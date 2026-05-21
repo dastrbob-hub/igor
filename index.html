@@ -456,6 +456,42 @@
             border: 1px solid rgba(255,255,255,0.2);
         }
         
+        .theme-btn {
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-weight: 600;
+            border-radius: 9999px;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-btn.active {
+            border-color: white;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+        
+        .theme-btn:hover {
+            filter: brightness(1.1);
+        }
+        
+        /* Theme specific styles */
+        body.theme-pirate {
+            background: linear-gradient(135deg, #1a0f0a 0%, #2c1810 100%);
+        }
+        
+        body.theme-pirate .section {
+            background: #2c1810;
+            border-color: rgba(139, 69, 19, 0.3);
+        }
+        
+        body.theme-pirate .battleship-grid {
+            background: #4a2c0a;
+        }
+        
+        body.theme-pirate .cell {
+            border-color: #6d4c2e;
+        }
+        
         .info-text {
             font-size: 0.85rem;
             color: #78909c;
@@ -470,6 +506,13 @@
         <header>
             <h1 class="title">⚓ Морской бой</h1>
             <p class="subtitle">Два игрока • WebRTC DataChannel • Без серверов</p>
+            
+            <!-- Fleet / Theme Selector -->
+            <div style="margin-top: 12px; display: flex; justify-content: center; gap: 12px; align-items: center;">
+                <span style="color:#90caf9; font-size:0.95rem;">Флот:</span>
+                <button id="themeNavyBtn" class="theme-btn active" style="width:auto; padding:6px 16px; font-size:0.9rem; background: linear-gradient(135deg, #00bcd4, #0097a7);">Государство</button>
+                <button id="themePirateBtn" class="theme-btn" style="width:auto; padding:6px 16px; font-size:0.9rem; background: linear-gradient(135deg, #5d4037, #3e2723);">Пираты</button>
+            </div>
         </header>
 
         <!-- Connection Section -->
@@ -516,6 +559,7 @@
             <h2>🚢 Расстановка кораблей</h2>
             <div class="pregame-controls">
                 <button id="placeShipsBtn" disabled>🎲 Автоматически расставить корабли</button>
+                <button id="reshuffleBtn" disabled style="display:none; background: #455a64;">🔄 Переставить корабли</button>
                 <button id="readyBtn" disabled>⚔️ Я готов к бою!</button>
             </div>
             <div id="readyStatus" class="info-text">Ожидание готовности обоих игроков...</div>
@@ -587,6 +631,16 @@
         let gameOver = false;
         let waitingForResult = false;
         
+        // Theme & Stats
+        let currentTheme = 'navy'; // 'navy' or 'pirate'
+        let stats = {
+            shotsFired: 0,
+            hits: 0,
+            opponentShots: 0,
+            opponentHits: 0
+        };
+        let moveHistory = [];
+        
         const GRID_SIZE = 10;
         const LETTERS = 'АБВГДЕЖЗИК';
         const SHIP_CONFIG = [
@@ -650,6 +704,7 @@
                 // Enable buttons
                 document.getElementById('placeShipsBtn').disabled = false;
                 document.getElementById('readyBtn').disabled = false;
+                // reshuffle will appear after first placement
                 
                 // Initial placement hint
                 appendChat('Система', 'Соединение успешно! Расставьте корабли и нажмите "Я готов".');
@@ -1366,11 +1421,46 @@
         }
         
         // ==================== INITIALIZATION ====================
+        function applyTheme(theme) {
+            currentTheme = theme;
+            const body = document.body;
+            
+            // Remove previous theme classes
+            body.classList.remove('theme-pirate', 'theme-navy');
+            
+            if (theme === 'pirate') {
+                body.classList.add('theme-pirate');
+                document.getElementById('themePirateBtn').classList.add('active');
+                document.getElementById('themeNavyBtn').classList.remove('active');
+                
+                // Change ship emoji globally for pirate feel
+                document.querySelectorAll('.cell').forEach(cell => {
+                    if (cell.innerHTML.includes('🚢')) cell.innerHTML = cell.innerHTML.replace('🚢', '🏴‍☠️');
+                });
+            } else {
+                body.classList.add('theme-navy');
+                document.getElementById('themeNavyBtn').classList.add('active');
+                document.getElementById('themePirateBtn').classList.remove('active');
+            }
+            
+            // Re-render grids to update colors/emojis
+            if (myGridContainer && enemyGridContainer) {
+                setTimeout(() => {
+                    renderMyGrid();
+                    renderEnemyGrid();
+                }, 50);
+            }
+        }
+        
         function init() {
             myGridContainer = document.getElementById('myGridContainer');
             enemyGridContainer = document.getElementById('enemyGridContainer');
             chatLog = document.getElementById('chatLog');
             chatInput = document.getElementById('chatInput');
+            
+            // Theme buttons
+            document.getElementById('themeNavyBtn').addEventListener('click', () => applyTheme('navy'));
+            document.getElementById('themePirateBtn').addEventListener('click', () => applyTheme('pirate'));
             
             // Initial empty grids
             initGrids();
@@ -1411,6 +1501,15 @@
             document.getElementById('placeShipsBtn').addEventListener('click', () => {
                 if (!gameStarted) {
                     autoPlaceShips();
+                    document.getElementById('reshuffleBtn').style.display = 'inline-block';
+                    document.getElementById('reshuffleBtn').disabled = false;
+                }
+            });
+
+            document.getElementById('reshuffleBtn').addEventListener('click', () => {
+                if (!gameStarted && !localReady) {
+                    autoPlaceShips();
+                    appendChat('Система', 'Корабли переставлены заново.');
                 }
             });
             
