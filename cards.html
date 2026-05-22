@@ -3,101 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дурак</title>
+    <title>Карточный Дурак • WebRTC P2P</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: 'Inter', system_ui, sans-serif; } .card { width: 70px; height: 100px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; box-shadow: 0 4px 15px rgb(0 0 0 / 0.3); }</style>
+    <style>
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .card { width: 70px; height: 100px; border-radius: 8px; box-shadow: 0 4px 15px rgb(0 0 0 / 0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
+        .felt { background: #166534; box-shadow: inset 0 0 80px rgba(0,0,0,0.6); }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-200 p-6">
-    <div class="max-w-[1100px] mx-auto">
+    <div class="max-w-6xl mx-auto">
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-x-4">
                 <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-3xl">🃏</div>
-                <div><h1 class="text-4xl font-bold">Карточный Дурак</h1><p class="text-slate-400">Подкидной • Внутри хаба</p></div>
-            </div>
-            <div id="connStatus" class="px-4 py-2 bg-slate-900 border border-amber-700 rounded-3xl text-sm">Подключено через хаб</div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5">
-                <div class="text-amber-400 font-bold mb-3">Карты соперника</div>
-                <div id="opponentCards" class="flex gap-2 flex-wrap min-h-[120px]"></div>
-            </div>
-
-            <div class="bg-emerald-950 border border-emerald-700 rounded-3xl p-5">
-                <div class="text-emerald-400 font-bold mb-3">Стол</div>
-                <div id="table" class="min-h-[140px] flex flex-wrap gap-3"></div>
-                <div class="mt-4 flex gap-3">
-                    <button onclick="sendBeat()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-semibold">Бито</button>
-                    <button onclick="takeCards()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 rounded-2xl font-semibold">Взять</button>
+                <div>
+                    <h1 class="text-4xl font-bold">Карточный Дурак</h1>
+                    <p class="text-slate-400">Подкидной • WebRTC P2P</p>
                 </div>
             </div>
-
-            <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5">
-                <div class="text-amber-400 font-bold mb-3">Мои карты</div>
-                <div id="myCards" class="flex gap-2 flex-wrap min-h-[120px]"></div>
+            <div id="connStatus" class="px-5 py-2 bg-slate-900 border border-amber-700 rounded-3xl text-sm flex items-center gap-x-2">
+                <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                <span>Ожидание подключения...</span>
             </div>
         </div>
 
-        <div class="mt-4 text-center text-sm text-slate-400" id="statusText">Ожидание начала игры...</div>
+        <!-- Connection -->
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <button onclick="generateOffer()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-2xl font-semibold">Создать игру (Offer) — Раздающий</button>
+                    <textarea id="offerOut" readonly class="mt-2 w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('offerOut')" class="mt-1 text-xs w-full py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="offerIn" placeholder="Вставьте Offer" class="w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="acceptOffer()" class="mt-2 w-full bg-teal-600 hover:bg-teal-500 py-3 rounded-2xl font-semibold">Принять игру (Answer)</button>
+                    <textarea id="answerOut" readonly class="mt-2 w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('answerOut')" class="mt-1 text-xs w-full py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="answerIn" placeholder="Вставьте Answer" class="w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="connectAnswer()" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 py-3 rounded-2xl font-semibold">Завершить подключение</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="felt border border-emerald-900 rounded-3xl p-8">
+            <div class="mb-8">
+                <div class="text-emerald-400 font-semibold mb-2">Карты соперника</div>
+                <div id="opponentHand" class="flex gap-2 justify-center min-h-[110px]"></div>
+            </div>
+
+            <div class="mb-8">
+                <div class="text-amber-400 font-semibold mb-2">СТОЛ</div>
+                <div id="tableArea" class="min-h-[130px] bg-emerald-950/50 border border-emerald-800 rounded-2xl p-4 flex flex-wrap gap-4 justify-center items-center"></div>
+            </div>
+
+            <div>
+                <div class="text-yellow-400 font-semibold mb-2">Ваши карты</div>
+                <div id="myHand" class="flex flex-wrap gap-3 justify-center min-h-[120px] p-2"></div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-center gap-4">
+            <button onclick="performAction()" class="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 font-bold rounded-2xl">ХОДИТЬ / БИТЬ</button>
+            <button onclick="sendBeat()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-2xl">БИТО</button>
+            <button onclick="sendTake()" class="px-6 py-3 bg-red-600 hover:bg-red-500 font-semibold rounded-2xl">ВЗЯТЬ</button>
+        </div>
     </div>
 
     <script>
-        let myCards = [];
-        let opponentCardCount = 6;
+        const RANKS = ['6','7','8','9','10','В','Д','К','Т'];
+        const SUITS = ['♥','♦','♣','♠'];
+        let deck = [];
+        let myHand = [];
+        let opponentHandCount = 6;
         let table = [];
-        let isMyTurn = false;
+        let trumpSuit = '♥';
+        let trumpCard = null;
+        let deckCount = 24;
+        let isHost = false;
+        let myTurn = false;
+        let isDefending = false;
 
-        function sendToHub(msg) {
-            window.parent.postMessage(JSON.stringify(msg), '*');
+        let pc = null;
+        let dataChannel = null;
+        let iceCandidates = [];
+
+        function updateStatus(text, connected = false) {
+            const el = document.getElementById('connStatus');
+            el.innerHTML = `<div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div><span>${text}</span>`;
         }
 
-        window.addEventListener('message', (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type === 'game_state') {
-                    document.getElementById('statusText').innerHTML = msg.status || '';
-                }
-                if (msg.type === 'connection_ready') {
-                    document.getElementById('statusText').innerHTML = 'Соединение активно. Игра началась.';
-                }
-            } catch(e) {}
-        });
-
-        function renderMyCards() {
-            const container = document.getElementById('myCards');
-            container.innerHTML = '';
-            myCards.forEach((card, index) => {
-                const el = document.createElement('div');
-                el.className = 'card bg-white text-slate-900 cursor-pointer';
-                el.innerHTML = `${card.rank}<span class="text-xl">${card.suit}</span>`;
-                el.onclick = () => playCard(index);
-                container.appendChild(el);
+        function waitForIce(pc) {
+            return new Promise(resolve => {
+                if (pc.iceGatheringState === 'complete') return resolve();
+                const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); } };
+                pc.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 4000);
             });
         }
 
-        function playCard(index) {
-            if (!isMyTurn) return;
-            const card = myCards[index];
-            sendToHub({ type: 'play_card', card });
-            myCards.splice(index, 1);
-            renderMyCards();
+        function setupDC(dc) {
+            dc.onopen = () => {
+                updateStatus('Соединено! Игра началась.', true);
+                if (isHost) startAsDealer();
+            };
+            dc.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                handleMessage(msg);
+            };
         }
 
-        function sendBeat() { sendToHub({ type: 'beat' }); }
-        function takeCards() { sendToHub({ type: 'take' }); }
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+            pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+            const dc = pc.createDataChannel('durak-game');
+            setupDC(dc);
+            dataChannel = dc;
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIce(pc);
+            document.getElementById('offerOut').value = JSON.stringify({type: 'offer', sdp: pc.localDescription.sdp, iceCandidates}, null, 2);
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerIn').value.trim();
+            if (!txt) return;
+            const sig = JSON.parse(txt);
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+            pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDC(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+            await pc.setRemoteDescription(new RTCSessionDescription({type:'offer', sdp: sig.sdp}));
+            for (let c of sig.iceCandidates || []) await pc.addIceCandidate(new RTCIceCandidate(c));
+            const ans = await pc.createAnswer();
+            await pc.setLocalDescription(ans);
+            await waitForIce(pc);
+            document.getElementById('answerOut').value = JSON.stringify({type: 'answer', sdp: pc.localDescription.sdp, iceCandidates}, null, 2);
+        }
+
+        async function connectAnswer() {
+            const txt = document.getElementById('answerIn').value.trim();
+            if (!txt || !pc) return;
+            const sig = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({type:'answer', sdp: sig.sdp}));
+            for (let c of sig.iceCandidates || []) await pc.addIceCandidate(new RTCIceCandidate(c));
+        }
+
+        function copyText(id) {
+            const ta = document.getElementById(id);
+            if (ta.value) navigator.clipboard.writeText(ta.value);
+        }
+
+        function handleMessage(msg) {
+            if (msg.type === 'deal') {
+                myHand = msg.hand;
+                trumpSuit = msg.trumpSuit;
+                trumpCard = msg.trumpCard;
+                deckCount = msg.deckCount;
+                myTurn = msg.firstAttacker === 'client';
+                isDefending = !myTurn;
+                updateUI();
+            }
+            if (msg.type === 'attack') {
+                table.push({attack: msg.card, defend: null});
+                updateUI();
+            }
+            if (msg.type === 'defend') {
+                if (table.length > 0) table[table.length-1].defend = msg.card;
+                updateUI();
+            }
+            if (msg.type === 'beat') {
+                table = [];
+                updateUI();
+            }
+            if (msg.type === 'take') {
+                table = [];
+                updateUI();
+            }
+        }
+
+        function updateUI() {
+            // Simplified rendering
+            document.getElementById('myHand').innerHTML = myHand.map((c,i) => `<div class="card bg-white text-slate-900 cursor-pointer" onclick="playCard(${i})">${c.rank}${c.suit}</div>`).join('');
+            document.getElementById('opponentHand').innerHTML = Array(opponentHandCount).fill('<div class="card card-back bg-blue-900">🂠</div>').join('');
+            document.getElementById('tableArea').innerHTML = table.map(p => `<div class="flex gap-2"><div class="card bg-white text-slate-900">${p.attack.rank}${p.attack.suit}</div>${p.defend ? `<div class="card bg-white text-slate-900">${p.defend.rank}${p.defend.suit}</div>` : ''}</div>`).join('');
+        }
+
+        function playCard(index) {
+            if (!myTurn) return;
+            const card = myHand[index];
+            if (isDefending) {
+                // defend logic simplified
+            } else {
+                table.push({attack: card, defend: null});
+                myHand.splice(index, 1);
+                if (dataChannel) dataChannel.send(JSON.stringify({type: 'attack', card}));
+                updateUI();
+            }
+        }
+
+        function sendBeat() {
+            if (dataChannel) dataChannel.send(JSON.stringify({type: 'beat'}));
+            table = [];
+            updateUI();
+        }
+
+        function sendTake() {
+            if (dataChannel) dataChannel.send(JSON.stringify({type: 'take'}));
+            table = [];
+            updateUI();
+        }
+
+        function startAsDealer() {
+            // Simplified deck
+            deck = [];
+            for (let s of SUITS) for (let r of RANKS) deck.push({rank: r, suit: s});
+            myHand = deck.splice(0,6);
+            const oppHand = deck.splice(0,6);
+            trumpCard = deck.pop();
+            trumpSuit = trumpCard.suit;
+            deckCount = deck.length;
+            if (dataChannel) dataChannel.send(JSON.stringify({type: 'deal', hand: oppHand, trumpSuit, trumpCard, deckCount, firstAttacker: 'client'}));
+            myTurn = true;
+            isDefending = false;
+            updateUI();
+        }
 
         function init() {
-            myCards = [
-                {rank: 'A', suit: '♠'}, {rank: 'K', suit: '♥'}, {rank: 'Q', suit: '♦'},
-                {rank: '10', suit: '♣'}, {rank: '7', suit: '♠'}, {rank: '8', suit: '♥'}
-            ];
-            renderMyCards();
-
-            setTimeout(() => {
-                window.parent.postMessage(JSON.stringify({ type: 'game_loaded', game: 'cards' }), '*');
-            }, 300);
+            console.log('%c[Дурак] Автономная версия загружена', 'color:#eab308');
         }
-
         window.onload = init;
     </script>
 </body>
