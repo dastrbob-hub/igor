@@ -8,65 +8,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
-        
-        :root {
-            --primary: #00d4ff;
-        }
-        
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-        }
-        
-        .title-font {
-            font-family: 'Space Grotesk', system-ui, sans-serif;
-            font-weight: 600;
-        }
-        
-        .game-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .game-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
-        
-        .game-card.active {
-            border-color: #00d4ff;
-            box-shadow: 0 0 0 1px #00d4ff;
-        }
-        
-        .game-card.disabled {
-            opacity: 0.6;
-            filter: grayscale(0.3);
-            cursor: not-allowed;
-        }
-        
-        .section-header {
-            background: linear-gradient(90deg, #0f172a, transparent);
-        }
-        
-        .navy-bg {
-            background: #0f172a;
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        .game-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .game-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        .game-card.active { border-color: #00d4ff; box-shadow: 0 0 0 1px #00d4ff; }
+        #game-frame { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
-    <!-- Navbar -->
+    <!-- Navbar with Connection Status -->
     <nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-x-3">
                 <div class="w-10 h-10 bg-cyan-500 rounded-2xl flex items-center justify-center">
                     <i class="fa-solid fa-gamepad text-white text-2xl"></i>
                 </div>
-                <div>
-                    <span class="font-bold text-2xl tracking-tighter">игровой хаб</span>
-                </div>
+                <span class="font-bold text-2xl tracking-tighter">игровой хаб</span>
             </div>
             
-            <div class="flex items-center gap-x-4 text-sm">
-                <a href="https://github.com/dastrbob-hub/igor" target="_blank" 
-                   class="flex items-center gap-x-2 px-4 py-2 rounded-3xl hover:bg-slate-800 transition-colors">
+            <!-- WebRTC Connection Status in Navbar -->
+            <div class="flex items-center gap-x-4">
+                <div id="globalConnStatus" class="px-4 py-1.5 bg-slate-900 border border-slate-700 rounded-3xl text-sm flex items-center gap-x-2 cursor-pointer" onclick="showConnectionPanel()">
+                    <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                    <span id="globalConnText">Не подключено</span>
+                </div>
+                <a href="https://github.com/dastrbob-hub/igor" target="_blank" class="flex items-center gap-x-2 px-4 py-2 rounded-3xl hover:bg-slate-800 transition-colors text-sm">
                     <i class="fa-brands fa-github"></i>
                     <span>GitHub</span>
                 </a>
@@ -74,211 +41,273 @@
         </div>
     </nav>
 
-    <!-- Hero / Header -->
-    <div class="max-w-7xl mx-auto px-6 pt-16 pb-12">
-        <div class="text-center">
-            <div class="inline-flex items-center gap-x-2 px-4 py-1.5 rounded-3xl bg-slate-900 border border-slate-700 mb-6">
-                <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                <span class="text-sm font-medium text-emerald-400">Бесплатно • Без регистрации • P2P</span>
+    <!-- Connection Panel (hidden by default, shown when clicking status) -->
+    <div id="connectionPanel" class="hidden max-w-4xl mx-auto mt-4 px-6">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6">
+            <h3 class="font-semibold mb-4 flex items-center gap-x-2">
+                <i class="fa-solid fa-plug"></i> 
+                <span>WebRTC Подключение (один раз для всех игр)</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <button onclick="generateOffer()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-2.5 rounded-2xl font-semibold text-sm">Создать игру (Offer)</button>
+                    <textarea id="offerOut" readonly class="mt-2 w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('offerOut')" class="mt-1 w-full text-xs py-1 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="offerIn" placeholder="Вставьте Offer" class="w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="acceptOffer()" class="mt-2 w-full bg-teal-600 hover:bg-teal-500 py-2.5 rounded-2xl font-semibold text-sm">Принять игру (Answer)</button>
+                    <textarea id="answerOut" readonly class="mt-2 w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('answerOut')" class="mt-1 w-full text-xs py-1 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="answerIn" placeholder="Вставьте Answer" class="w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="connectAnswer()" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 py-2.5 rounded-2xl font-semibold text-sm">Завершить подключение</button>
+                </div>
             </div>
-            
-            <h1 class="text-6xl md:text-7xl font-bold tracking-tighter title-font mb-4">
-                Мой игровой хаб
-            </h1>
-            <p class="max-w-md mx-auto text-xl text-slate-400">
-                Коллекция крутых браузерных игр.<br>
-                Играй с друзьями или в одиночку.
-            </p>
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="max-w-7xl mx-auto px-6 pt-8 pb-6" id="heroSection">
+        <div class="text-center">
+            <h1 class="text-6xl md:text-7xl font-bold tracking-tighter title-font mb-4">Мой игровой хаб</h1>
+            <p class="max-w-md mx-auto text-xl text-slate-400">Подключись один раз — играй во все игры без переподключения.</p>
         </div>
     </div>
 
     <!-- Games Grid -->
-    <div class="max-w-7xl mx-auto px-6 pb-20">
+    <div class="max-w-7xl mx-auto px-6 pb-10" id="gamesGrid">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            
-            <!-- Морской бой - ACTIVE -->
-            <a href="battleship.html" class="game-card active group block">
+            <!-- Game Cards (now with onclick to load in iframe) -->
+            <div onclick="loadGame('battleship.html')" class="game-card active group block cursor-pointer">
                 <div class="bg-slate-900 border border-cyan-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-cyan-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">⚓</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-cyan-500/10 text-cyan-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-40 bg-gradient-to-br from-cyan-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-6xl">⚓</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Морской бой</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Классика жанра. Два игрока соединяются напрямую через WebRTC P2P.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-cyan-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-semibold">Морской бой</h3>
+                        <p class="text-slate-400 text-sm mt-1">Классика. P2P WebRTC</p>
                     </div>
                 </div>
-            </a>
-            
-            <!-- Змейка - ACTIVE -->
-            <a href="snake.html" class="game-card active group block">
+            </div>
+
+            <div onclick="loadGame('snake.html')" class="game-card active group block cursor-pointer">
                 <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-emerald-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">🐍</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-40 bg-gradient-to-br from-emerald-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-6xl">🐍</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Сетевая Змейка</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Две змейки на одном поле. Ешьте яблоки, избегайте столкновений. Реал-тайм P2P.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-emerald-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-semibold">Сетевая Змейка</h3>
+                        <p class="text-slate-400 text-sm mt-1">Две змейки на одном поле</p>
                     </div>
                 </div>
-            </a>
-            
-            <!-- Пинг-понг - ACTIVE -->
-            <a href="pingpong.html" class="game-card active group block">
+            </div>
+
+            <div onclick="loadGame('pingpong.html')" class="game-card active group block cursor-pointer">
                 <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-emerald-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">🏓</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-40 bg-gradient-to-br from-emerald-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-6xl">🏓</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Сетевой Пинг-Понг</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Классический пинг-понг с реал-тайм синхронизацией.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-emerald-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-semibold">Сетевой Пинг-Понг</h3>
+                        <p class="text-slate-400 text-sm mt-1">Реал-тайм пинг-понг</p>
                     </div>
                 </div>
-            </a>
-            
-            <!-- Дурак - ACTIVE -->
-            <a href="cards.html" class="game-card active group block">
+            </div>
+
+            <div onclick="loadGame('cards.html')" class="game-card active group block cursor-pointer">
                 <div class="bg-slate-900 border border-amber-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-amber-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">🃏</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-amber-500/10 text-amber-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-40 bg-gradient-to-br from-amber-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-6xl">🃏</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Карточный Дурак</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Подкидной Дурак. Раздача, козырь, атака и защита по правилам.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-amber-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-semibold">Карточный Дурак</h3>
+                        <p class="text-slate-400 text-sm mt-1">Подкидной Дурак</p>
                     </div>
                 </div>
-            </a>
-            
-            <!-- Морской бой: ПРО - NEW ACTIVE -->
-            <a href="battleship2.html" class="game-card active group block">
+            </div>
+
+            <div onclick="loadGame('battleship2.html')" class="game-card active group block cursor-pointer">
                 <div class="bg-slate-900 border border-cyan-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-cyan-950 via-blue-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">⚓</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-cyan-500/10 text-cyan-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-rocket"></i>
-                                <span>ADVANCED • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-40 bg-gradient-to-br from-cyan-950 via-blue-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-6xl">⚓</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Морской бой: ПРО</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Масштабная версия 50×50. Энергия, Сонар, Авиаудар и Ядерный удар.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-cyan-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-semibold">Морской бой: ПРО</h3>
+                        <p class="text-slate-400 text-sm mt-1">50×50 + Супер-удары</p>
                     </div>
                 </div>
-            </a>
-            
+            </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="border-t border-slate-800 bg-slate-950">
-        <div class="max-w-7xl mx-auto px-6 py-8 text-center text-sm text-slate-500">
-            <p>Все игры работают в браузере. <span class="text-cyan-400">Морской бой: ПРО</span> — новая эпическая версия с супер-способностями.</p>
-            <p class="mt-2 text-xs">github.com/dastrbob-hub/igor</p>
+    <!-- Game Iframe -->
+    <div id="gameContainer" class="max-w-7xl mx-auto px-6 hidden">
+        <div class="flex justify-end mb-2">
+            <button onclick="exitToMenu()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm flex items-center gap-x-2">
+                <i class="fa-solid fa-arrow-left"></i> 
+                <span>Выйти в меню</span>
+            </button>
         </div>
+        <iframe id="game-frame" class="w-full rounded-3xl border border-slate-700 bg-black" style="height: 80vh;"></iframe>
     </div>
 
     <script>
-        console.log('%c[Хаб] Морской бой: ПРО добавлен в меню!', 'color:#67e8f9');
+        // ==================== WEBRTC (copied from battleship.html) ====================
+        let pc = null;
+        let dataChannel = null;
+        let isHost = false;
+        let iceCandidates = [];
+
+        function updateGlobalStatus(text, connected = false) {
+            const el = document.getElementById('globalConnStatus');
+            const textEl = document.getElementById('globalConnText');
+            textEl.textContent = text;
+            
+            if (connected) {
+                el.classList.add('!border-emerald-500');
+                el.querySelector('div').classList.add('!bg-emerald-400');
+            } else {
+                el.classList.remove('!border-emerald-500');
+                el.querySelector('div').classList.remove('!bg-emerald-400');
+            }
+        }
+
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise((resolve) => {
+                if (peerConnection.iceGatheringState === 'complete') { resolve(); return; }
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => { peerConnection.removeEventListener('icegatheringstatechange', check); resolve(); }, 4500);
+            });
+        }
+
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateGlobalStatus('Подключено', true);
+                document.getElementById('connectionPanel').classList.add('hidden');
+            };
+            dc.onmessage = (event) => {
+                // Forward message to current game iframe
+                const frame = document.getElementById('game-frame');
+                if (frame && frame.contentWindow) {
+                    frame.contentWindow.postMessage(event.data, '*');
+                }
+            };
+        }
+
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            dataChannel = pc.createDataChannel('hub-games');
+            setupDataChannel(dataChannel);
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIceGatheringComplete(pc);
+
+            const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerOut').value = JSON.stringify(signal, null, 2);
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerIn').value.trim();
+            if (!txt) return;
+            const sig = JSON.parse(txt);
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGatheringComplete(pc);
+
+            const ansSig = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('answerOut').value = JSON.stringify(ansSig, null, 2);
+        }
+
+        async function connectAnswer() {
+            const txt = document.getElementById('answerIn').value.trim();
+            if (!txt || !pc) return;
+            const sig = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
+            updateGlobalStatus('Соединение устанавливается...');
+        }
+
+        function copyText(id) {
+            const ta = document.getElementById(id);
+            if (ta.value) navigator.clipboard.writeText(ta.value);
+        }
+
+        function showConnectionPanel() {
+            document.getElementById('connectionPanel').classList.toggle('hidden');
+        }
+
+        // ==================== IFRAME GAME LOADER ====================
+        function loadGame(gameFile) {
+            const grid = document.getElementById('gamesGrid');
+            const hero = document.getElementById('heroSection');
+            const container = document.getElementById('gameContainer');
+            const frame = document.getElementById('game-frame');
+
+            grid.style.display = 'none';
+            hero.style.display = 'none';
+            container.style.display = 'block';
+
+            frame.src = gameFile;
+            frame.style.display = 'block';
+
+            // Send connection status to game when it loads
+            frame.onload = () => {
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    frame.contentWindow.postMessage({ type: 'connection_ready' }, '*');
+                }
+            };
+        }
+
+        function exitToMenu() {
+            const grid = document.getElementById('gamesGrid');
+            const hero = document.getElementById('heroSection');
+            const container = document.getElementById('gameContainer');
+            const frame = document.getElementById('game-frame');
+
+            frame.src = 'about:blank';
+            container.style.display = 'none';
+            grid.style.display = 'block';
+            hero.style.display = 'block';
+        }
+
+        // Listen for messages from games inside iframe
+        window.addEventListener('message', (event) => {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                // Forward message from game to the other player
+                dataChannel.send(event.data);
+            }
+        });
+
+        // Initial status
+        function init() {
+            updateGlobalStatus('Не подключено');
+            console.log('%c[Hub] Новая архитектура загружена (WebRTC + iframe)', 'color:#67e8f9');
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
