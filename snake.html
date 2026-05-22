@@ -15,13 +15,10 @@
             border-radius: 12px;
             box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
         }
-        .neon-green { box-shadow: 0 0 15px #22c55e; }
-        .neon-blue { box-shadow: 0 0 15px #3b82f6; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
     <div class="max-w-[900px] mx-auto p-6">
-        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-x-4">
                 <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center">
@@ -38,7 +35,6 @@
             </div>
         </div>
 
-        <!-- Signaling Panel -->
         <div id="signalingPanel" class="bg-slate-900 border border-slate-700 rounded-3xl p-5 mb-6">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="font-semibold">Подключение игроков</h3>
@@ -66,7 +62,6 @@
             </div>
         </div>
 
-        <!-- Scores -->
         <div class="flex justify-center gap-x-12 mb-4">
             <div class="text-center">
                 <div class="text-emerald-400 text-sm font-bold flex items-center justify-center gap-x-2">
@@ -82,12 +77,19 @@
             </div>
         </div>
 
-        <!-- Game Canvas -->
         <div class="flex justify-center">
             <canvas id="gameCanvas" width="600" height="600" class="bg-[#0a0f1a]"></canvas>
         </div>
 
         <div id="gameStatus" class="mt-4 text-center text-xl font-semibold h-8"></div>
+
+        <!-- Restart Button -->
+        <div id="restartContainer" class="mt-4 flex justify-center hidden">
+            <button onclick="restartGame()" 
+                    class="px-8 py-3 bg-white text-slate-950 hover:bg-gray-200 font-bold rounded-2xl text-lg transition-all">
+                Играть снова
+            </button>
+        </div>
 
         <div class="mt-3 text-center text-xs text-slate-500">
             Управление: Игрок 1 — Стрелки • Игрок 2 — WASD
@@ -95,7 +97,6 @@
     </div>
 
     <script>
-        // Tailwind
         function initTailwind() {}
         initTailwind();
 
@@ -104,9 +105,8 @@
         const GRID_SIZE = 30;
         const CELL_SIZE = 20;
 
-        // Game state
-        let snake1 = [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}]; // Green - Player 1 (host)
-        let snake2 = [{x: 24, y: 15}, {x: 25, y: 15}, {x: 26, y: 15}]; // Blue - Player 2
+        let snake1 = [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}];
+        let snake2 = [{x: 24, y: 15}, {x: 25, y: 15}, {x: 26, y: 15}];
         let dir1 = {x: 1, y: 0};
         let dir2 = {x: -1, y: 0};
         let apple = {x: 15, y: 15};
@@ -115,7 +115,6 @@
         let gameRunning = false;
         let isHost = false;
         let gameOver = false;
-        let winner = null;
 
         let keys = {};
         document.addEventListener('keydown', e => {
@@ -125,12 +124,12 @@
         document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
         function handleInput(key) {
-            if (isHost) { // Player 1 - Arrows
+            if (isHost) {
                 if (key === 'arrowup' && dir1.y !== 1) dir1 = {x: 0, y: -1};
                 if (key === 'arrowdown' && dir1.y !== -1) dir1 = {x: 0, y: 1};
                 if (key === 'arrowleft' && dir1.x !== 1) dir1 = {x: -1, y: 0};
                 if (key === 'arrowright' && dir1.x !== -1) dir1 = {x: 1, y: 0};
-            } else { // Player 2 - WASD
+            } else {
                 if ((key === 'w' || key === 'arrowup') && dir2.y !== 1) dir2 = {x: 0, y: -1};
                 if ((key === 's' || key === 'arrowdown') && dir2.y !== -1) dir2 = {x: 0, y: 1};
                 if ((key === 'a' || key === 'arrowleft') && dir2.x !== 1) dir2 = {x: -1, y: 0};
@@ -142,7 +141,6 @@
             ctx.fillStyle = '#0a0f1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Grid
             ctx.strokeStyle = '#1e2937';
             ctx.lineWidth = 1;
             for (let x = 0; x <= GRID_SIZE; x++) {
@@ -156,32 +154,17 @@
                 ctx.stroke();
             }
 
-            // Apple
             ctx.fillStyle = '#ef4444';
             ctx.fillRect(apple.x * CELL_SIZE + 2, apple.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-            ctx.fillStyle = '#f87171';
-            ctx.fillRect(apple.x * CELL_SIZE + 6, apple.y * CELL_SIZE + 6, 6, 6);
 
-            // Snake 1 (Green)
             ctx.fillStyle = '#22c55e';
             snake1.forEach((seg, i) => {
                 ctx.fillRect(seg.x * CELL_SIZE + 1, seg.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-                if (i === 0) {
-                    ctx.fillStyle = '#15803d';
-                    ctx.fillRect(seg.x * CELL_SIZE + 4, seg.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
-                    ctx.fillStyle = '#22c55e';
-                }
             });
 
-            // Snake 2 (Blue)
             ctx.fillStyle = '#3b82f6';
             snake2.forEach((seg, i) => {
                 ctx.fillRect(seg.x * CELL_SIZE + 1, seg.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-                if (i === 0) {
-                    ctx.fillStyle = '#1e40af';
-                    ctx.fillRect(seg.x * CELL_SIZE + 4, seg.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
-                    ctx.fillStyle = '#3b82f6';
-                }
             });
         }
 
@@ -197,13 +180,10 @@
         }
 
         function checkCollision(head, snake, otherSnake) {
-            // Wall
             if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) return true;
-            // Self
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) return true;
             }
-            // Other snake
             for (let seg of otherSnake) {
                 if (head.x === seg.x && head.y === seg.y) return true;
             }
@@ -213,37 +193,24 @@
         function placeApple() {
             let newApple;
             do {
-                newApple = {
-                    x: Math.floor(Math.random() * GRID_SIZE),
-                    y: Math.floor(Math.random() * GRID_SIZE)
-                };
-            } while (
-                snake1.some(s => s.x === newApple.x && s.y === newApple.y) ||
-                snake2.some(s => s.x === newApple.x && s.y === newApple.y)
-            );
+                newApple = { x: Math.floor(Math.random() * GRID_SIZE), y: Math.floor(Math.random() * GRID_SIZE) };
+            } while (snake1.some(s => s.x === newApple.x && s.y === newApple.y) || snake2.some(s => s.x === newApple.x && s.y === newApple.y));
             return newApple;
         }
 
-        // Game loop (authoritative on host)
         let gameInterval = null;
 
         function gameLoop() {
             if (!gameRunning || gameOver) return;
 
-            // Move snakes
             const head1 = moveSnake(snake1, dir1);
             const head2 = moveSnake(snake2, dir2);
 
-            // Check collisions
             const coll1 = checkCollision(head1, snake1, snake2);
             const coll2 = checkCollision(head2, snake2, snake1);
 
-            let ate1 = false, ate2 = false;
-
-            // Apple check
             if (head1.x === apple.x && head1.y === apple.y) {
                 score1++;
-                ate1 = true;
                 apple = placeApple();
             } else {
                 snake1.pop();
@@ -251,7 +218,6 @@
 
             if (head2.x === apple.x && head2.y === apple.y) {
                 score2++;
-                ate2 = true;
                 apple = placeApple();
             } else {
                 snake2.pop();
@@ -259,30 +225,22 @@
 
             updateScores();
 
-            // Send state to peer
             if (dataChannel && dataChannel.readyState === 'open') {
-                const state = {
+                dataChannel.send(JSON.stringify({
                     type: 'state',
-                    snake1: snake1,
-                    snake2: snake2,
-                    apple: apple,
-                    score1: score1,
-                    score2: score2
-                };
-                dataChannel.send(JSON.stringify(state));
+                    snake1, snake2, apple, score1, score2
+                }));
             }
 
             draw();
 
-            // Check game over
             if (coll1 || coll2) {
                 gameOver = true;
                 gameRunning = false;
+                document.getElementById('restartContainer').classList.remove('hidden');
                 if (coll1) {
-                    winner = 'blue';
                     document.getElementById('gameStatus').innerHTML = '<span class="text-red-400 text-3xl font-bold">ПОРАЖЕНИЕ</span> <span class="text-emerald-400">— Победа Синей!</span>';
                 } else {
-                    winner = 'green';
                     document.getElementById('gameStatus').innerHTML = '<span class="text-emerald-400 text-3xl font-bold">ПОБЕДА!</span> <span class="text-blue-400">— Зелёная победила!</span>';
                 }
                 clearInterval(gameInterval);
@@ -294,9 +252,9 @@
             gameRunning = true;
             gameOver = false;
             document.getElementById('gameStatus').innerHTML = '';
-            
-            // Reset positions if needed
-            if (snake1.length === 0) {
+            document.getElementById('restartContainer').classList.add('hidden');
+
+            if (snake1.length < 3) {
                 snake1 = [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}];
                 snake2 = [{x: 24, y: 15}, {x: 25, y: 15}, {x: 26, y: 15}];
                 dir1 = {x: 1, y: 0};
@@ -310,21 +268,46 @@
             draw();
 
             if (isHost) {
-                gameInterval = setInterval(gameLoop, 140); // ~7 moves/sec
+                gameInterval = setInterval(gameLoop, 140);
             }
         }
 
-        // WebRTC
+        // NEW: Restart without breaking WebRTC
+        function restartGame() {
+            gameOver = false;
+            gameRunning = false;
+            document.getElementById('restartContainer').classList.add('hidden');
+            document.getElementById('gameStatus').innerHTML = '';
+
+            snake1 = [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}];
+            snake2 = [{x: 24, y: 15}, {x: 25, y: 15}, {x: 26, y: 15}];
+            dir1 = {x: 1, y: 0};
+            dir2 = {x: -1, y: 0};
+            score1 = 0;
+            score2 = 0;
+            apple = placeApple();
+
+            updateScores();
+            draw();
+
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify({ type: 'RESTART_GAME' }));
+            }
+
+            // Restart the loop if host
+            if (isHost) {
+                gameRunning = true;
+                gameInterval = setInterval(gameLoop, 140);
+            }
+        }
+
         let pc = null;
         let dataChannel = null;
         let iceCandidates = [];
 
         function updateConnStatus(text, connected = false) {
             const el = document.getElementById('connStatus');
-            el.innerHTML = `
-                <div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div>
-                <span>${text}</span>
-            `;
+            el.innerHTML = `<div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div><span>${text}</span>`;
         }
 
         function waitForIce(peerConnection) {
@@ -351,17 +334,18 @@
             dc.onmessage = (event) => {
                 try {
                     const msg = JSON.parse(event.data);
-                    if (msg.type === 'state') {
-                        // Client receives authoritative state from host
-                        if (!isHost) {
-                            snake1 = msg.snake1;
-                            snake2 = msg.snake2;
-                            apple = msg.apple;
-                            score1 = msg.score1;
-                            score2 = msg.score2;
-                            updateScores();
-                            draw();
-                        }
+                    if (msg.type === 'state' && !isHost) {
+                        snake1 = msg.snake1;
+                        snake2 = msg.snake2;
+                        apple = msg.apple;
+                        score1 = msg.score1;
+                        score2 = msg.score2;
+                        updateScores();
+                        draw();
+                    }
+                    // NEW: Handle restart signal
+                    if (msg.type === 'RESTART_GAME') {
+                        restartGame();
                     }
                 } catch(e) {}
             };
@@ -373,18 +357,14 @@
             if (pc) pc.close();
             iceCandidates = [];
             isHost = true;
-
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             const dc = pc.createDataChannel('snake-game');
             setupDataChannel(dc);
             dataChannel = dc;
-
             pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
-
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             await waitForIce(pc);
-
             const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
             document.getElementById('offerOut').value = JSON.stringify(signal, null, 2);
             updateConnStatus('Offer создан — отправьте Игроку 2');
@@ -394,24 +374,17 @@
             const txt = document.getElementById('offerIn').value.trim();
             if (!txt) return alert('Вставьте Offer!');
             const signal = JSON.parse(txt);
-
             if (pc) pc.close();
             iceCandidates = [];
             isHost = false;
-
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
             pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
-
             await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: signal.sdp }));
-            for (const c of signal.iceCandidates || []) {
-                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
-            }
-
+            for (const c of signal.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             await waitForIce(pc);
-
             const ansSignal = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
             document.getElementById('answerOut').value = JSON.stringify(ansSignal, null, 2);
             updateConnStatus('Answer создан — отправьте Игроку 1');
@@ -421,11 +394,8 @@
             const txt = document.getElementById('answerIn').value.trim();
             if (!txt || !pc) return alert('Сначала создайте Offer!');
             const signal = JSON.parse(txt);
-
             await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signal.sdp }));
-            for (const c of signal.iceCandidates || []) {
-                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
-            }
+            for (const c of signal.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
             updateConnStatus('Соединение устанавливается...');
         }
 
@@ -438,15 +408,11 @@
             document.getElementById('signalingPanel').style.display = 'none';
         }
 
-        // Init
         function init() {
-            // Initial draw
             draw();
             updateScores();
             document.getElementById('gameStatus').innerHTML = 'Подключитесь, чтобы начать';
-            console.log('%c[Snake] Multiplayer Snake ready. P2P WebRTC enabled.', 'color:#22c55e');
         }
-
         window.onload = init;
     </script>
 </body>
