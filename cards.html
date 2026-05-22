@@ -120,8 +120,19 @@
                     class="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 disabled:bg-slate-700 disabled:text-slate-400 font-bold rounded-2xl text-lg transition-all">
                 ХОДИТЬ / БИТЬ
             </button>
-            <button onclick="sendBeat()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-2xl">БИТО</button>
+            <button id="beatBtn" onclick="sendBeat()" 
+                    class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 disabled:text-slate-400 font-semibold rounded-2xl transition-all">
+                БИТО
+            </button>
             <button onclick="sendTake()" class="px-6 py-3 bg-red-600 hover:bg-red-500 font-semibold rounded-2xl">ВЗЯТЬ</button>
+        </div>
+
+        <!-- Restart Button (appears after round end) -->
+        <div id="restartContainer" class="mt-4 flex justify-center hidden">
+            <button onclick="restartGame()" 
+                    class="px-8 py-3 bg-white text-slate-950 hover:bg-gray-200 font-bold rounded-2xl text-lg transition-all">
+                Играть снова
+            </button>
         </div>
 
         <div id="turnStatus" class="mt-4 text-center text-lg font-medium text-slate-300"></div>
@@ -129,12 +140,9 @@
 
     <script>
         // Tailwind
-        function initTailwind() {
-            // already loaded
-        }
+        function initTailwind() {}
         initTailwind();
 
-        // Card definitions
         const RANKS = ['6','7','8','9','10','В','Д','К','Т'];
         const SUITS = ['♥','♦','♣','♠'];
         const SUIT_COLORS = { '♥': 'suit-red', '♦': 'suit-red', '♣': 'suit-black', '♠': 'suit-black' };
@@ -142,15 +150,15 @@
         let deck = [];
         let myHand = [];
         let opponentHandCount = 6;
-        let table = []; // array of {attack: card, defend: card or null}
+        let table = [];
         let trumpSuit = '♥';
         let trumpCard = null;
         let deckCount = 24;
         let isHost = false;
-        let myTurn = false; // true if attacking
+        let myTurn = false;
         let isDefending = false;
+        let gameEnded = false;
 
-        // WebRTC
         let pc = null;
         let dataChannel = null;
 
@@ -182,7 +190,18 @@
             return false;
         }
 
-        // Render functions
+        // NEW: Check if all cards on table are successfully beaten
+        function isTableFullyBeaten() {
+            if (table.length === 0) return false;
+            return table.every(pair => pair.defend && canBeat(pair.attack, pair.defend, trumpSuit));
+        }
+
+        function updateBeatButton() {
+            const btn = document.getElementById('beatBtn');
+            if (!btn) return;
+            btn.disabled = !isTableFullyBeaten();
+        }
+
         function renderOpponentHand() {
             const container = document.getElementById('opponentHand');
             container.innerHTML = '';
@@ -214,7 +233,6 @@
 
         let selectedCardIndex = null;
         function selectCard(index, el) {
-            // Deselect others
             document.querySelectorAll('#myHand .card').forEach(c => c.classList.remove('selected'));
             if (selectedCardIndex === index) {
                 selectedCardIndex = null;
@@ -227,15 +245,13 @@
         function renderTable() {
             const container = document.getElementById('tableArea');
             container.innerHTML = '';
-            table.forEach((pair, idx) => {
+            table.forEach((pair) => {
                 const pairDiv = document.createElement('div');
                 pairDiv.className = 'flex gap-2 items-center';
                 
-                // Attack card
                 const attackEl = createCardElement(pair.attack, false);
                 pairDiv.appendChild(attackEl);
 
-                // Defend card or empty
                 if (pair.defend) {
                     const defendEl = createCardElement(pair.defend, false);
                     pairDiv.appendChild(defendEl);
@@ -247,6 +263,7 @@
                 }
                 container.appendChild(pairDiv);
             });
+            updateBeatButton();
         }
 
         function createCardElement(card, isBack = false) {
@@ -273,16 +290,15 @@
             document.getElementById('deckCount').textContent = deckCount;
             document.getElementById('trumpSuit').innerHTML = trumpCard ? `${trumpCard.suit} <span class="text-xs">(${trumpCard.rank})</span>` : '';
             
-            // Status
             const status = document.getElementById('turnStatus');
             if (myTurn) {
                 status.innerHTML = isDefending ? 'Вы <span class="text-red-400 font-bold">отбиваетесь</span>' : 'Вы <span class="text-emerald-400 font-bold">атакуете</span>';
             } else {
                 status.innerHTML = isDefending ? 'Соперник отбивается' : 'Соперник атакует';
             }
+            updateBeatButton();
         }
 
-        // WebRTC
         function updateConnection(text, connected) {
             const dot = document.getElementById('connectionDot');
             const txt = document.getElementById('statusText');
@@ -309,10 +325,7 @@
             dc.onopen = () => {
                 updateConnection('Соединено! Игра началась.', true);
                 document.getElementById('signaling').style.display = 'none';
-                if (isHost) {
-                    // Dealer starts the game
-                    startAsDealer();
-                }
+                if (isHost) startAsDealer();
             };
             dc.onmessage = (e) => {
                 const msg = JSON.parse(e.data);
@@ -324,18 +337,14 @@
             if (pc) pc.close();
             iceCandidates = [];
             isHost = true;
-
             pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
             const dc = pc.createDataChannel('durak-game');
             setupDC(dc);
             dataChannel = dc;
-
             pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
-
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             await waitForIce(pc);
-
             const sig = {type: 'offer', sdp: pc.localDescription.sdp, iceCandidates};
             document.getElementById('offerOut').value = JSON.stringify(sig, null, 2);
         }
@@ -344,22 +353,17 @@
             const txt = document.getElementById('offerIn').value.trim();
             if (!txt) return alert('Вставьте Offer');
             const sig = JSON.parse(txt);
-
             if (pc) pc.close();
             iceCandidates = [];
             isHost = false;
-
             pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
             pc.ondatachannel = e => { dataChannel = e.channel; setupDC(dataChannel); };
             pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
-
             await pc.setRemoteDescription(new RTCSessionDescription({type:'offer', sdp: sig.sdp}));
             for (let c of sig.iceCandidates || []) await pc.addIceCandidate(new RTCIceCandidate(c));
-
             const ans = await pc.createAnswer();
             await pc.setLocalDescription(ans);
             await waitForIce(pc);
-
             const ansSig = {type: 'answer', sdp: pc.localDescription.sdp, iceCandidates};
             document.getElementById('answerOut').value = JSON.stringify(ansSig, null, 2);
         }
@@ -377,7 +381,6 @@
             navigator.clipboard.writeText(ta.value);
         }
 
-        // Game logic messages
         function handleMessage(msg) {
             if (msg.type === 'deal') {
                 myHand = msg.hand;
@@ -386,50 +389,38 @@
                 deckCount = msg.deckCount;
                 myTurn = msg.firstAttacker === 'client';
                 isDefending = !myTurn;
+                gameEnded = false;
+                document.getElementById('restartContainer').classList.add('hidden');
                 updateUI();
-                document.getElementById('turnStatus').textContent = myTurn ? 'Ваш ход (атакуете)' : 'Вы отбиваетесь';
             }
-
             if (msg.type === 'attack') {
-                // Opponent attacked
                 table.push({attack: msg.card, defend: null});
                 renderTable();
                 myTurn = false;
                 isDefending = true;
-                document.getElementById('turnStatus').textContent = 'Вы отбиваетесь';
             }
-
             if (msg.type === 'defend') {
-                // Update table with defend
-                if (table.length > 0) {
-                    table[table.length-1].defend = msg.card;
-                }
+                if (table.length > 0) table[table.length-1].defend = msg.card;
                 renderTable();
             }
-
             if (msg.type === 'beat') {
                 table = [];
                 renderTable();
-                // Add cards from deck if any (simplified)
-                if (isHost && deck.length > 0) {
-                    // Host deals more if needed
-                }
                 myTurn = true;
                 isDefending = false;
-                document.getElementById('turnStatus').textContent = 'Ваш ход (атакуете)';
             }
-
             if (msg.type === 'take') {
-                // Player took cards
                 table = [];
                 renderTable();
-                // In real impl, add taken cards to hand
-                myTurn = !isHost; // switch turn
+                myTurn = !isHost;
             }
-
             if (msg.type === 'newCards') {
                 myHand = myHand.concat(msg.cards);
                 updateUI();
+            }
+            // NEW: Restart game signal (connection stays alive)
+            if (msg.type === 'RESTART_GAME') {
+                restartGame(false); // false = don't send again
             }
         }
 
@@ -439,58 +430,50 @@
             }
         }
 
-        // Host (dealer) starts the game
         function startAsDealer() {
             createDeck();
             shuffle(deck);
-
-            // Deal 6 cards each
             myHand = deck.splice(0, 6);
             const opponentHand = deck.splice(0, 6);
-
             trumpCard = deck.pop();
             trumpSuit = trumpCard.suit;
             deckCount = deck.length;
-
-            // Send to client his hand + trump
-            sendMessage({
-                type: 'deal',
-                hand: opponentHand,
-                trumpSuit: trumpSuit,
-                trumpCard: trumpCard,
-                deckCount: deckCount,
-                firstAttacker: 'client' // or 'host'
-            });
-
-            // Host starts attacking
+            sendMessage({ type: 'deal', hand: opponentHand, trumpSuit, trumpCard, deckCount, firstAttacker: 'client' });
             myTurn = true;
             isDefending = false;
+            gameEnded = false;
+            document.getElementById('restartContainer').classList.add('hidden');
             updateUI();
-            document.getElementById('turnStatus').textContent = 'Ваш ход (атакуете)';
         }
 
         function performAction() {
-            if (selectedCardIndex === null) return alert('Выберите карту');
+            if (selectedCardIndex === null || gameEnded) return;
 
             const card = myHand[selectedCardIndex];
 
+            // NEW: Podkidnoy rule - can only play same rank as already on table
+            if (myTurn && !isDefending && table.length > 0) {
+                const allowedRanks = table.map(p => p.attack.rank);
+                if (!allowedRanks.includes(card.rank)) {
+                    alert('Можно подкидывать только карты тех же рангов, что уже на столе');
+                    return;
+                }
+            }
+
             if (myTurn && !isDefending) {
-                // Attack
                 table.push({attack: card, defend: null});
                 myHand.splice(selectedCardIndex, 1);
-                sendMessage({type: 'attack', card: card});
+                sendMessage({type: 'attack', card});
                 selectedCardIndex = null;
                 updateUI();
                 myTurn = false;
-                isDefending = true; // now opponent defends
-                document.getElementById('turnStatus').textContent = 'Соперник отбивается';
+                isDefending = true;
             } else if (isDefending) {
-                // Defend last attack
                 const lastPair = table[table.length - 1];
                 if (lastPair && !lastPair.defend && canBeat(lastPair.attack, card, trumpSuit)) {
                     lastPair.defend = card;
                     myHand.splice(selectedCardIndex, 1);
-                    sendMessage({type: 'defend', card: card});
+                    sendMessage({type: 'defend', card});
                     selectedCardIndex = null;
                     updateUI();
                 } else {
@@ -500,21 +483,23 @@
         }
 
         function sendBeat() {
+            if (!isTableFullyBeaten() || gameEnded) return;
+
             if (!isHost && isDefending) {
-                // Client confirms beat
                 sendMessage({type: 'beat'});
             }
             table = [];
             renderTable();
             myTurn = true;
             isDefending = false;
-            document.getElementById('turnStatus').textContent = 'Ваш ход (атакуете)';
+
+            // Simple end round - show restart button
+            gameEnded = true;
+            document.getElementById('restartContainer').classList.remove('hidden');
         }
 
         function sendTake() {
-            if (isDefending) {
-                // Take all remaining attack cards
-                // In full impl, add to hand
+            if (isDefending && !gameEnded) {
                 sendMessage({type: 'take'});
                 table = [];
                 renderTable();
@@ -523,12 +508,40 @@
             }
         }
 
-        // Boot
+        // NEW: Restart game (keeps WebRTC connection alive)
+        function restartGame(sendSignal = true) {
+            table = [];
+            gameEnded = false;
+            document.getElementById('restartContainer').classList.add('hidden');
+
+            if (isHost) {
+                createDeck();
+                shuffle(deck);
+                myHand = deck.splice(0, 6);
+                const opponentHand = deck.splice(0, 6);
+                trumpCard = deck.pop();
+                trumpSuit = trumpCard.suit;
+                deckCount = deck.length;
+
+                if (sendSignal) {
+                    sendMessage({ type: 'RESTART_GAME' });
+                    sendMessage({ type: 'deal', hand: opponentHand, trumpSuit, trumpCard, deckCount, firstAttacker: 'client' });
+                }
+            } else {
+                // Client waits for new deal from host
+                myHand = [];
+            }
+
+            myTurn = isHost;
+            isDefending = false;
+            updateUI();
+        }
+
         function init() {
             console.log('%c[Дурак] Игра загружена. Готов к P2P.', 'color:#eab308');
-            // Initial empty renders
             renderOpponentHand();
             document.getElementById('myHand').innerHTML = '<div class="text-slate-500 text-sm p-4">Подключитесь, чтобы начать раздачу</div>';
+            document.getElementById('beatBtn').disabled = true;
         }
         window.onload = init;
     </script>
