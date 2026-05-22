@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Морской бой</title>
+    <title>Морской бой • WebRTC P2P</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
-        body { background: linear-gradient(135deg, #0a1628 0%, #0d1b2a 100%); color: #e3f2fd; font-family: 'Inter', system_ui, sans-serif; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        body { background: linear-gradient(135deg, #0a1628 0%, #0d1b2a 100%); color: #e3f2fd; font-family: 'Inter', system_ui, sans-serif; }
         .section { background: #132238; border-radius: 16px; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(0, 212, 255, 0.1); }
         .battleship-grid { display: grid; grid-template-columns: 28px repeat(10, minmax(30px, 38px)); gap: 3px; background: #0d47a1; padding: 4px; border-radius: 12px; }
         .cell { background: #4fc3f7; border: 1px solid #0288d1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; cursor: crosshair; }
@@ -19,37 +18,64 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header style="text-align:center; margin-bottom:30px;">
-            <h1 style="font-size:3rem; background: linear-gradient(90deg, #00d4ff, #00bcd4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚓ Морской бой</h1>
-            <p style="color:#90caf9;">Игра запущена внутри хаба • WebRTC соединение управляется родительской страницей</p>
+    <div class="max-w-[1200px] mx-auto p-6">
+        <header class="text-center mb-8">
+            <h1 class="text-5xl font-bold tracking-tighter" style="background: linear-gradient(90deg, #00d4ff, #00bcd4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚓ Морской бой</h1>
+            <p class="text-slate-400">WebRTC P2P • Без серверов</p>
         </header>
 
-        <div class="section" id="pregameSection">
-            <h2 style="color:#00d4ff; margin-bottom:16px;">🚢 Расстановка кораблей</h2>
-            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-                <button id="placeShipsBtn" style="background:#00bcd4; color:white; border:none; padding:12px 24px; border-radius:10px; font-weight:600;">🎲 Автоматически расставить</button>
-                <button id="readyBtn" style="background:#455a64; color:white; border:none; padding:12px 24px; border-radius:10px; font-weight:600;" disabled>⚔️ Я готов к бою!</button>
+        <!-- Connection Section -->
+        <div class="section">
+            <h2 class="text-2xl font-semibold mb-4 text-cyan-400">🔗 Подключение (WebRTC P2P)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <button onclick="generateOffer()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-2xl font-semibold">Создать игру (Offer)</button>
+                    <textarea id="offerOut" readonly class="mt-2 w-full h-20 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('offerOut')" class="mt-1 w-full text-xs py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="offerIn" placeholder="Вставьте Offer" class="w-full h-20 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="acceptOffer()" class="mt-2 w-full bg-teal-600 hover:bg-teal-500 py-3 rounded-2xl font-semibold">Принять игру (Answer)</button>
+                    <textarea id="answerOut" readonly class="mt-2 w-full h-20 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('answerOut')" class="mt-1 w-full text-xs py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="answerIn" placeholder="Вставьте Answer" class="w-full h-20 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="connectAnswer()" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 py-3 rounded-2xl font-semibold">Завершить подключение</button>
+                </div>
             </div>
+            <div id="connStatus" class="mt-4 px-4 py-2 bg-slate-900 border border-slate-700 rounded-2xl text-sm flex items-center gap-x-2">
+                <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                <span>Ожидание действий...</span>
+            </div>
+        </div>
+
+        <div class="section" id="pregameSection" style="display:none;">
+            <h2 class="text-2xl font-semibold mb-4 text-cyan-400">🚢 Расстановка кораблей</h2>
+            <button onclick="autoPlaceShips()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl font-semibold">🎲 Автоматически расставить корабли</button>
+            <button onclick="ready()" id="readyBtn" class="ml-4 bg-yellow-600 hover:bg-yellow-500 px-6 py-3 rounded-2xl font-semibold" disabled>⚔️ Я готов к бою!</button>
         </div>
 
         <div class="section" id="gameSection" style="display:none;">
             <div id="turnIndicator" class="turn-indicator">Ожидание начала игры...</div>
-            <div style="display:flex; gap:30px; justify-content:center; flex-wrap:wrap;">
+            <div class="flex gap-8 justify-center">
                 <div>
-                    <h3 style="text-align:center; margin-bottom:12px; color:#90caf9;">Моё поле</h3>
-                    <div id="myGridContainer"></div>
+                    <h3 class="text-center mb-2 text-cyan-400">Моё поле</h3>
+                    <div id="myGrid"></div>
                 </div>
                 <div>
-                    <h3 style="text-align:center; margin-bottom:12px; color:#90caf9;">Поле противника</h3>
-                    <div id="enemyGridContainer"></div>
+                    <h3 class="text-center mb-2 text-red-400">Поле противника</h3>
+                    <div id="enemyGrid"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== GAME STATE ====================
+        let pc = null;
+        let dataChannel = null;
+        let isHost = false;
+        let iceCandidates = [];
         let myShipsGrid = [];
         let myHitsGrid = [];
         let myMissesGrid = [];
@@ -60,27 +86,92 @@
         let myTurn = false;
         let gameStarted = false;
         let gameOver = false;
-        let waitingForResult = false;
 
         const GRID_SIZE = 10;
         const LETTERS = 'АБВГДЕЖЗИК';
-        const SHIP_CONFIG = [ { size: 4, count: 1 }, { size: 3, count: 2 }, { size: 2, count: 3 }, { size: 1, count: 4 } ];
 
-        let myGridContainer, enemyGridContainer;
-
-        // ==================== POSTMESSAGE BRIDGE (new architecture) ====================
-        function sendToHub(msg) {
-            window.parent.postMessage(JSON.stringify(msg), '*');
+        function updateStatus(text, connected = false) {
+            const el = document.getElementById('connStatus');
+            el.innerHTML = `<div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div><span>${text}</span>`;
         }
 
-        window.addEventListener('message', (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                handleMessage(msg);
-            } catch(e) {}
-        });
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise((resolve) => {
+                if (peerConnection.iceGatheringState === 'complete') { resolve(); return; }
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 4500);
+            });
+        }
 
-        // ==================== GAME LOGIC ====================
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateStatus('Соединение установлено!', true);
+                document.getElementById('pregameSection').style.display = 'block';
+            };
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleMessage(msg);
+                } catch(e) {}
+            };
+        }
+
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            dataChannel = pc.createDataChannel('battleship-game');
+            setupDataChannel(dataChannel);
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIceGatheringComplete(pc);
+            const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerOut').value = JSON.stringify(signal, null, 2);
+            updateStatus('Offer создан. Скопируйте и отправьте Игроку 2.');
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerIn').value.trim();
+            if (!txt) return;
+            const sig = JSON.parse(txt);
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGatheringComplete(pc);
+            const ansSig = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('answerOut').value = JSON.stringify(ansSig, null, 2);
+            updateStatus('Answer создан. Скопируйте и отправьте Игроку 1.');
+        }
+
+        async function connectAnswer() {
+            const txt = document.getElementById('answerIn').value.trim();
+            if (!txt || !pc) return;
+            const sig = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
+            updateStatus('Соединение устанавливается...');
+        }
+
+        function copyText(id) {
+            const ta = document.getElementById(id);
+            if (ta.value) navigator.clipboard.writeText(ta.value);
+        }
+
         function initGrids() {
             myShipsGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
             myHitsGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
@@ -89,215 +180,81 @@
             myShotsOnEnemy = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('empty'));
         }
 
-        function canPlaceShip(grid, startX, startY, size, horizontal) {
+        function autoPlaceShips() {
+            initGrids();
+            const sizes = [4,3,3,2,2,2,1,1,1,1];
+            let id = 1;
+            sizes.forEach(size => {
+                let placed = false;
+                while (!placed) {
+                    const x = Math.floor(Math.random() * (GRID_SIZE - size + 1));
+                    const y = Math.floor(Math.random() * GRID_SIZE);
+                    const horizontal = Math.random() > 0.5;
+                    if (canPlaceShip(myShipsGrid, x, y, size, horizontal)) {
+                        placeShip(myShipsGrid, myShips, x, y, size, horizontal, id++);
+                        placed = true;
+                    }
+                }
+            });
+            renderGrids();
+        }
+
+        function canPlaceShip(grid, x, y, size, horizontal) {
             for (let i = 0; i < size; i++) {
-                const x = horizontal ? startX + i : startX;
-                const y = horizontal ? startY : startY + i;
-                if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE || grid[y][x] !== 0) return false;
+                const nx = horizontal ? x + i : x;
+                const ny = horizontal ? y : y + i;
+                if (nx >= GRID_SIZE || ny >= GRID_SIZE || grid[ny][nx] !== 0) return false;
             }
             return true;
         }
 
-        function placeSingleShip(grid, shipsList, size, id) {
-            let placed = false;
-            let attempts = 0;
-            while (!placed && attempts < 800) {
-                attempts++;
-                const horizontal = Math.random() > 0.5;
-                const startX = Math.floor(Math.random() * (GRID_SIZE - (horizontal ? size : 0)));
-                const startY = Math.floor(Math.random() * (GRID_SIZE - (horizontal ? 0 : size)));
-                if (canPlaceShip(grid, startX, startY, size, horizontal)) {
-                    const positions = [];
-                    for (let i = 0; i < size; i++) {
-                        const x = horizontal ? startX + i : startX;
-                        const y = horizontal ? startY : startY + i;
-                        grid[y][x] = id;
-                        positions.push({ x, y });
-                    }
-                    shipsList.push({ id, size, positions, hits: 0, isSunk: false });
-                    placed = true;
-                }
+        function placeShip(grid, ships, x, y, size, horizontal, id) {
+            const positions = [];
+            for (let i = 0; i < size; i++) {
+                const nx = horizontal ? x + i : x;
+                const ny = horizontal ? y : y + i;
+                grid[ny][nx] = id;
+                positions.push({x: nx, y: ny});
             }
-            return placed;
+            ships.push({id, size, positions, hits: 0, isSunk: false});
         }
 
-        function autoPlaceShips() {
-            initGrids();
-            let currentId = 1;
-            const shipsToPlace = [];
-            SHIP_CONFIG.forEach(c => { for (let i=0; i<c.count; i++) shipsToPlace.push(c.size); });
-            shipsToPlace.sort((a,b)=>b-a);
-            shipsToPlace.forEach(size => placeSingleShip(myShipsGrid, myShips, size, currentId++));
-            renderMyGrid();
-            renderEnemyGrid();
+        function renderGrids() {
+            const myContainer = document.getElementById('myGrid');
+            myContainer.innerHTML = '<div class="battleship-grid" style="width: 420px;"></div>';
+            const enemyContainer = document.getElementById('enemyGrid');
+            enemyContainer.innerHTML = '<div class="battleship-grid" style="width: 420px;"></div>';
         }
 
-        function renderMyGrid() {
-            const container = document.getElementById('myGridContainer');
-            container.innerHTML = '';
-            const grid = document.createElement('div');
-            grid.className = 'battleship-grid';
-            for (let row = 0; row <= GRID_SIZE; row++) {
-                for (let col = 0; col <= GRID_SIZE; col++) {
-                    const cell = document.createElement('div');
-                    if (row === 0 && col === 0) { cell.style.background = 'transparent'; }
-                    else if (row === 0) { cell.textContent = LETTERS[col-1]; cell.style.fontSize = '12px'; cell.style.color = '#bbdefb'; }
-                    else if (col === 0) { cell.textContent = row; cell.style.fontSize = '12px'; cell.style.color = '#bbdefb'; }
-                    else {
-                        const x = col-1, y = row-1;
-                        cell.className = 'cell own';
-                        cell.dataset.x = x; cell.dataset.y = y;
-                        if (myShipsGrid[y][x] !== 0) cell.style.background = '#546e7a';
-                    }
-                    grid.appendChild(cell);
-                }
+        function ready() {
+            if (!localReady && dataChannel && dataChannel.readyState === 'open') {
+                localReady = true;
+                document.getElementById('readyBtn').disabled = true;
+                dataChannel.send(JSON.stringify({ type: 'ready' }));
             }
-            container.appendChild(grid);
-        }
-
-        function renderEnemyGrid() {
-            const container = document.getElementById('enemyGridContainer');
-            container.innerHTML = '';
-            const grid = document.createElement('div');
-            grid.className = 'battleship-grid';
-            for (let row = 0; row <= GRID_SIZE; row++) {
-                for (let col = 0; col <= GRID_SIZE; col++) {
-                    const cell = document.createElement('div');
-                    if (row === 0 && col === 0) { cell.style.background = 'transparent'; }
-                    else if (row === 0) { cell.textContent = LETTERS[col-1]; cell.style.fontSize = '12px'; cell.style.color = '#bbdefb'; }
-                    else if (col === 0) { cell.textContent = row; cell.style.fontSize = '12px'; cell.style.color = '#bbdefb'; }
-                    else {
-                        const x = col-1, y = row-1;
-                        cell.className = 'cell';
-                        cell.dataset.x = x; cell.dataset.y = y;
-                        cell.addEventListener('click', () => handleEnemyCellClick(x, y));
-                    }
-                    grid.appendChild(cell);
-                }
-            }
-            container.appendChild(grid);
-        }
-
-        function handleEnemyCellClick(x, y) {
-            if (!myTurn || gameOver || waitingForResult || myShotsOnEnemy[y][x] !== 'empty') return;
-            waitingForResult = true;
-            myTurn = false;
-            updateTurnIndicator();
-            sendToHub({ type: 'shot', x, y });
         }
 
         function handleMessage(msg) {
-            switch (msg.type) {
-                case 'shot':
-                    handleIncomingShot(msg.x, msg.y);
-                    break;
-                case 'shotResult':
-                    handleShotResult(msg);
-                    break;
-                case 'ready':
-                    opponentReady = true;
-                    checkBothReady();
-                    break;
-                case 'startGame':
+            if (msg.type === 'ready') {
+                opponentReady = true;
+                if (localReady && isHost) {
+                    const first = Math.random() > 0.5;
+                    myTurn = first;
+                    dataChannel.send(JSON.stringify({ type: 'startGame', yourTurn: !first }));
                     gameStarted = true;
-                    myTurn = !!msg.yourTurn;
-                    updateTurnIndicator();
-                    document.getElementById('placeShipsBtn').disabled = true;
-                    document.getElementById('readyBtn').disabled = true;
-                    break;
-                case 'connection_ready':
-                    // Parent confirmed WebRTC is active
-                    document.getElementById('readyBtn').disabled = false;
-                    break;
-            }
-        }
-
-        function handleIncomingShot(x, y) {
-            let result = 'miss';
-            let sunkPositions = null;
-            const shipId = myShipsGrid[y][x];
-            if (shipId !== 0) {
-                if (!myHitsGrid[y][x]) {
-                    myHitsGrid[y][x] = true;
-                    const ship = myShips.find(s => s.id === shipId);
-                    if (ship) {
-                        ship.hits++;
-                        if (ship.hits === ship.size) { ship.isSunk = true; result = 'sunk'; sunkPositions = ship.positions; }
-                        else result = 'hit';
-                    }
-                }
-            } else {
-                myMissesGrid[y][x] = true;
-                result = 'miss';
-            }
-            const isGameOverNow = myShips.every(s => s.hits === s.size);
-            sendToHub({ type: 'shotResult', x, y, result, gameOver: isGameOverNow, sunkPositions });
-            if (result === 'miss' && !isGameOverNow) { myTurn = true; updateTurnIndicator(); }
-        }
-
-        function handleShotResult(msg) {
-            const { x, y, result, gameOver: opponentGameOver, sunkPositions } = msg;
-            myShotsOnEnemy[y][x] = result;
-            if (sunkPositions) sunkPositions.forEach(pos => myShotsOnEnemy[pos.y][pos.x] = 'sunk');
-            waitingForResult = false;
-            if (opponentGameOver) { endGame(true); return; }
-            myTurn = (result !== 'miss');
-            updateTurnIndicator();
-        }
-
-        function checkBothReady() {
-            if (localReady && opponentReady && !gameStarted) {
-                if (isHost) {
-                    const iStartFirst = Math.random() > 0.5;
-                    myTurn = iStartFirst;
-                    sendToHub({ type: 'startGame', yourTurn: !iStartFirst });
-                    gameStarted = true;
-                    updateTurnIndicator();
                 }
             }
+            if (msg.type === 'startGame') {
+                gameStarted = true;
+                myTurn = msg.yourTurn;
+            }
         }
 
-        function updateTurnIndicator() {
-            const el = document.getElementById('turnIndicator');
-            if (!gameStarted) { el.textContent = 'Ожидание начала игры...'; el.classList.remove('your-turn'); return; }
-            if (myTurn) { el.innerHTML = '🎯 <strong>ВАШ ХОД!</strong>'; el.classList.add('your-turn'); }
-            else { el.innerHTML = '⏳ Ход противника...'; el.classList.remove('your-turn'); }
-        }
-
-        function endGame(won) {
-            gameOver = true;
-            alert(won ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ');
-        }
-
-        // ==================== INIT ====================
         function init() {
-            myGridContainer = document.getElementById('myGridContainer');
-            enemyGridContainer = document.getElementById('enemyGridContainer');
-
             initGrids();
-            renderMyGrid();
-            renderEnemyGrid();
-
-            document.getElementById('placeShipsBtn').addEventListener('click', () => {
-                autoPlaceShips();
-            });
-
-            document.getElementById('readyBtn').addEventListener('click', () => {
-                if (!localReady) {
-                    localReady = true;
-                    document.getElementById('readyBtn').textContent = '✅ Готов!';
-                    document.getElementById('readyBtn').disabled = true;
-                    sendToHub({ type: 'ready' });
-                    checkBothReady();
-                }
-            });
-
-            // Tell parent we are ready to receive connection status
-            setTimeout(() => {
-                window.parent.postMessage(JSON.stringify({ type: 'game_loaded' }), '*');
-            }, 300);
-
-            console.log('%c[Морской бой] Игра загружена в iframe режиме', 'color:#67e8f9');
+            document.getElementById('myGrid').innerHTML = '<div class="battleship-grid" style="width:420px;height:420px;background:#0d47a1;border-radius:12px;"></div>';
+            document.getElementById('enemyGrid').innerHTML = '<div class="battleship-grid" style="width:420px;height:420px;background:#0d47a1;border-radius:12px;"></div>';
+            console.log('%c[Морской бой] Восстановлена автономная версия с WebRTC', 'color:#67e8f9');
         }
 
         window.onload = init;
