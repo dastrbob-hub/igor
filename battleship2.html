@@ -32,7 +32,6 @@
             </div>
         </div>
 
-        <!-- Signaling -->
         <div id="signalingPanel" class="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -147,6 +146,12 @@
             }
             if (msg.type === 'RESTART_GAME') {
                 restartGame(false);
+            }
+            if (msg.type === 'ready') {
+                // Второй игрок подтвердил, что канал открыт
+                if (isHost) {
+                    startGameAsHost();
+                }
             }
         }
 
@@ -322,10 +327,18 @@
 
         function setupDataChannel(dc) {
             dc.onopen = () => {
-                updateStatus('Соединено!', true);
+                updateStatus('Соединение установлено', true);
                 document.getElementById('signalingPanel').style.display = 'none';
-                if (isHost) startGameAsHost();
+
+                if (isHost) {
+                    // Хост ждёт подтверждения от второго игрока
+                    sendMessage({ type: 'ready' });
+                } else {
+                    // Второй игрок подтверждает, что канал открыт
+                    sendMessage({ type: 'ready' });
+                }
             };
+
             dc.onmessage = e => { try { handleMessage(JSON.parse(e.data)); } catch(e){} };
         }
 
@@ -378,7 +391,7 @@
             const sig = JSON.parse(txt);
             await pc.setRemoteDescription(new RTCSessionDescription({type:'answer', sdp: sig.sdp}));
             for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
-            updateStatus('Соединение установлено');
+            updateStatus('Соединение устанавливается...');
         }
 
         function copyText(id) {
@@ -391,7 +404,6 @@
             drawGrid(document.getElementById('enemyCanvas'), enemyGrid, false);
             updateEnergy();
             setupCanvasListeners();
-            console.log('%c[PRO] Исправленная версия загружена', 'color:#67e8f9');
         }
         window.onload = init;
     </script>
