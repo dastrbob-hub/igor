@@ -3,110 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Пинг-Понг</title>
+    <title>Сетевой Пинг-Понг • WebRTC P2P</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: 'Inter', system_ui, sans-serif; } canvas { border: 4px solid #334155; border-radius: 12px; }</style>
+    <style>
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        canvas { border: 4px solid #334155; border-radius: 12px; }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-200 p-6">
     <div class="max-w-[900px] mx-auto text-center">
         <h1 class="text-4xl font-bold mb-2">Сетевой Пинг-Понг</h1>
-        <p class="text-slate-400 mb-6">Внутри хаба • WebRTC</p>
+        <p class="text-slate-400 mb-6">WebRTC P2P • Без серверов</p>
 
         <canvas id="game" width="800" height="500" class="bg-black mx-auto rounded-xl"></canvas>
 
         <div class="mt-4 flex justify-center gap-8 text-2xl font-bold">
-            <div>Игрок 1: <span id="score1">0</span></div>
-            <div>Игрок 2: <span id="score2">0</span></div>
+            <div>Игрок 1 (Левая): <span id="scoreLeft">0</span></div>
+            <div>Игрок 2 (Правая): <span id="scoreRight">0</span></div>
         </div>
 
-        <div id="status" class="mt-3 text-lg text-emerald-400">Ожидание подключения через хаб...</div>
+        <div id="connStatus" class="mt-3 text-lg text-emerald-400 flex justify-center items-center gap-x-2">
+            <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+            <span>Ожидание подключения...</span>
+        </div>
+
+        <!-- Connection Panel -->
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 mt-6 max-w-3xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <button onclick="generateOffer()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-2xl font-semibold">Создать игру (Offer)</button>
+                    <textarea id="offerTextarea" readonly class="mt-2 w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyToClipboard('offerTextarea')" class="mt-1 w-full text-xs py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="offerInput" placeholder="Вставьте Offer" class="w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="acceptOffer()" class="mt-2 w-full bg-teal-600 hover:bg-teal-500 py-2.5 rounded-2xl font-semibold">Принять игру (Answer)</button>
+                    <textarea id="answerTextarea" readonly class="mt-2 w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyToClipboard('answerTextarea')" class="mt-1 w-full text-xs py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="answerInput" placeholder="Вставьте Answer" class="w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="connectWithAnswer()" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 py-2.5 rounded-2xl font-semibold">Завершить подключение</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
+        const WIDTH = 800;
+        const HEIGHT = 500;
+        const PADDLE_WIDTH = 12;
+        const PADDLE_HEIGHT = 80;
+        const BALL_RADIUS = 8;
+        const WIN_SCORE = 10;
 
-        let paddle1 = { y: 200 };
-        let paddle2 = { y: 200 };
-        let ball = { x: 400, y: 250, vx: 5, vy: 3 };
-        let score1 = 0, score2 = 0;
+        let paddleLeftY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        let paddleRightY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        let ballX = WIDTH / 2;
+        let ballY = HEIGHT / 2;
+        let ballVX = 5;
+        let ballVY = 3;
+        let scoreLeft = 0;
+        let scoreRight = 0;
+        let gameRunning = false;
         let isHost = false;
+        let gameOver = false;
 
-        function sendToHub(msg) {
-            window.parent.postMessage(JSON.stringify(msg), '*');
+        let pc = null;
+        let dataChannel = null;
+
+        function updateConnectionStatus(text, connected = false) {
+            const statusEl = document.getElementById('connStatus');
+            statusEl.innerHTML = `<div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div><span>${text}</span>`;
         }
 
-        window.addEventListener('message', (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type === 'state') {
-                    paddle2.y = msg.paddle2;
-                    ball = msg.ball;
-                    score1 = msg.score1;
-                    score2 = msg.score2;
-                }
-                if (msg.type === 'connection_ready') {
-                    document.getElementById('status').innerHTML = 'Подключено. Игра началась!';
-                }
-            } catch(e) {}
-        });
-
-        function draw() {
-            ctx.fillStyle = '#111827';
-            ctx.fillRect(0, 0, 800, 500);
-
-            ctx.fillStyle = '#22c55e';
-            ctx.fillRect(30, paddle1.y, 12, 80);
-
-            ctx.fillStyle = '#3b82f6';
-            ctx.fillRect(758, paddle2.y, 12, 80);
-
-            ctx.fillStyle = '#f1f5f9';
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            document.getElementById('score1').textContent = score1;
-            document.getElementById('score2').textContent = score2;
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise((resolve) => {
+                if (peerConnection.iceGatheringState === 'complete') { resolve(); return; }
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 4000);
+            });
         }
 
-        function gameLoop() {
-            if (isHost) {
-                ball.x += ball.vx;
-                ball.y += ball.vy;
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateConnectionStatus('Соединение установлено! Игра началась.', true);
+                startGame();
+            };
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'paddle') {
+                        if (isHost) paddleRightY = msg.y; else paddleLeftY = msg.y;
+                    }
+                    if (msg.type === 'ball' && !isHost) {
+                        ballX = msg.x; ballY = msg.y; ballVX = msg.vx; ballVY = msg.vy;
+                    }
+                    if (msg.type === 'score') {
+                        scoreLeft = msg.left; scoreRight = msg.right;
+                    }
+                } catch (e) {}
+            };
+        }
 
-                if (ball.y < 0 || ball.y > 500) ball.vy *= -1;
+        async function generateOffer() {
+            if (pc) pc.close();
+            isHost = true;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            dataChannel = pc.createDataChannel('pong-game');
+            setupDataChannel(dataChannel);
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIceGatheringComplete(pc);
+            document.getElementById('offerTextarea').value = JSON.stringify({ type: 'offer', sdp: pc.localDescription.sdp }, null, 2);
+            updateConnectionStatus('Offer создан — отправьте Игроку 2');
+        }
 
-                if (ball.x < 50 && ball.y > paddle1.y && ball.y < paddle1.y + 80) ball.vx *= -1;
-                if (ball.x > 750 && ball.y > paddle2.y && ball.y < paddle2.y + 80) ball.vx *= -1;
+        async function acceptOffer() {
+            const offerText = document.getElementById('offerInput').value.trim();
+            if (!offerText) return;
+            const offerSignal = JSON.parse(offerText);
+            if (pc) pc.close();
+            isHost = false;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offerSignal.sdp }));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGatheringComplete(pc);
+            document.getElementById('answerTextarea').value = JSON.stringify({ type: 'answer', sdp: pc.localDescription.sdp }, null, 2);
+            updateConnectionStatus('Answer создан — отправьте Игроку 1');
+        }
 
-                if (ball.x < 0) { score2++; resetBall(); }
-                if (ball.x > 800) { score1++; resetBall(); }
+        async function connectWithAnswer() {
+            const answerText = document.getElementById('answerInput').value.trim();
+            if (!answerText || !pc) return;
+            const answerSignal = JSON.parse(answerText);
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSignal.sdp }));
+        }
 
-                sendToHub({ type: 'state', paddle2: paddle2.y, ball, score1, score2 });
-            }
-            draw();
-            requestAnimationFrame(gameLoop);
+        function copyToClipboard(id) {
+            const ta = document.getElementById(id);
+            if (ta.value) navigator.clipboard.writeText(ta.value);
+        }
+
+        function updatePaddles() {
+            if (!gameRunning || gameOver) return;
+            // Simple keyboard/mouse control for host
+        }
+
+        function updateBall() {
+            if (!isHost || !gameRunning || gameOver) return;
+            ballX += ballVX;
+            ballY += ballVY;
+            if (ballY < 0 || ballY > HEIGHT) ballVY = -ballVY;
+            if (ballX < 30 && ballY > paddleLeftY && ballY < paddleLeftY + PADDLE_HEIGHT && ballVX < 0) { ballVX = -ballVX; ballX = 30; }
+            if (ballX > WIDTH - 30 && ballY > paddleRightY && ballY < paddleRightY + PADDLE_HEIGHT && ballVX > 0) { ballVX = -ballVX; ballX = WIDTH - 30; }
+            if (ballX < 0) { scoreRight++; resetBall(); }
+            if (ballX > WIDTH) { scoreLeft++; resetBall(); }
         }
 
         function resetBall() {
-            ball = { x: 400, y: 250, vx: (Math.random() > 0.5 ? 5 : -5), vy: (Math.random() - 0.5) * 6 };
+            ballX = WIDTH / 2;
+            ballY = HEIGHT / 2;
+            ballVX = (Math.random() > 0.5 ? 5 : -5);
+            ballVY = (Math.random() - 0.5) * 6;
         }
 
-        function init() {
-            canvas.addEventListener('mousemove', e => {
-                if (isHost) {
-                    paddle1.y = Math.max(0, Math.min(420, e.offsetY - 40));
-                }
-            });
+        function draw() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = '#14b8a6';
+            ctx.fillRect(15, paddleLeftY, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillRect(WIDTH - 27, paddleRightY, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillStyle = '#f1f5f9';
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-            setTimeout(() => {
-                window.parent.postMessage(JSON.stringify({ type: 'game_loaded', game: 'pingpong' }), '*');
-            }, 200);
+        function gameLoop() {
+            if (!gameRunning || gameOver) return;
+            updatePaddles();
+            updateBall();
+            draw();
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const myY = isHost ? paddleLeftY : paddleRightY;
+                dataChannel.send(JSON.stringify({ type: 'paddle', y: myY }));
+            }
+            requestAnimationFrame(gameLoop);
+        }
 
+        function startGame() {
+            if (gameRunning) return;
+            gameRunning = true;
+            gameOver = false;
+            resetBall();
+            paddleLeftY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+            paddleRightY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+            scoreLeft = 0;
+            scoreRight = 0;
+            draw();
             gameLoop();
         }
 
+        function init() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            console.log('%c[Пинг-Понг] Автономная версия загружена', 'color:#67e8f9');
+        }
         window.onload = init;
     </script>
 </body>
