@@ -438,7 +438,7 @@
 
         let currentColor = '#00d4ff';
         let currentThickness = 8;
-        let currentBrush = 'solid'; // solid, neon, dashed, eraser
+        let currentBrush = 'solid';
         let isDrawing = false;
         let lastX = 0, lastY = 0;
 
@@ -545,11 +545,10 @@
             updateConnectionStatus('Соединение устанавливается...');
         }
 
-        // ==================== DRAWING ====================
+        // ==================== DRAWING (FIXED) ====================
         function clearCanvas() {
             ctx.fillStyle = '#0d1b2a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // redraw subtle grid
             drawGrid();
         }
 
@@ -564,7 +563,7 @@
             }
         }
 
-        function setBrushStyle(brush) {
+        function setBrushStyle(brush, size) {
             ctx.shadowBlur = 0;
             ctx.shadowColor = 'transparent';
             ctx.setLineDash([]);
@@ -576,16 +575,17 @@
                 ctx.shadowColor = currentColor;
             } else if (brush === 'dashed') {
                 ctx.setLineDash([12, 8]);
-            } else if (brush === 'eraser') {
-                ctx.strokeStyle = '#0d1b2a';
-                ctx.lineWidth = currentThickness * 1.8;
             }
+            // For eraser we will set strokeStyle + lineWidth in drawLine
         }
 
         function drawLine(x1, y1, x2, y2, color, size, brush) {
-            setBrushStyle(brush);
-            
-            if (brush !== 'eraser') {
+            setBrushStyle(brush, size);
+
+            if (brush === 'eraser') {
+                ctx.strokeStyle = '#0d1b2a';
+                ctx.lineWidth = size;           // ← используем ПРИСЛАННЫЙ size
+            } else {
                 ctx.strokeStyle = color;
                 ctx.lineWidth = size;
             }
@@ -595,7 +595,6 @@
             ctx.lineTo(x2, y2);
             ctx.stroke();
 
-            // reset shadow after neon
             if (brush === 'neon') {
                 ctx.shadowBlur = 0;
             }
@@ -620,12 +619,15 @@
             const pos = getMousePos(e);
             lastX = pos.x; lastY = pos.y;
 
+            let sendSize = currentThickness;
+            if (currentBrush === 'eraser') sendSize = Math.round(currentThickness * 1.8);
+
             if (dataChannel && dataChannel.readyState === 'open') {
                 dataChannel.send(JSON.stringify({
                     type: 'draw',
                     x: pos.x, y: pos.y,
                     color: currentColor,
-                    size: currentThickness,
+                    size: sendSize,
                     brush: currentBrush,
                     isStart: true
                 }));
@@ -636,14 +638,17 @@
             if (!isDrawing) return;
             const pos = getMousePos(e);
 
-            drawLine(lastX, lastY, pos.x, pos.y, currentColor, currentThickness, currentBrush);
+            let drawSize = currentThickness;
+            if (currentBrush === 'eraser') drawSize = Math.round(currentThickness * 1.8);
+
+            drawLine(lastX, lastY, pos.x, pos.y, currentColor, drawSize, currentBrush);
 
             if (dataChannel && dataChannel.readyState === 'open') {
                 dataChannel.send(JSON.stringify({
                     type: 'draw',
                     x: pos.x, y: pos.y,
                     color: currentColor,
-                    size: currentThickness,
+                    size: drawSize,
                     brush: currentBrush,
                     isStart: false
                 }));
@@ -658,10 +663,11 @@
             document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('brush-' + type).classList.add('active');
 
+            const val = document.getElementById('thicknessValue');
             if (type === 'eraser') {
-                document.getElementById('thicknessValue').textContent = Math.round(currentThickness * 1.8) + ' px (ластик)';
+                val.textContent = Math.round(currentThickness * 1.8) + ' px (ластик)';
             } else {
-                document.getElementById('thicknessValue').textContent = currentThickness + ' px';
+                val.textContent = currentThickness + ' px';
             }
         }
 
@@ -705,7 +711,6 @@
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
 
-            // Touch
             canvas.addEventListener('touchstart', e => {
                 e.preventDefault();
                 const t = e.touches[0];
@@ -722,20 +727,15 @@
         function init() {
             initCanvas();
 
-            // Colors
             document.querySelectorAll('.color-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     currentColor = btn.dataset.color;
-
-                    if (currentBrush === 'neon') {
-                        ctx.shadowColor = currentColor;
-                    }
+                    if (currentBrush === 'neon') ctx.shadowColor = currentColor;
                 });
             });
 
-            // Thickness
             const slider = document.getElementById('thicknessSlider');
             const val = document.getElementById('thicknessValue');
             slider.addEventListener('input', () => {
@@ -747,7 +747,6 @@
                 }
             });
 
-            // Clear
             document.getElementById('clearBtn').addEventListener('click', () => {
                 clearCanvas();
                 if (dataChannel && dataChannel.readyState === 'open') {
@@ -755,7 +754,6 @@
                 }
             });
 
-            // WebRTC
             document.getElementById('createOfferBtn').addEventListener('click', generateOffer);
             document.getElementById('acceptOfferBtn').addEventListener('click', acceptOffer);
             document.getElementById('connectBtn').addEventListener('click', connectWithAnswer);
@@ -769,7 +767,6 @@
                 if (ta.value) navigator.clipboard.writeText(ta.value);
             });
 
-            // Chat enter
             document.getElementById('chatInput').addEventListener('keypress', e => {
                 if (e.key === 'Enter') sendChatMessage();
             });
@@ -777,7 +774,6 @@
             updateConnectionStatus('Ожидание действий. Создайте комнату или присоединитесь.');
             appendChat('system', 'Добро пожаловать! Обменяйтесь кодами для начала.');
 
-            // Default brush
             setBrushType('solid');
         }
 
