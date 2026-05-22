@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сетевая Змейка • P2P</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        canvas { 
+            image-rendering: pixelated; 
+            border: 4px solid #334155;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+        }
+        .neon-green { box-shadow: 0 0 15px #22c55e; }
+        .neon-blue { box-shadow: 0 0 15px #3b82f6; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="max-w-[900px] mx-auto p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center">
+                    <span class="text-white text-3xl">🐍</span>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tighter title-font">Сетевая Змейка</h1>
+                    <p class="text-slate-400">Multiplayer • P2P WebRTC • 30×30</p>
+                </div>
+            </div>
+            <div id="connStatus" class="px-4 py-2 bg-slate-900 border border-slate-700 rounded-3xl text-sm flex items-center gap-x-2">
+                <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                <span>Ожидание подключения...</span>
+            </div>
+        </div>
+
+        <!-- Signaling Panel -->
+        <div id="signalingPanel" class="bg-slate-900 border border-slate-700 rounded-3xl p-5 mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold">Подключение игроков</h3>
+                <button onclick="hideSignaling()" class="text-xs px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-2xl">Скрыть</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <div class="text-emerald-400 text-xs mb-1">ИГРОК 1 (Зелёная)</div>
+                    <button onclick="createOffer()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-2xl font-semibold">Создать игру (Offer)</button>
+                    <textarea id="offerOut" readonly class="mt-2 w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="copyToClipboard('offerOut')" class="mt-1 w-full text-xs py-1.5 bg-slate-800 rounded-2xl">📋 Копировать</button>
+                </div>
+                <div>
+                    <div class="text-blue-400 text-xs mb-1">ИГРОК 2 (Синяя)</div>
+                    <textarea id="offerIn" placeholder="Вставьте Offer" class="w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="acceptOffer()" class="mt-2 w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-2xl font-semibold">Принять игру (Answer)</button>
+                    <textarea id="answerOut" readonly class="mt-2 w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="copyToClipboard('answerOut')" class="mt-1 w-full text-xs py-1.5 bg-slate-800 rounded-2xl">📋 Копировать</button>
+                </div>
+                <div>
+                    <div class="text-sky-400 text-xs mb-1">ИГРОК 1 — завершить</div>
+                    <textarea id="answerIn" placeholder="Вставьте Answer" class="w-full h-14 bg-slate-950 border border-slate-700 rounded-xl p-2 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="connectWithAnswer()" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 py-2.5 rounded-2xl font-semibold">Начать соединение</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scores -->
+        <div class="flex justify-center gap-x-12 mb-4">
+            <div class="text-center">
+                <div class="text-emerald-400 text-sm font-bold flex items-center justify-center gap-x-2">
+                    <span class="inline-block w-3 h-3 bg-emerald-500 rounded"></span> ЗЕЛЁНАЯ
+                </div>
+                <div id="score1" class="text-5xl font-bold tabular-nums text-emerald-400">0</div>
+            </div>
+            <div class="text-center">
+                <div class="text-blue-400 text-sm font-bold flex items-center justify-center gap-x-2">
+                    <span class="inline-block w-3 h-3 bg-blue-500 rounded"></span> СИНЯЯ
+                </div>
+                <div id="score2" class="text-5xl font-bold tabular-nums text-blue-400">0</div>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <div class="flex justify-center">
+            <canvas id="gameCanvas" width="600" height="600" class="bg-[#0a0f1a]"></canvas>
+        </div>
+
+        <div id="gameStatus" class="mt-4 text-center text-xl font-semibold h-8"></div>
+
+        <div class="mt-3 text-center text-xs text-slate-500">
+            Управление: Игрок 1 — Стрелки • Игрок 2 — WASD
+        </div>
+    </div>
+
+    <script>
+        // Tailwind
+        function initTailwind() {}
+        initTailwind();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const GRID_SIZE = 30;
+        const CELL_SIZE = 20;
+
+        // Game state
+        let snake1 = [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}]; // Green - Player 1 (host)
+        let snake2 = [{x: 24, y: 15}, {x: 25, y: 15}, {x: 26, y: 15}]; // Blue - Player 2
+        let dir1 = {x: 1, y: 0};
+        let dir2 = {x: -1, y: 0};
+        let apple = {x: 15, y: 15};
+        let score1 = 0;
+        let score2 = 0;
+        let gameRunning = false;
+        let isHost = false;
+        let gameOver = false;
+        let winner = null;
+
+        let keys = {};
+        document.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            if (gameRunning && !gameOver) handleInput(e.key.toLowerCase());
+        });
+        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        function handleInput(key) {
+            if (isHost) { // Player 1 - Arrows
+                if (key === 'arrowup' && dir1.y !== 1) dir1 = {x: 0, y: -1};
+                if (key === 'arrowdown' && dir1.y !== -1) dir1 = {x: 0, y: 1};
+                if (key === 'arrowleft' && dir1.x !== 1) dir1 = {x: -1, y: 0};
+                if (key === 'arrowright' && dir1.x !== -1) dir1 = {x: 1, y: 0};
+            } else { // Player 2 - WASD
+                if ((key === 'w' || key === 'arrowup') && dir2.y !== 1) dir2 = {x: 0, y: -1};
+                if ((key === 's' || key === 'arrowdown') && dir2.y !== -1) dir2 = {x: 0, y: 1};
+                if ((key === 'a' || key === 'arrowleft') && dir2.x !== 1) dir2 = {x: -1, y: 0};
+                if ((key === 'd' || key === 'arrowright') && dir2.x !== -1) dir2 = {x: 1, y: 0};
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = '#1e2937';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= GRID_SIZE; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * CELL_SIZE, 0);
+                ctx.lineTo(x * CELL_SIZE, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, x * CELL_SIZE);
+                ctx.lineTo(canvas.width, x * CELL_SIZE);
+                ctx.stroke();
+            }
+
+            // Apple
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(apple.x * CELL_SIZE + 2, apple.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+            ctx.fillStyle = '#f87171';
+            ctx.fillRect(apple.x * CELL_SIZE + 6, apple.y * CELL_SIZE + 6, 6, 6);
+
+            // Snake 1 (Green)
+            ctx.fillStyle = '#22c55e';
+            snake1.forEach((seg, i) => {
+                ctx.fillRect(seg.x * CELL_SIZE + 1, seg.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+                if (i === 0) {
+                    ctx.fillStyle = '#15803d';
+                    ctx.fillRect(seg.x * CELL_SIZE + 4, seg.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
+                    ctx.fillStyle = '#22c55e';
+                }
+            });
+
+            // Snake 2 (Blue)
+            ctx.fillStyle = '#3b82f6';
+            snake2.forEach((seg, i) => {
+                ctx.fillRect(seg.x * CELL_SIZE + 1, seg.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+                if (i === 0) {
+                    ctx.fillStyle = '#1e40af';
+                    ctx.fillRect(seg.x * CELL_SIZE + 4, seg.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
+                    ctx.fillStyle = '#3b82f6';
+                }
+            });
+        }
+
+        function updateScores() {
+            document.getElementById('score1').textContent = score1;
+            document.getElementById('score2').textContent = score2;
+        }
+
+        function moveSnake(snake, dir) {
+            const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+            snake.unshift(head);
+            return head;
+        }
+
+        function checkCollision(head, snake, otherSnake) {
+            // Wall
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) return true;
+            // Self
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) return true;
+            }
+            // Other snake
+            for (let seg of otherSnake) {
+                if (head.x === seg.x && head.y === seg.y) return true;
+            }
+            return false;
+        }
+
+        function placeApple() {
+            let newApple;
+            do {
+                newApple = {
+                    x: Math.floor(Math.random() * GRID_SIZE),
+                    y: Math.floor(Math.random() * GRID_SIZE)
+                };
+            } while (
+                snake1.some(s => s.x === newApple.x && s.y === newApple.y) ||
+                snake2.some(s => s.x === newApple.x && s.y === newApple.y)
+            );
+            return newApple;
+        }
+
+        // Game loop (authoritative on host)
+        let gameInterval = null;
+
+        function gameLoop() {
+            if (!gameRunning || gameOver) return;
+
+            // Move snakes
+            const head1 = moveSnake(snake1, dir1);
+            const head2 = moveSnake(snake2, dir2);
+
+            // Check collisions
+            const coll1 = checkCollision(head1, snake1, snake2);
+            const coll2 = checkCollision(head2, snake2, snake1);
+
+            let ate1 = false, ate2 = false;
+
+            // Apple check
+            if (head1.x === apple.x && head1.y === apple.y) {
+                score1++;
+                ate1 = true;
+                apple = placeApple();
+            } else {
+                snake1.pop();
+            }
+
+            if (head2.x === apple.x && head2.y === apple.y) {
+                score2++;
+                ate2 = true;
+                apple = placeApple();
+            } else {
+                snake2.pop();
+            }
+
+            updateScores();
+
+            // Send state to peer
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const state = {
+                    type: 'state',
+                    snake1: snake1,
+                    snake2: snake2,
+                    apple: apple,
+                    score1: score1,
+                    score2: score2
+                };
+                dataChannel.send(JSON.stringify(state));
+            }
+
+            draw();
+
+            // Check game over
+            if (coll1 || coll2) {
+                gameOver = true;
+                gameRunning = false;
+                if (coll1) {
+                    winner = 'blue';
+                    document.getElementById('gameStatus').innerHTML = '<span class="text-red-400 text-3xl font-bold">ПОРАЖЕНИЕ</span> <span class="text-emerald-400">— Победа Синей!</span>';
+                } else {
+                    winner = 'green';
+                    document.getElementById('gameStatus').innerHTML = '<span class="text-emerald-400 text-3xl font-bold">ПОБЕДА!</span> <span class="text-blue-400">— Зелёная победила!</span>';
+                }
+                clearInterval(gameInterval);
+            }
+        }
+
+        function startGame() {
+            if (gameRunning) return;
+            gameRunning = true;
+            gameOver = false;
+            document.getElementById('gameStatus').innerHTML = '';
+            
+            // Reset positions if needed
+            if (snake1.length === 0) {
+                snake1 = [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}];
+                snake2 = [{x: 24, y: 15}, {x: 25, y: 15}, {x: 26, y: 15}];
+                dir1 = {x: 1, y: 0};
+                dir2 = {x: -1, y: 0};
+                score1 = 0;
+                score2 = 0;
+                apple = placeApple();
+            }
+
+            updateScores();
+            draw();
+
+            if (isHost) {
+                gameInterval = setInterval(gameLoop, 140); // ~7 moves/sec
+            }
+        }
+
+        // WebRTC
+        let pc = null;
+        let dataChannel = null;
+        let iceCandidates = [];
+
+        function updateConnStatus(text, connected = false) {
+            const el = document.getElementById('connStatus');
+            el.innerHTML = `
+                <div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div>
+                <span>${text}</span>
+            `;
+        }
+
+        function waitForIce(peerConnection) {
+            return new Promise(resolve => {
+                if (peerConnection.iceGatheringState === 'complete') return resolve();
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 3500);
+            });
+        }
+
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateConnStatus('Соединено! Игра началась.', true);
+                document.getElementById('signalingPanel').style.display = 'none';
+                startGame();
+            };
+
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'state') {
+                        // Client receives authoritative state from host
+                        if (!isHost) {
+                            snake1 = msg.snake1;
+                            snake2 = msg.snake2;
+                            apple = msg.apple;
+                            score1 = msg.score1;
+                            score2 = msg.score2;
+                            updateScores();
+                            draw();
+                        }
+                    }
+                } catch(e) {}
+            };
+
+            dc.onclose = () => updateConnStatus('Соединение потеряно', false);
+        }
+
+        async function createOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            const dc = pc.createDataChannel('snake-game');
+            setupDataChannel(dc);
+            dataChannel = dc;
+
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIce(pc);
+
+            const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerOut').value = JSON.stringify(signal, null, 2);
+            updateConnStatus('Offer создан — отправьте Игроку 2');
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerIn').value.trim();
+            if (!txt) return alert('Вставьте Offer!');
+            const signal = JSON.parse(txt);
+
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: signal.sdp }));
+            for (const c of signal.iceCandidates || []) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+            }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIce(pc);
+
+            const ansSignal = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('answerOut').value = JSON.stringify(ansSignal, null, 2);
+            updateConnStatus('Answer создан — отправьте Игроку 1');
+        }
+
+        async function connectWithAnswer() {
+            const txt = document.getElementById('answerIn').value.trim();
+            if (!txt || !pc) return alert('Сначала создайте Offer!');
+            const signal = JSON.parse(txt);
+
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signal.sdp }));
+            for (const c of signal.iceCandidates || []) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+            }
+            updateConnStatus('Соединение устанавливается...');
+        }
+
+        function copyToClipboard(id) {
+            const ta = document.getElementById(id);
+            if (ta.value) navigator.clipboard.writeText(ta.value);
+        }
+
+        function hideSignaling() {
+            document.getElementById('signalingPanel').style.display = 'none';
+        }
+
+        // Init
+        function init() {
+            // Initial draw
+            draw();
+            updateScores();
+            document.getElementById('gameStatus').innerHTML = 'Подключитесь, чтобы начать';
+            console.log('%c[Snake] Multiplayer Snake ready. P2P WebRTC enabled.', 'color:#22c55e');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
