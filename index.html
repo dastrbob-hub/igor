@@ -8,277 +8,104 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
-        
-        :root {
-            --primary: #00d4ff;
-        }
-        
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-        }
-        
-        .title-font {
-            font-family: 'Space Grotesk', system-ui, sans-serif;
-            font-weight: 600;
-        }
-        
-        .game-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .game-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
-        
-        .game-card.active {
-            border-color: #00d4ff;
-            box-shadow: 0 0 0 1px #00d4ff;
-        }
-        
-        .game-card.disabled {
-            opacity: 0.6;
-            filter: grayscale(0.3);
-            cursor: not-allowed;
-        }
-        
-        .section-header {
-            background: linear-gradient(90deg, #0f172a, transparent);
-        }
-        
-        .navy-bg {
-            background: #0f172a;
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        .game-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .game-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
-    <!-- Navbar -->
     <nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-x-3">
                 <div class="w-10 h-10 bg-cyan-500 rounded-2xl flex items-center justify-center">
                     <i class="fa-solid fa-gamepad text-white text-2xl"></i>
                 </div>
-                <div>
-                    <span class="font-bold text-2xl tracking-tighter">игровой хаб</span>
-                </div>
+                <span class="font-bold text-2xl tracking-tighter">игровой хаб</span>
             </div>
-            
-            <div class="flex items-center gap-x-4 text-sm">
-                <a href="https://github.com/dastrbob-hub/igor" target="_blank" 
-                   class="flex items-center gap-x-2 px-4 py-2 rounded-3xl hover:bg-slate-800 transition-colors">
-                    <i class="fa-brands fa-github"></i>
-                    <span>GitHub</span>
-                </a>
-            </div>
+            <a href="https://github.com/dastrbob-hub/igor" target="_blank" class="flex items-center gap-x-2 px-4 py-2 rounded-3xl hover:bg-slate-800 transition-colors text-sm">
+                <i class="fa-brands fa-github"></i>
+                <span>GitHub</span>
+            </a>
         </div>
     </nav>
 
-    <!-- Hero / Header -->
-    <div class="max-w-7xl mx-auto px-6 pt-16 pb-12">
-        <div class="text-center">
-            <div class="inline-flex items-center gap-x-2 px-4 py-1.5 rounded-3xl bg-slate-900 border border-slate-700 mb-6">
-                <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                <span class="text-sm font-medium text-emerald-400">Бесплатно • Без регистрации • P2P</span>
-            </div>
-            
-            <h1 class="text-6xl md:text-7xl font-bold tracking-tighter title-font mb-4">
-                Мой игровой хаб
-            </h1>
-            <p class="max-w-md mx-auto text-xl text-slate-400">
-                Коллекция крутых браузерных игр.<br>
-                Играй с друзьями или в одиночку.
-            </p>
-        </div>
+    <div class="max-w-7xl mx-auto px-6 pt-16 pb-12 text-center">
+        <h1 class="text-6xl md:text-7xl font-bold tracking-tighter title-font mb-4">Мой игровой хаб</h1>
+        <p class="max-w-md mx-auto text-xl text-slate-400">Коллекция крутых браузерных игр. Играй с друзьями через WebRTC P2P.</p>
     </div>
 
-    <!-- Games Grid -->
     <div class="max-w-7xl mx-auto px-6 pb-20">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             
-            <!-- Морской бой - ACTIVE -->
-            <a href="battleship.html" class="game-card active group block">
+            <a href="battleship.html" class="game-card block">
                 <div class="bg-slate-900 border border-cyan-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-cyan-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">⚓</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-cyan-500/10 text-cyan-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-48 bg-gradient-to-br from-cyan-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-7xl">⚓</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Морской бой</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Классика жанра. Два игрока соединяются напрямую через WebRTC P2P.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-cyan-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-semibold tracking-tight mb-2">Морской бой</h3>
+                        <p class="text-slate-400 text-[15px]">Классика. WebRTC P2P</p>
                     </div>
                 </div>
             </a>
-            
-            <!-- Змейка - ACTIVE -->
-            <a href="snake.html" class="game-card active group block">
+
+            <a href="snake.html" class="game-card block">
                 <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-emerald-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">🐍</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-48 bg-gradient-to-br from-emerald-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-7xl">🐍</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Сетевая Змейка</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Две змейки на одном поле. Ешьте яблоки, избегайте столкновений. Реал-тайм P2P.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-emerald-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-semibold tracking-tight mb-2">Сетевая Змейка</h3>
+                        <p class="text-slate-400 text-[15px]">Две змейки на одном поле</p>
                     </div>
                 </div>
             </a>
-            
-            <!-- Пинг-понг - ACTIVE -->
-            <a href="pingpong.html" class="game-card active group block">
+
+            <a href="pingpong.html" class="game-card block">
                 <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-emerald-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">🏓</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-48 bg-gradient-to-br from-emerald-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-7xl">🏓</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Сетевой Пинг-Понг</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Классический пинг-понг с реал-тайм синхронизацией.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-emerald-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-semibold tracking-tight mb-2">Сетевой Пинг-Понг</h3>
+                        <p class="text-slate-400 text-[15px]">Реал-тайм пинг-понг</p>
                     </div>
                 </div>
             </a>
-            
-            <!-- Дурак - ACTIVE -->
-            <a href="cards.html" class="game-card active group block">
+
+            <a href="cards.html" class="game-card block">
                 <div class="bg-slate-900 border border-amber-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-amber-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">🃏</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-amber-500/10 text-amber-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-users"></i>
-                                <span>2 ИГРОКА • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-48 bg-gradient-to-br from-amber-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-7xl">🃏</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Карточный Дурак</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Подкидной Дурак. Раздача, козырь, атака и защита по правилам.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-amber-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-semibold tracking-tight mb-2">Карточный Дурак</h3>
+                        <p class="text-slate-400 text-[15px]">Подкидной Дурак</p>
                     </div>
                 </div>
             </a>
-            
-            <!-- Морской бой: ПРО - NEW ACTIVE -->
-            <a href="battleship2.html" class="game-card active group block">
+
+            <a href="battleship2.html" class="game-card block">
                 <div class="bg-slate-900 border border-cyan-500/30 rounded-3xl overflow-hidden h-full flex flex-col">
-                    <div class="h-48 bg-gradient-to-br from-cyan-950 via-blue-950 to-slate-900 relative flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="text-7xl mb-3 group-hover:scale-110 transition-transform">⚓</div>
-                            <div class="inline-flex items-center gap-x-2 px-3 py-1 rounded-2xl bg-cyan-500/10 text-cyan-400 text-xs font-semibold tracking-wider">
-                                <i class="fa-solid fa-rocket"></i>
-                                <span>ADVANCED • P2P</span>
-                            </div>
-                        </div>
-                        <div class="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-check"></i>
-                            <span>ГОТОВО</span>
-                        </div>
+                    <div class="h-48 bg-gradient-to-br from-cyan-950 via-blue-950 to-slate-900 flex items-center justify-center">
+                        <div class="text-7xl">⚓</div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex-1">
-                            <h3 class="text-2xl font-semibold tracking-tight mb-2">Морской бой: ПРО</h3>
-                            <p class="text-slate-400 text-[15px] leading-relaxed">
-                                Масштабная версия 50×50. Энергия, Сонар, Авиаудар и Ядерный удар.
-                            </p>
-                        </div>
-                        <div class="mt-auto pt-6 flex items-center justify-between text-sm">
-                            <div class="flex items-center gap-x-2 text-cyan-400">
-                                <i class="fa-solid fa-play"></i>
-                                <span class="font-medium">Играть сейчас</span>
-                            </div>
-                            <div class="text-xs px-3 py-1 bg-slate-800 rounded-2xl text-slate-400">WebRTC</div>
-                        </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-semibold tracking-tight mb-2">Морской бой: ПРО</h3>
+                        <p class="text-slate-400 text-[15px]">50×50 + Супер-удары</p>
                     </div>
                 </div>
             </a>
-            
+
         </div>
     </div>
 
-    <!-- Footer -->
     <div class="border-t border-slate-800 bg-slate-950">
         <div class="max-w-7xl mx-auto px-6 py-8 text-center text-sm text-slate-500">
-            <p>Все игры работают в браузере. <span class="text-cyan-400">Морской бой: ПРО</span> — новая эпическая версия с супер-способностями.</p>
+            <p>Все игры работают в браузере. WebRTC P2P • Без серверов</p>
             <p class="mt-2 text-xs">github.com/dastrbob-hub/igor</p>
         </div>
     </div>
-
-    <script>
-        console.log('%c[Хаб] Морской бой: ПРО добавлен в меню!', 'color:#67e8f9');
-    </script>
 </body>
 </html>
