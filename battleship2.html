@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Морской бой: ПРО • Advanced</title>
+    <title>Морской бой: ПРО • 50×50</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
         .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
-        canvas { image-rendering: crisp-edges; border: 2px solid #334155; border-radius: 8px; }
-        .neon-cyan { text-shadow: 0 0 10px #67e8f9; }
-        .log-entry { font-size: 0.85rem; }
+        canvas { image-rendering: crisp-edges; border: 3px solid #334155; border-radius: 12px; }
+        .neon { text-shadow: 0 0 12px #67e8f9; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
-    <div class="max-w-[1400px] mx-auto p-6">
+    <div class="max-w-[1300px] mx-auto p-6">
         <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-x-4">
-                <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center">
-                    <span class="text-white text-4xl">⚓</span>
-                </div>
-                <div>
-                    <h1 class="text-5xl font-bold tracking-tighter title-font neon-cyan">Морской бой: ПРО</h1>
-                    <p class="text-slate-400">Advanced • 50×50 • Энергия • Супер-удары</p>
-                </div>
+            <div>
+                <h1 class="text-5xl font-bold tracking-tighter title-font neon text-cyan-400">Морской бой: ПРО</h1>
+                <p class="text-slate-400">50×50 • Энергия • Супер-способности • P2P</p>
             </div>
             <div id="connStatus" class="px-5 py-2 bg-slate-900 border border-slate-700 rounded-3xl text-sm flex items-center gap-x-3">
                 <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
@@ -32,6 +25,7 @@
             </div>
         </div>
 
+        <!-- Signaling (exact copy from battleship.html) -->
         <div id="signalingPanel" class="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -53,46 +47,49 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- My Field -->
             <div class="lg:col-span-5">
-                <div class="flex items-center justify-between mb-2 px-1">
-                    <div class="text-cyan-400 font-bold">МОЁ ПОЛЕ <span class="text-xs text-slate-500">(50×50)</span></div>
-                    <div id="energyDisplay" class="px-4 py-1 bg-slate-900 border border-cyan-700 rounded-2xl text-sm font-mono">
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <div class="text-cyan-400 font-bold">МОЁ ПОЛЕ (50×50)</div>
+                    <div class="px-4 py-1 bg-slate-900 border border-cyan-700 rounded-2xl text-sm">
                         Энергия: <span id="energy" class="font-bold text-cyan-400">100</span>
                     </div>
                 </div>
-                <canvas id="myCanvas" width="500" height="500" class="bg-[#0a0f1a] rounded-xl border border-slate-700"></canvas>
+                <canvas id="myCanvas" width="500" height="500" class="bg-[#0a0f1a] rounded-xl"></canvas>
             </div>
 
+            <!-- Enemy Field -->
             <div class="lg:col-span-5">
-                <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex justify-between items-center mb-2 px-1">
                     <div class="text-red-400 font-bold">ПОЛЕ ВРАГА</div>
                     <div class="text-xs text-slate-500">Клик = выстрел</div>
                 </div>
-                <canvas id="enemyCanvas" width="500" height="500" class="bg-[#0a0f1a] rounded-xl border border-slate-700 cursor-crosshair"></canvas>
+                <canvas id="enemyCanvas" width="500" height="500" class="bg-[#0a0f1a] rounded-xl cursor-crosshair"></canvas>
             </div>
 
-            <div class="lg:col-span-2 space-y-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-3xl p-4">
-                    <div class="text-sm font-bold mb-3 text-amber-400">СПОСОБНОСТИ</div>
-                    <div class="space-y-2">
-                        <button onclick="useAbility('sonar')" class="w-full text-left px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm flex justify-between">
-                            <span>Сонар (30)</span>
+            <!-- Sidebar -->
+            <div class="lg:col-span-2">
+                <div class="bg-slate-900 border border-slate-700 rounded-3xl p-4 mb-4">
+                    <div class="text-amber-400 font-bold mb-3">СПОСОБНОСТИ</div>
+                    <div class="space-y-2 text-sm">
+                        <button onclick="useAbility('sonar')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl flex justify-between">
+                            <span>Сонар (20)</span>
                         </button>
-                        <button onclick="useAbility('airstrike')" class="w-full text-left px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm flex justify-between">
-                            <span>Авиаудар (50)</span>
+                        <button onclick="useAbility('airstrike')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl flex justify-between">
+                            <span>Авиаудар (40)</span>
                         </button>
-                        <button onclick="useAbility('nuke')" class="w-full text-left px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm flex justify-between">
-                            <span>Ядерный удар (100)</span>
+                        <button onclick="useAbility('nuke')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl flex justify-between">
+                            <span>Ядерный удар (80)</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-700 rounded-3xl p-4 h-[280px] overflow-auto">
-                    <div class="text-sm font-bold mb-2 text-emerald-400">ЛОГ БОЯ</div>
-                    <div id="actionLog" class="text-xs space-y-1 text-slate-400 font-mono"></div>
+                <div class="bg-slate-900 border border-slate-700 rounded-3xl p-4 h-64 overflow-auto mb-4">
+                    <div class="text-emerald-400 font-bold mb-2">ЛОГ</div>
+                    <div id="actionLog" class="text-xs space-y-1 text-slate-400"></div>
                 </div>
 
-                <button onclick="restartGame()" class="w-full py-3 bg-white text-slate-950 hover:bg-gray-200 font-bold rounded-2xl hidden" id="restartBtn">
+                <button onclick="restartGame()" id="restartBtn" class="w-full py-3 bg-white text-slate-950 hover:bg-gray-200 font-bold rounded-2xl hidden">
                     Играть снова
                 </button>
             </div>
@@ -100,21 +97,10 @@
     </div>
 
     <script>
-        const GRID_SIZE = 50;
-        const CELL_SIZE = 10;
-
-        let myGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
-        let enemyGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
-        let myShips = [];
-        let enemyShips = [];
-        let energy = 100;
-        let isHost = false;
-        let gameStarted = false;
-        let gameOver = false;
-        let myTurn = true;
-
+        // ==================== STABLE WEBRTC (copied from battleship.html) ====================
         let pc = null;
         let dataChannel = null;
+        let isHost = false;
         let iceCandidates = [];
 
         function updateStatus(text, connected = false) {
@@ -122,224 +108,29 @@
             el.innerHTML = `<div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div><span>${text}</span>`;
         }
 
-        function sendMessage(msg) {
-            if (dataChannel && dataChannel.readyState === 'open') {
-                dataChannel.send(JSON.stringify(msg));
-            }
-        }
-
-        function handleMessage(msg) {
-            if (msg.type === 'place') {
-                enemyShips = msg.ships;
-            }
-            if (msg.type === 'shot') {
-                const result = processShot(msg.x, msg.y, true);
-                sendMessage({ type: 'shotResult', x: msg.x, y: msg.y, result });
-                if (result.hit) { energy += 20; updateEnergy(); }
-            }
-            if (msg.type === 'shotResult') {
-                applyShotResult(msg.x, msg.y, msg.result);
-                myTurn = true;
-            }
-            if (msg.type === 'ability') {
-                applyEnemyAbility(msg.ability, msg.data);
-            }
-            if (msg.type === 'RESTART_GAME') {
-                restartGame(false);
-            }
-            if (msg.type === 'ready') {
-                // Второй игрок подтвердил, что канал открыт
-                if (isHost) {
-                    startGameAsHost();
-                }
-            }
-        }
-
-        function canPlaceShip(x, y, size, horizontal, grid) {
-            for (let i = 0; i < size; i++) {
-                const nx = horizontal ? x + i : x;
-                const ny = horizontal ? y : y + i;
-                if (nx >= GRID_SIZE || ny >= GRID_SIZE || grid[ny][nx] !== 0) return false;
-            }
-            return true;
-        }
-
-        function placeShip(x, y, size, horizontal, grid, ships) {
-            const ship = { x, y, size, horizontal, hits: 0 };
-            for (let i = 0; i < size; i++) {
-                const nx = horizontal ? x + i : x;
-                const ny = horizontal ? y : y + i;
-                grid[ny][nx] = 1;
-            }
-            ships.push(ship);
-        }
-
-        function autoPlaceFleet(grid, ships) {
-            ships.length = 0;
-            grid.forEach(row => row.fill(0));
-            const configs = [
-                {size:5, count:1}, {size:4, count:2}, {size:3, count:3}, {size:2, count:4},
-                {size:6, count:1, special:'carrier'}, {size:3, count:2, special:'sub'}
-            ];
-            for (let cfg of configs) {
-                for (let c = 0; c < cfg.count; c++) {
-                    let placed = false, attempts = 0;
-                    while (!placed && attempts < 300) {
-                        attempts++;
-                        const x = Math.floor(Math.random()*GRID_SIZE);
-                        const y = Math.floor(Math.random()*GRID_SIZE);
-                        const h = Math.random() > 0.5;
-                        if (cfg.special === 'carrier') {
-                            if (canPlaceShip(x,y,4,true,grid) && canPlaceShip(x+1,y-1,3,false,grid)) {
-                                placeShip(x,y,4,true,grid,ships);
-                                placeShip(x+1,y-1,3,false,grid,ships);
-                                placed = true;
-                            }
-                        } else if (canPlaceShip(x,y,cfg.size,h,grid)) {
-                            placeShip(x,y,cfg.size,h,grid,ships);
-                            placed = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        function drawGrid(canvas, grid, showShips = true) {
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0f1a';
-            ctx.fillRect(0,0,canvas.width,canvas.height);
-            const cell = CELL_SIZE;
-            for (let y=0; y<GRID_SIZE; y++) {
-                for (let x=0; x<GRID_SIZE; x++) {
-                    const v = grid[y][x];
-                    if (v===1 && showShips) ctx.fillStyle = '#22c55e';
-                    else if (v===2) ctx.fillStyle = '#ef4444';
-                    else if (v===3) ctx.fillStyle = '#64748b';
-                    else continue;
-                    ctx.fillRect(x*cell, y*cell, cell-1, cell-1);
-                }
-            }
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 0.5;
-            for (let i=0; i<=GRID_SIZE; i++) {
-                ctx.beginPath(); ctx.moveTo(i*cell,0); ctx.lineTo(i*cell,GRID_SIZE*cell); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0,i*cell); ctx.lineTo(GRID_SIZE*cell,i*cell); ctx.stroke();
-            }
-        }
-
-        function updateEnergy() { document.getElementById('energy').textContent = energy; }
-
-        function logAction(text) {
-            const log = document.getElementById('actionLog');
-            const div = document.createElement('div');
-            div.className = 'log-entry text-emerald-400';
-            div.textContent = '> ' + text;
-            log.appendChild(div);
-            log.scrollTop = log.scrollHeight;
-        }
-
-        function processShot(x, y) {
-            if (myGrid[y][x] === 1) { myGrid[y][x] = 2; return {hit:true}; }
-            if (myGrid[y][x] === 0) { myGrid[y][x] = 3; return {hit:false}; }
-            return {hit:false};
-        }
-
-        function applyShotResult(x, y, result) {
-            enemyGrid[y][x] = result.hit ? 2 : 3;
-            drawGrid(document.getElementById('enemyCanvas'), enemyGrid, false);
-            if (result.hit) { energy += 20; updateEnergy(); logAction('Попадание! +20 энергии'); }
-        }
-
-        function shoot(x, y) {
-            if (!myTurn || gameOver) return;
-            sendMessage({type:'shot', x, y});
-            myTurn = false;
-        }
-
-        function useAbility(type) {
-            if (!myTurn || gameOver) return;
-            let cost = (type==='sonar'?30 : type==='airstrike'?50 : 100);
-            if (energy < cost) { alert('Недостаточно энергии'); return; }
-            energy -= cost; updateEnergy();
-            const cx = Math.floor(Math.random()*(GRID_SIZE-6));
-            const cy = Math.floor(Math.random()*(GRID_SIZE-6));
-            sendMessage({type:'ability', ability:type, data:{cx,cy}});
-            logAction('Вы применили ' + type);
-            myTurn = false;
-        }
-
-        function applyEnemyAbility(ability) {
-            logAction('Враг применил ' + ability);
-        }
-
-        function startGameAsHost() {
-            autoPlaceFleet(myGrid, myShips);
-            sendMessage({type:'place', ships:myShips});
-            drawGrid(document.getElementById('myCanvas'), myGrid, true);
-            gameStarted = true;
-            myTurn = true;
-            logAction('Игра началась');
-        }
-
-        function restartGame(sendSignal = true) {
-            myGrid = Array(GRID_SIZE).fill().map(()=>Array(GRID_SIZE).fill(0));
-            enemyGrid = Array(GRID_SIZE).fill().map(()=>Array(GRID_SIZE).fill(0));
-            myShips = []; enemyShips = [];
-            energy = 100; gameOver = false; gameStarted = false;
-            updateEnergy();
-            drawGrid(document.getElementById('myCanvas'), myGrid, true);
-            drawGrid(document.getElementById('enemyCanvas'), enemyGrid, false);
-            document.getElementById('restartBtn').classList.add('hidden');
-            document.getElementById('actionLog').innerHTML = '';
-            if (isHost) {
-                autoPlaceFleet(myGrid, myShips);
-                drawGrid(document.getElementById('myCanvas'), myGrid, true);
-                if (sendSignal) sendMessage({type:'RESTART_GAME'});
-                gameStarted = true; myTurn = true;
-            }
-        }
-
-        function setupCanvasListeners() {
-            const c = document.getElementById('enemyCanvas');
-            c.addEventListener('click', e => {
-                if (!gameStarted || !myTurn || gameOver) return;
-                const r = c.getBoundingClientRect();
-                const x = Math.floor((e.clientX - r.left) / CELL_SIZE);
-                const y = Math.floor((e.clientY - r.top) / CELL_SIZE);
-                if (x>=0 && x<GRID_SIZE && y>=0 && y<GRID_SIZE) shoot(x,y);
-            });
-        }
-
-        // ==================== FIXED WEBRTC ====================
-        function waitForIce(peerConnection) {
-            return new Promise(resolve => {
-                if (peerConnection.iceGatheringState === 'complete') return resolve();
-                const listener = () => {
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise((resolve) => {
+                if (peerConnection.iceGatheringState === 'complete') { resolve(); return; }
+                const check = () => {
                     if (peerConnection.iceGatheringState === 'complete') {
-                        peerConnection.removeEventListener('icegatheringstatechange', listener);
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
                         resolve();
                     }
                 };
-                peerConnection.addEventListener('icegatheringstatechange', listener);
-                setTimeout(() => { peerConnection.removeEventListener('icegatheringstatechange', listener); resolve(); }, 4000);
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => { peerConnection.removeEventListener('icegatheringstatechange', check); resolve(); }, 4500);
             });
         }
 
         function setupDataChannel(dc) {
             dc.onopen = () => {
-                updateStatus('Соединение установлено', true);
+                updateStatus('Соединение установлено!', true);
                 document.getElementById('signalingPanel').style.display = 'none';
-
-                if (isHost) {
-                    // Хост ждёт подтверждения от второго игрока
-                    sendMessage({ type: 'ready' });
-                } else {
-                    // Второй игрок подтверждает, что канал открыт
-                    sendMessage({ type: 'ready' });
-                }
+                if (isHost) startGameAsHost();
             };
-
-            dc.onmessage = e => { try { handleMessage(JSON.parse(e.data)); } catch(e){} };
+            dc.onmessage = (event) => {
+                try { handleMessage(JSON.parse(event.data)); } catch(e) {}
+            };
         }
 
         async function generateOffer() {
@@ -347,49 +138,47 @@
             iceCandidates = [];
             isHost = true;
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-            dataChannel = pc.createDataChannel('advanced-battleship');
+            dataChannel = pc.createDataChannel('pro-battleship');
             setupDataChannel(dataChannel);
-
             pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
 
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            await waitForIce(pc);
+            await waitForIceGatheringComplete(pc);
 
             const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
             document.getElementById('offerOut').value = JSON.stringify(signal, null, 2);
-            updateStatus('Offer создан — отправьте второму игроку');
+            updateStatus('Offer создан');
         }
 
         async function acceptOffer() {
             const txt = document.getElementById('offerIn').value.trim();
-            if (!txt) return alert('Вставьте Offer');
+            if (!txt) return;
             const sig = JSON.parse(txt);
             if (pc) pc.close();
             iceCandidates = [];
             isHost = false;
-
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
             pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
 
-            await pc.setRemoteDescription(new RTCSessionDescription({type:'offer', sdp: sig.sdp}));
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
             for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
 
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            await waitForIce(pc);
+            await waitForIceGatheringComplete(pc);
 
             const ansSig = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
             document.getElementById('answerOut').value = JSON.stringify(ansSig, null, 2);
-            updateStatus('Answer создан — отправьте первому игроку');
+            updateStatus('Answer создан');
         }
 
         async function connectAnswer() {
             const txt = document.getElementById('answerIn').value.trim();
-            if (!txt || !pc) return alert('Сначала создайте Offer');
+            if (!txt || !pc) return;
             const sig = JSON.parse(txt);
-            await pc.setRemoteDescription(new RTCSessionDescription({type:'answer', sdp: sig.sdp}));
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sig.sdp }));
             for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
             updateStatus('Соединение устанавливается...');
         }
@@ -399,12 +188,202 @@
             if (ta.value) navigator.clipboard.writeText(ta.value);
         }
 
-        function init() {
-            drawGrid(document.getElementById('myCanvas'), myGrid, true);
-            drawGrid(document.getElementById('enemyCanvas'), enemyGrid, false);
-            updateEnergy();
-            setupCanvasListeners();
+        // ==================== GAME ====================
+        const GRID_SIZE = 50;
+        const CELL_SIZE = 10;
+
+        let myGrid = [];
+        let enemyGrid = [];
+        let myShips = [];
+        let energy = 100;
+        let gameStarted = false;
+        let myTurn = true;
+        let gameOver = false;
+
+        function initGrids() {
+            myGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            enemyGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            myShips = [];
         }
+
+        function autoPlaceFleet() {
+            initGrids();
+            // Powerful fleet
+            const fleet = [
+                { size: 6, count: 1, shape: 'carrier' },
+                { size: 5, count: 2 },
+                { size: 4, count: 4 },
+                { size: 3, count: 6 },
+                { size: 2, count: 8, stealth: true }
+            ];
+
+            for (let type of fleet) {
+                for (let i = 0; i < type.count; i++) {
+                    let placed = false;
+                    let attempts = 0;
+                    while (!placed && attempts < 400) {
+                        attempts++;
+                        const x = Math.floor(Math.random() * GRID_SIZE);
+                        const y = Math.floor(Math.random() * GRID_SIZE);
+                        const horizontal = Math.random() > 0.5;
+
+                        if (type.shape === 'carrier') {
+                            if (canPlaceCarrier(x, y, myGrid)) {
+                                placeCarrier(x, y, myGrid, myShips);
+                                placed = true;
+                            }
+                        } else {
+                            if (canPlaceShip(x, y, type.size, horizontal, myGrid)) {
+                                placeShip(x, y, type.size, horizontal, myGrid, myShips, type.stealth);
+                                placed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            drawMyGrid();
+        }
+
+        function canPlaceShip(x, y, size, horizontal, grid) {
+            for (let i = 0; i < size; i++) {
+                const nx = horizontal ? x + i : x;
+                const ny = horizontal ? y : y + i;
+                if (nx < 0 || nx >= GRID_SIZE || ny < 0 || ny >= GRID_SIZE || grid[ny][nx] !== 0) return false;
+            }
+            return true;
+        }
+
+        function placeShip(x, y, size, horizontal, grid, ships, stealth = false) {
+            const ship = { x, y, size, horizontal, hits: 0, stealth };
+            for (let i = 0; i < size; i++) {
+                const nx = horizontal ? x + i : x;
+                const ny = horizontal ? y : y + i;
+                grid[ny][nx] = 1;
+            }
+            ships.push(ship);
+        }
+
+        function canPlaceCarrier(x, y, grid) {
+            return canPlaceShip(x, y, 4, true, grid) && canPlaceShip(x + 1, y + 1, 3, false, grid);
+        }
+
+        function placeCarrier(x, y, grid, ships) {
+            const ship = { x, y, size: 6, shape: 'carrier', hits: 0 };
+            for (let i = 0; i < 4; i++) grid[y][x + i] = 1;
+            for (let i = 1; i < 3; i++) grid[y + i][x + 1] = 1;
+            ships.push(ship);
+        }
+
+        function drawMyGrid() {
+            const canvas = document.getElementById('myCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0f1a';
+            ctx.fillRect(0, 0, 500, 500);
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    if (myGrid[y][x] === 1) {
+                        ctx.fillStyle = '#22c55e';
+                        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                    }
+                }
+            }
+        }
+
+        function drawEnemyGrid() {
+            const canvas = document.getElementById('enemyCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0f1a';
+            ctx.fillRect(0, 0, 500, 500);
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const val = enemyGrid[y][x];
+                    if (val === 2) ctx.fillStyle = '#ef4444';
+                    else if (val === 3) ctx.fillStyle = '#64748b';
+                    else continue;
+                    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                }
+            }
+        }
+
+        function updateEnergy() {
+            document.getElementById('energy').textContent = energy;
+        }
+
+        function log(text) {
+            const logEl = document.getElementById('actionLog');
+            const div = document.createElement('div');
+            div.textContent = '> ' + text;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function startGameAsHost() {
+            autoPlaceFleet();
+            gameStarted = true;
+            myTurn = true;
+            log('Игра началась. Твой ход.');
+        }
+
+        function useAbility(type) {
+            if (!myTurn || gameOver) return;
+            let cost = (type === 'sonar' ? 20 : type === 'airstrike' ? 40 : 80);
+            if (energy < cost) { alert('Недостаточно энергии'); return; }
+            energy -= cost;
+            updateEnergy();
+            log('Применена: ' + type);
+            myTurn = false;
+        }
+
+        function handleMessage(msg) {
+            if (msg.type === 'RESTART_PRO') {
+                restartGame(false);
+            }
+        }
+
+        function restartGame(sendSignal = true) {
+            initGrids();
+            enemyGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            energy = 100;
+            gameOver = false;
+            gameStarted = false;
+            document.getElementById('restartBtn').classList.add('hidden');
+            drawMyGrid();
+            drawEnemyGrid();
+            updateEnergy();
+
+            if (isHost && sendSignal) {
+                sendMessage({ type: 'RESTART_PRO' });
+                startGameAsHost();
+            }
+        }
+
+        function sendMessage(msg) {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify(msg));
+            }
+        }
+
+        function init() {
+            initGrids();
+            drawMyGrid();
+            drawEnemyGrid();
+            updateEnergy();
+
+            const enemyCanvas = document.getElementById('enemyCanvas');
+            enemyCanvas.addEventListener('click', (e) => {
+                if (!myTurn || gameOver) return;
+                const rect = enemyCanvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+                const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+                log(`Выстрел в ${x}, ${y}`);
+                myTurn = false;
+            });
+
+            console.log('%c[battleship2] Полная стабильная версия загружена', 'color:#67e8f9');
+        }
+
         window.onload = init;
     </script>
 </body>
