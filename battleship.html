@@ -6,14 +6,16 @@
     <title>Морской бой • WebRTC P2P</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
         body { background: linear-gradient(135deg, #0a1628 0%, #0d1b2a 100%); color: #e3f2fd; font-family: 'Inter', system_ui, sans-serif; }
         .section { background: #132238; border-radius: 16px; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(0, 212, 255, 0.1); }
-        .battleship-grid { display: grid; grid-template-columns: 28px repeat(10, minmax(30px, 38px)); gap: 3px; background: #0d47a1; padding: 4px; border-radius: 12px; }
-        .cell { background: #4fc3f7; border: 1px solid #0288d1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; cursor: crosshair; }
+        .battleship-grid { display: grid; grid-template-columns: 28px repeat(10, minmax(32px, 38px)); gap: 3px; background: #0d47a1; padding: 4px; border-radius: 12px; }
+        .cell { background: #4fc3f7; border: 1px solid #0288d1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; cursor: crosshair; transition: all 0.1s; }
         .cell.own { background: #546e7a; cursor: default; }
         .cell.hit { background: #e53935; }
         .cell.miss { background: #81d4fa; }
-        .turn-indicator { text-align: center; font-size: 1.3rem; font-weight: 700; padding: 14px; background: #1a2f4a; border-radius: 9999px; margin: 10px auto; max-width: 420px; border: 2px solid #00bcd4; }
+        .cell.ship { background: #546e7a; }
+        .turn-indicator { text-align: center; font-size: 1.25rem; font-weight: 700; padding: 12px 24px; background: #1a2f4a; border-radius: 9999px; margin: 10px auto; max-width: 420px; border: 2px solid #00bcd4; }
         .turn-indicator.your-turn { background: #00695c; border-color: #4caf50; }
     </style>
 </head>
@@ -21,12 +23,12 @@
     <div class="max-w-[1200px] mx-auto p-6">
         <header class="text-center mb-8">
             <h1 class="text-5xl font-bold tracking-tighter" style="background: linear-gradient(90deg, #00d4ff, #00bcd4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚓ Морской бой</h1>
-            <p class="text-slate-400">WebRTC P2P • Без серверов</p>
+            <p class="text-slate-400">Классика • WebRTC P2P • Без серверов</p>
         </header>
 
-        <!-- Connection Section -->
+        <!-- Connection -->
         <div class="section">
-            <h2 class="text-2xl font-semibold mb-4 text-cyan-400">🔗 Подключение (WebRTC P2P)</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-cyan-400">🔗 Подключение</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <button onclick="generateOffer()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-2xl font-semibold">Создать игру (Offer)</button>
@@ -46,27 +48,37 @@
             </div>
             <div id="connStatus" class="mt-4 px-4 py-2 bg-slate-900 border border-slate-700 rounded-2xl text-sm flex items-center gap-x-2">
                 <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
-                <span>Ожидание действий...</span>
+                <span>Ожидание действий игрока 1...</span>
             </div>
         </div>
 
         <div class="section" id="pregameSection" style="display:none;">
             <h2 class="text-2xl font-semibold mb-4 text-cyan-400">🚢 Расстановка кораблей</h2>
-            <button onclick="autoPlaceShips()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl font-semibold">🎲 Автоматически расставить корабли</button>
-            <button onclick="ready()" id="readyBtn" class="ml-4 bg-yellow-600 hover:bg-yellow-500 px-6 py-3 rounded-2xl font-semibold" disabled>⚔️ Я готов к бою!</button>
+            <div class="flex gap-3">
+                <button onclick="autoPlaceShips()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl font-semibold">🎲 Автоматически расставить</button>
+                <button onclick="ready()" id="readyBtn" class="bg-yellow-600 hover:bg-yellow-500 px-6 py-3 rounded-2xl font-semibold" disabled>⚔️ Я готов к бою!</button>
+            </div>
         </div>
 
         <div class="section" id="gameSection" style="display:none;">
             <div id="turnIndicator" class="turn-indicator">Ожидание начала игры...</div>
-            <div class="flex gap-8 justify-center">
+            <div class="flex gap-8 justify-center flex-wrap">
                 <div>
-                    <h3 class="text-center mb-2 text-cyan-400">Моё поле</h3>
-                    <div id="myGrid"></div>
+                    <h3 class="text-center mb-2 text-cyan-400 font-semibold">Моё поле</h3>
+                    <div id="myGridContainer"></div>
                 </div>
                 <div>
-                    <h3 class="text-center mb-2 text-red-400">Поле противника</h3>
-                    <div id="enemyGrid"></div>
+                    <h3 class="text-center mb-2 text-red-400 font-semibold">Поле противника</h3>
+                    <div id="enemyGridContainer"></div>
                 </div>
+            </div>
+
+            <div class="mt-6 max-w-[820px] mx-auto">
+                <div class="flex gap-2">
+                    <input id="chatInput" type="text" placeholder="Написать сообщение..." class="flex-1 px-4 py-2 bg-slate-950 border border-slate-700 rounded-2xl">
+                    <button onclick="sendChat()" class="px-6 bg-cyan-600 hover:bg-cyan-500 rounded-2xl font-semibold">Отправить</button>
+                </div>
+                <div id="chatLog" class="mt-3 h-32 overflow-y-auto bg-slate-950 border border-slate-700 rounded-2xl p-3 text-sm"></div>
             </div>
         </div>
     </div>
@@ -76,6 +88,7 @@
         let dataChannel = null;
         let isHost = false;
         let iceCandidates = [];
+
         let myShipsGrid = [];
         let myHitsGrid = [];
         let myMissesGrid = [];
@@ -85,10 +98,11 @@
         let opponentReady = false;
         let myTurn = false;
         let gameStarted = false;
-        let gameOver = false;
+        let waitingForResult = false;
 
         const GRID_SIZE = 10;
         const LETTERS = 'АБВГДЕЖЗИК';
+        const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
 
         function updateStatus(text, connected = false) {
             const el = document.getElementById('connStatus');
@@ -111,8 +125,9 @@
 
         function setupDataChannel(dc) {
             dc.onopen = () => {
-                updateStatus('Соединение установлено!', true);
+                updateStatus('Соединение установлено! Можно расставлять корабли.', true);
                 document.getElementById('pregameSection').style.display = 'block';
+                appendChat('Система', 'Соединение успешно! Расставьте корабли и нажмите "Я готов".');
             };
             dc.onmessage = (event) => {
                 try {
@@ -180,81 +195,258 @@
             myShotsOnEnemy = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('empty'));
         }
 
-        function autoPlaceShips() {
-            initGrids();
-            const sizes = [4,3,3,2,2,2,1,1,1,1];
-            let id = 1;
-            sizes.forEach(size => {
-                let placed = false;
-                while (!placed) {
-                    const x = Math.floor(Math.random() * (GRID_SIZE - size + 1));
-                    const y = Math.floor(Math.random() * GRID_SIZE);
-                    const horizontal = Math.random() > 0.5;
-                    if (canPlaceShip(myShipsGrid, x, y, size, horizontal)) {
-                        placeShip(myShipsGrid, myShips, x, y, size, horizontal, id++);
-                        placed = true;
-                    }
-                }
-            });
-            renderGrids();
-        }
-
         function canPlaceShip(grid, x, y, size, horizontal) {
             for (let i = 0; i < size; i++) {
                 const nx = horizontal ? x + i : x;
                 const ny = horizontal ? y : y + i;
-                if (nx >= GRID_SIZE || ny >= GRID_SIZE || grid[ny][nx] !== 0) return false;
+                if (nx < 0 || nx >= GRID_SIZE || ny < 0 || ny >= GRID_SIZE || grid[ny][nx] !== 0) return false;
             }
             return true;
         }
 
-        function placeShip(grid, ships, x, y, size, horizontal, id) {
+        function placeShip(grid, shipsList, x, y, size, horizontal, id) {
             const positions = [];
             for (let i = 0; i < size; i++) {
                 const nx = horizontal ? x + i : x;
                 const ny = horizontal ? y : y + i;
                 grid[ny][nx] = id;
-                positions.push({x: nx, y: ny});
+                positions.push({ x: nx, y: ny });
             }
-            ships.push({id, size, positions, hits: 0, isSunk: false});
+            shipsList.push({ id, size, positions, hits: 0, isSunk: false });
         }
 
-        function renderGrids() {
-            const myContainer = document.getElementById('myGrid');
-            myContainer.innerHTML = '<div class="battleship-grid" style="width: 420px;"></div>';
-            const enemyContainer = document.getElementById('enemyGrid');
-            enemyContainer.innerHTML = '<div class="battleship-grid" style="width: 420px;"></div>';
+        function autoPlaceShips() {
+            initGrids();
+            let currentId = 1;
+            const sizes = [...SHIP_SIZES];
+            sizes.sort((a, b) => b - a);
+
+            for (let size of sizes) {
+                let placed = false;
+                let attempts = 0;
+                while (!placed && attempts < 500) {
+                    attempts++;
+                    const horizontal = Math.random() > 0.5;
+                    const startX = Math.floor(Math.random() * (GRID_SIZE - (horizontal ? size - 1 : 0)));
+                    const startY = Math.floor(Math.random() * (GRID_SIZE - (horizontal ? 0 : size - 1)));
+                    if (canPlaceShip(myShipsGrid, startX, startY, size, horizontal)) {
+                        placeShip(myShipsGrid, myShips, startX, startY, size, horizontal, currentId++);
+                        placed = true;
+                    }
+                }
+            }
+            renderMyGrid();
+            renderEnemyGrid();
+            appendChat('Система', 'Корабли расставлены. Нажмите "Я готов к бою!"');
+        }
+
+        function renderMyGrid() {
+            const container = document.getElementById('myGridContainer');
+            container.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'battleship-grid';
+
+            for (let row = 0; row <= GRID_SIZE; row++) {
+                for (let col = 0; col <= GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    if (row === 0 && col === 0) { cell.style.background = 'transparent'; }
+                    else if (row === 0) { cell.textContent = LETTERS[col-1]; cell.style.fontSize = '13px'; cell.style.color = '#bbdefb'; }
+                    else if (col === 0) { cell.textContent = row; cell.style.fontSize = '13px'; cell.style.color = '#bbdefb'; }
+                    else {
+                        const x = col-1;
+                        const y = row-1;
+                        cell.className = 'cell own';
+                        cell.dataset.x = x;
+                        cell.dataset.y = y;
+                        const shipId = myShipsGrid[y][x];
+                        if (shipId !== 0) cell.style.background = '#546e7a';
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+            container.appendChild(grid);
+        }
+
+        function renderEnemyGrid() {
+            const container = document.getElementById('enemyGridContainer');
+            container.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'battleship-grid';
+
+            for (let row = 0; row <= GRID_SIZE; row++) {
+                for (let col = 0; col <= GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    if (row === 0 && col === 0) { cell.style.background = 'transparent'; }
+                    else if (row === 0) { cell.textContent = LETTERS[col-1]; cell.style.fontSize = '13px'; cell.style.color = '#bbdefb'; }
+                    else if (col === 0) { cell.textContent = row; cell.style.fontSize = '13px'; cell.style.color = '#bbdefb'; }
+                    else {
+                        const x = col-1;
+                        const y = row-1;
+                        cell.className = 'cell';
+                        cell.dataset.x = x;
+                        cell.dataset.y = y;
+                        cell.addEventListener('click', () => handleEnemyCellClick(x, y));
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+            container.appendChild(grid);
+        }
+
+        function handleEnemyCellClick(x, y) {
+            if (!dataChannel || dataChannel.readyState !== 'open' || !myTurn || gameOver || waitingForResult) return;
+            if (myShotsOnEnemy[y][x] !== 'empty') { appendChat('Система', 'Сюда уже стреляли!'); return; }
+
+            waitingForResult = true;
+            myTurn = false;
+            updateTurnIndicator();
+            dataChannel.send(JSON.stringify({ type: 'shot', x, y }));
+            appendChat('Вы', `Выстрел в ${LETTERS[x]}${y+1}`);
+        }
+
+        function handleIncomingShot(x, y) {
+            let result = 'miss';
+            let sunkPositions = null;
+            const shipId = myShipsGrid[y][x];
+
+            if (shipId !== 0) {
+                if (!myHitsGrid[y][x]) {
+                    myHitsGrid[y][x] = true;
+                    const ship = myShips.find(s => s.id === shipId);
+                    if (ship) {
+                        ship.hits++;
+                        if (ship.hits === ship.size) {
+                            ship.isSunk = true;
+                            result = 'sunk';
+                            sunkPositions = ship.positions;
+                        } else {
+                            result = 'hit';
+                        }
+                    }
+                }
+            } else {
+                myMissesGrid[y][x] = true;
+                result = 'miss';
+            }
+
+            const isGameOverNow = myShips.every(s => s.hits === s.size);
+
+            const response = { type: 'shotResult', x, y, result, gameOver: isGameOverNow };
+            if (sunkPositions) response.sunkPositions = sunkPositions;
+            dataChannel.send(JSON.stringify(response));
+
+            if (result === 'miss' && !isGameOverNow) {
+                myTurn = true;
+                updateTurnIndicator();
+            }
+            if (isGameOverNow) setTimeout(() => endGame(false), 800);
+        }
+
+        function handleShotResult(msg) {
+            const { x, y, result, gameOver: opponentGameOver, sunkPositions } = msg;
+            myShotsOnEnemy[y][x] = result;
+            if (sunkPositions) sunkPositions.forEach(pos => myShotsOnEnemy[pos.y][pos.x] = 'sunk');
+
+            waitingForResult = false;
+
+            if (opponentGameOver) {
+                setTimeout(() => endGame(true), 600);
+                return;
+            }
+
+            if (result === 'miss') myTurn = false;
+            else myTurn = true;
+            updateTurnIndicator();
+
+            let feedback = '';
+            if (result === 'miss') feedback = 'Мимо!';
+            else if (result === 'hit') feedback = 'Попал!';
+            else if (result === 'sunk') feedback = 'Корабль потоплен!';
+            if (feedback) appendChat('Система', feedback);
+        }
+
+        function handleMessage(msg) {
+            switch (msg.type) {
+                case 'shot': handleIncomingShot(msg.x, msg.y); break;
+                case 'shotResult': handleShotResult(msg); break;
+                case 'chat': appendChat('Противник', msg.text); break;
+                case 'ready':
+                    opponentReady = true;
+                    checkBothReady();
+                    appendChat('Система', 'Противник готов к бою!');
+                    break;
+                case 'startGame':
+                    gameStarted = true;
+                    myTurn = !!msg.yourTurn;
+                    updateTurnIndicator();
+                    document.getElementById('readyBtn').disabled = true;
+                    appendChat('Система', 'Игра началась! ' + (myTurn ? 'Вы ходите первым.' : 'Противник ходит первым.'));
+                    break;
+            }
+        }
+
+        function checkBothReady() {
+            if (localReady && opponentReady && !gameStarted && isHost) {
+                const iStartFirst = Math.random() > 0.5;
+                myTurn = iStartFirst;
+                dataChannel.send(JSON.stringify({ type: 'startGame', yourTurn: !iStartFirst }));
+                gameStarted = true;
+                updateTurnIndicator();
+            }
         }
 
         function ready() {
             if (!localReady && dataChannel && dataChannel.readyState === 'open') {
                 localReady = true;
                 document.getElementById('readyBtn').disabled = true;
+                document.getElementById('readyBtn').textContent = '✅ Готов!';
                 dataChannel.send(JSON.stringify({ type: 'ready' }));
+                checkBothReady();
             }
         }
 
-        function handleMessage(msg) {
-            if (msg.type === 'ready') {
-                opponentReady = true;
-                if (localReady && isHost) {
-                    const first = Math.random() > 0.5;
-                    myTurn = first;
-                    dataChannel.send(JSON.stringify({ type: 'startGame', yourTurn: !first }));
-                    gameStarted = true;
-                }
+        function updateTurnIndicator() {
+            const el = document.getElementById('turnIndicator');
+            if (!gameStarted) { el.textContent = 'Ожидание начала игры...'; el.classList.remove('your-turn'); return; }
+            if (myTurn) { el.innerHTML = '🎯 <strong>ВАШ ХОД!</strong> — кликайте по полю противника'; el.classList.add('your-turn'); }
+            else { el.innerHTML = '⏳ Ход противника...'; el.classList.remove('your-turn'); }
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !dataChannel || dataChannel.readyState !== 'open') return;
+            dataChannel.send(JSON.stringify({ type: 'chat', text }));
+            appendChat('Вы', text);
+            input.value = '';
+        }
+
+        function appendChat(from, text) {
+            const log = document.getElementById('chatLog');
+            const div = document.createElement('div');
+            if (from === 'Система') {
+                div.style.color = '#78909c';
+                div.style.fontStyle = 'italic';
+                div.innerHTML = `<strong>⚓</strong> ${text}`;
+            } else {
+                div.innerHTML = `<strong>${from}:</strong> ${text}`;
             }
-            if (msg.type === 'startGame') {
-                gameStarted = true;
-                myTurn = msg.yourTurn;
-            }
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            const el = document.getElementById('turnIndicator');
+            el.textContent = won ? '🎉 ПОБЕДА!' : '😞 ПОРАЖЕНИЕ';
+            el.style.borderColor = won ? '#4caf50' : '#ef5350';
         }
 
         function init() {
             initGrids();
-            document.getElementById('myGrid').innerHTML = '<div class="battleship-grid" style="width:420px;height:420px;background:#0d47a1;border-radius:12px;"></div>';
-            document.getElementById('enemyGrid').innerHTML = '<div class="battleship-grid" style="width:420px;height:420px;background:#0d47a1;border-radius:12px;"></div>';
-            console.log('%c[Морской бой] Восстановлена автономная версия с WebRTC', 'color:#67e8f9');
+            document.getElementById('myGridContainer').innerHTML = '<div class="battleship-grid"></div>';
+            document.getElementById('enemyGridContainer').innerHTML = '<div class="battleship-grid"></div>';
+            console.log('%c[Морской бой] Полная рабочая автономная версия загружена', 'color:#67e8f9');
         }
 
         window.onload = init;
