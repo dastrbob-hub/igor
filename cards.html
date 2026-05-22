@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карточный Дурак • P2P</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        .card {
+            width: 70px;
+            height: 100px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            position: relative;
+            user-select: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .card.selected { border: 3px solid #eab308; transform: translateY(-8px); }
+        .card-back {
+            background: linear-gradient(135deg, #1e3a8a, #1e40af);
+            border: 2px solid #3b82f6;
+        }
+        .felt {
+            background: #166534;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.6);
+        }
+        .suit-red { color: #ef4444; }
+        .suit-black { color: #111827; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="max-w-6xl mx-auto p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-2xl flex items-center justify-center">
+                    <span class="text-white text-3xl">🃏</span>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tighter title-font">Карточный Дурак</h1>
+                    <p class="text-slate-400">Подкидной • 2 игрока • P2P WebRTC</p>
+                </div>
+            </div>
+            <div id="statusBar" class="px-5 py-2 bg-slate-900 border border-slate-700 rounded-3xl text-sm flex items-center gap-x-3">
+                <div id="connectionDot" class="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                <span id="statusText">Ожидание подключения...</span>
+            </div>
+        </div>
+
+        <!-- Signaling -->
+        <div id="signaling" class="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-6">
+            <h3 class="font-semibold mb-4 flex items-center gap-x-2"><i class="fa-solid fa-plug"></i> Подключение</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <button onclick="generateOffer()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-2xl font-semibold">Создать игру (Offer) — Раздающий</button>
+                    <textarea id="offerOut" readonly class="mt-2 w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('offerOut')" class="mt-1 text-xs w-full py-1.5 bg-slate-800 rounded-2xl">Скопировать</button>
+                </div>
+                <div>
+                    <textarea id="offerIn" placeholder="Вставьте Offer" class="w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="acceptOffer()" class="mt-2 w-full bg-teal-600 hover:bg-teal-500 py-3 rounded-2xl font-semibold">Принять игру (Answer)</button>
+                    <textarea id="answerOut" readonly class="mt-2 w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="copyText('answerOut')" class="mt-1 text-xs w-full py-1.5 bg-slate-800 rounded-2xl">Скопировать Answer</button>
+                </div>
+                <div>
+                    <textarea id="answerIn" placeholder="Вставьте Answer" class="w-full h-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono"></textarea>
+                    <button onclick="connectAnswer()" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 py-3 rounded-2xl font-semibold">Завершить подключение</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="felt border border-emerald-900 rounded-3xl p-8 shadow-2xl">
+            <!-- Opponent -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2 px-2">
+                    <div class="text-emerald-400 font-semibold">Карты соперника</div>
+                    <div id="opponentCount" class="text-sm bg-emerald-900 px-3 py-0.5 rounded-full">6 карт</div>
+                </div>
+                <div id="opponentHand" class="flex gap-2 justify-center min-h-[110px]">
+                    <!-- Card backs rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2 px-2">
+                    <div class="text-amber-400 font-semibold">СТОЛ</div>
+                    <div id="deckInfo" class="text-sm text-slate-400">Козырь: <span id="trumpSuit" class="font-bold text-lg"></span> • В колоде: <span id="deckCount">24</span></div>
+                </div>
+                <div id="tableArea" class="min-h-[130px] bg-emerald-950/50 border border-emerald-800 rounded-2xl p-4 flex flex-wrap gap-4 justify-center items-center">
+                    <!-- Attack/Defend pairs -->
+                </div>
+            </div>
+
+            <!-- My Hand -->
+            <div>
+                <div class="flex items-center justify-between mb-2 px-2">
+                    <div class="text-yellow-400 font-semibold">Ваши карты</div>
+                    <div id="myCount" class="text-sm">6 карт</div>
+                </div>
+                <div id="myHand" class="flex flex-wrap gap-3 justify-center min-h-[120px] p-2">
+                    <!-- My cards as clickable cards -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-6 flex justify-center gap-4">
+            <button id="actionBtn" onclick="performAction()" 
+                    class="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 disabled:bg-slate-700 disabled:text-slate-400 font-bold rounded-2xl text-lg transition-all">
+                ХОДИТЬ / БИТЬ
+            </button>
+            <button onclick="sendBeat()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-2xl">БИТО</button>
+            <button onclick="sendTake()" class="px-6 py-3 bg-red-600 hover:bg-red-500 font-semibold rounded-2xl">ВЗЯТЬ</button>
+        </div>
+
+        <div id="turnStatus" class="mt-4 text-center text-lg font-medium text-slate-300"></div>
+    </div>
+
+    <script>
+        // Tailwind
+        function initTailwind() {
+            // already loaded
+        }
+        initTailwind();
+
+        // Card definitions
+        const RANKS = ['6','7','8','9','10','В','Д','К','Т'];
+        const SUITS = ['♥','♦','♣','♠'];
+        const SUIT_COLORS = { '♥': 'suit-red', '♦': 'suit-red', '♣': 'suit-black', '♠': 'suit-black' };
+
+        let deck = [];
+        let myHand = [];
+        let opponentHandCount = 6;
+        let table = []; // array of {attack: card, defend: card or null}
+        let trumpSuit = '♥';
+        let trumpCard = null;
+        let deckCount = 24;
+        let isHost = false;
+        let myTurn = false; // true if attacking
+        let isDefending = false;
+
+        // WebRTC
+        let pc = null;
+        let dataChannel = null;
+
+        function createDeck() {
+            deck = [];
+            for (let suit of SUITS) {
+                for (let rank of RANKS) {
+                    deck.push({ rank, suit, id: rank + suit });
+                }
+            }
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getCardValue(card) {
+            const rankValue = { '6':1, '7':2, '8':3, '9':4, '10':5, 'В':6, 'Д':7, 'К':8, 'Т':9 };
+            return rankValue[card.rank];
+        }
+
+        function canBeat(attackCard, defendCard, trump) {
+            if (defendCard.suit === trump && attackCard.suit !== trump) return true;
+            if (defendCard.suit === attackCard.suit && getCardValue(defendCard) > getCardValue(attackCard)) return true;
+            return false;
+        }
+
+        // Render functions
+        function renderOpponentHand() {
+            const container = document.getElementById('opponentHand');
+            container.innerHTML = '';
+            for (let i = 0; i < opponentHandCount; i++) {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card card-back flex-shrink-0`;
+                cardEl.innerHTML = `<span class="text-blue-300 text-xl">🂠</span>`;
+                container.appendChild(cardEl);
+            }
+        }
+
+        function renderMyHand() {
+            const container = document.getElementById('myHand');
+            container.innerHTML = '';
+            myHand.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card border border-slate-600 bg-white flex-shrink-0 cursor-pointer ${SUIT_COLORS[card.suit]}`;
+                cardEl.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">${card.rank}</div>
+                        <div class="text-3xl -mt-1">${card.suit}</div>
+                    </div>
+                `;
+                cardEl.onclick = () => selectCard(index, cardEl);
+                container.appendChild(cardEl);
+            });
+            document.getElementById('myCount').textContent = `${myHand.length} карт`;
+        }
+
+        let selectedCardIndex = null;
+        function selectCard(index, el) {
+            // Deselect others
+            document.querySelectorAll('#myHand .card').forEach(c => c.classList.remove('selected'));
+            if (selectedCardIndex === index) {
+                selectedCardIndex = null;
+                return;
+            }
+            selectedCardIndex = index;
+            el.classList.add('selected');
+        }
+
+        function renderTable() {
+            const container = document.getElementById('tableArea');
+            container.innerHTML = '';
+            table.forEach((pair, idx) => {
+                const pairDiv = document.createElement('div');
+                pairDiv.className = 'flex gap-2 items-center';
+                
+                // Attack card
+                const attackEl = createCardElement(pair.attack, false);
+                pairDiv.appendChild(attackEl);
+
+                // Defend card or empty
+                if (pair.defend) {
+                    const defendEl = createCardElement(pair.defend, false);
+                    pairDiv.appendChild(defendEl);
+                } else {
+                    const empty = document.createElement('div');
+                    empty.className = 'w-[70px] h-[100px] border-2 border-dashed border-emerald-700 rounded-lg flex items-center justify-center text-xs text-emerald-600';
+                    empty.textContent = 'Бить';
+                    pairDiv.appendChild(empty);
+                }
+                container.appendChild(pairDiv);
+            });
+        }
+
+        function createCardElement(card, isBack = false) {
+            const el = document.createElement('div');
+            if (isBack) {
+                el.className = 'card card-back';
+                el.innerHTML = `<span class="text-3xl">🂠</span>`;
+            } else {
+                el.className = `card border border-slate-300 bg-white flex-shrink-0 ${SUIT_COLORS[card.suit]}`;
+                el.innerHTML = `
+                    <div class="text-center leading-none">
+                        <div class="text-xl font-bold">${card.rank}</div>
+                        <div class="text-4xl -mt-2">${card.suit}</div>
+                    </div>
+                `;
+            }
+            return el;
+        }
+
+        function updateUI() {
+            renderOpponentHand();
+            renderMyHand();
+            renderTable();
+            document.getElementById('deckCount').textContent = deckCount;
+            document.getElementById('trumpSuit').innerHTML = trumpCard ? `${trumpCard.suit} <span class="text-xs">(${trumpCard.rank})</span>` : '';
+            
+            // Status
+            const status = document.getElementById('turnStatus');
+            if (myTurn) {
+                status.innerHTML = isDefending ? 'Вы <span class="text-red-400 font-bold">отбиваетесь</span>' : 'Вы <span class="text-emerald-400 font-bold">атакуете</span>';
+            } else {
+                status.innerHTML = isDefending ? 'Соперник отбивается' : 'Соперник атакует';
+            }
+        }
+
+        // WebRTC
+        function updateConnection(text, connected) {
+            const dot = document.getElementById('connectionDot');
+            const txt = document.getElementById('statusText');
+            dot.className = `w-3 h-3 rounded-full ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`;
+            txt.textContent = text;
+        }
+
+        let iceCandidates = [];
+        function waitForIce(pc) {
+            return new Promise(resolve => {
+                if (pc.iceGatheringState === 'complete') return resolve();
+                const listener = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', listener);
+                        resolve();
+                    }
+                };
+                pc.addEventListener('icegatheringstatechange', listener);
+                setTimeout(() => { pc.removeEventListener('icegatheringstatechange', listener); resolve(); }, 4000);
+            });
+        }
+
+        function setupDC(dc) {
+            dc.onopen = () => {
+                updateConnection('Соединено! Игра началась.', true);
+                document.getElementById('signaling').style.display = 'none';
+                if (isHost) {
+                    // Dealer starts the game
+                    startAsDealer();
+                }
+            };
+            dc.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                handleMessage(msg);
+            };
+        }
+
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+
+            pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+            const dc = pc.createDataChannel('durak-game');
+            setupDC(dc);
+            dataChannel = dc;
+
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIce(pc);
+
+            const sig = {type: 'offer', sdp: pc.localDescription.sdp, iceCandidates};
+            document.getElementById('offerOut').value = JSON.stringify(sig, null, 2);
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerIn').value.trim();
+            if (!txt) return alert('Вставьте Offer');
+            const sig = JSON.parse(txt);
+
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+
+            pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDC(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            await pc.setRemoteDescription(new RTCSessionDescription({type:'offer', sdp: sig.sdp}));
+            for (let c of sig.iceCandidates || []) await pc.addIceCandidate(new RTCIceCandidate(c));
+
+            const ans = await pc.createAnswer();
+            await pc.setLocalDescription(ans);
+            await waitForIce(pc);
+
+            const ansSig = {type: 'answer', sdp: pc.localDescription.sdp, iceCandidates};
+            document.getElementById('answerOut').value = JSON.stringify(ansSig, null, 2);
+        }
+
+        async function connectAnswer() {
+            const txt = document.getElementById('answerIn').value.trim();
+            if (!txt || !pc) return;
+            const sig = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({type:'answer', sdp: sig.sdp}));
+            for (let c of sig.iceCandidates || []) await pc.addIceCandidate(new RTCIceCandidate(c));
+        }
+
+        function copyText(id) {
+            const ta = document.getElementById(id);
+            navigator.clipboard.writeText(ta.value);
+        }
+
+        // Game logic messages
+        function handleMessage(msg) {
+            if (msg.type === 'deal') {
+                myHand = msg.hand;
+                trumpSuit = msg.trumpSuit;
+                trumpCard = msg.trumpCard;
+                deckCount = msg.deckCount;
+                myTurn = msg.firstAttacker === 'client';
+                isDefending = !myTurn;
+                updateUI();
+                document.getElementById('turnStatus').textContent = myTurn ? 'Ваш ход (атакуете)' : 'Вы отбиваетесь';
+            }
+
+            if (msg.type === 'attack') {
+                // Opponent attacked
+                table.push({attack: msg.card, defend: null});
+                renderTable();
+                myTurn = false;
+                isDefending = true;
+                document.getElementById('turnStatus').textContent = 'Вы отбиваетесь';
+            }
+
+            if (msg.type === 'defend') {
+                // Update table with defend
+                if (table.length > 0) {
+                    table[table.length-1].defend = msg.card;
+                }
+                renderTable();
+            }
+
+            if (msg.type === 'beat') {
+                table = [];
+                renderTable();
+                // Add cards from deck if any (simplified)
+                if (isHost && deck.length > 0) {
+                    // Host deals more if needed
+                }
+                myTurn = true;
+                isDefending = false;
+                document.getElementById('turnStatus').textContent = 'Ваш ход (атакуете)';
+            }
+
+            if (msg.type === 'take') {
+                // Player took cards
+                table = [];
+                renderTable();
+                // In real impl, add taken cards to hand
+                myTurn = !isHost; // switch turn
+            }
+
+            if (msg.type === 'newCards') {
+                myHand = myHand.concat(msg.cards);
+                updateUI();
+            }
+        }
+
+        function sendMessage(msg) {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify(msg));
+            }
+        }
+
+        // Host (dealer) starts the game
+        function startAsDealer() {
+            createDeck();
+            shuffle(deck);
+
+            // Deal 6 cards each
+            myHand = deck.splice(0, 6);
+            const opponentHand = deck.splice(0, 6);
+
+            trumpCard = deck.pop();
+            trumpSuit = trumpCard.suit;
+            deckCount = deck.length;
+
+            // Send to client his hand + trump
+            sendMessage({
+                type: 'deal',
+                hand: opponentHand,
+                trumpSuit: trumpSuit,
+                trumpCard: trumpCard,
+                deckCount: deckCount,
+                firstAttacker: 'client' // or 'host'
+            });
+
+            // Host starts attacking
+            myTurn = true;
+            isDefending = false;
+            updateUI();
+            document.getElementById('turnStatus').textContent = 'Ваш ход (атакуете)';
+        }
+
+        function performAction() {
+            if (selectedCardIndex === null) return alert('Выберите карту');
+
+            const card = myHand[selectedCardIndex];
+
+            if (myTurn && !isDefending) {
+                // Attack
+                table.push({attack: card, defend: null});
+                myHand.splice(selectedCardIndex, 1);
+                sendMessage({type: 'attack', card: card});
+                selectedCardIndex = null;
+                updateUI();
+                myTurn = false;
+                isDefending = true; // now opponent defends
+                document.getElementById('turnStatus').textContent = 'Соперник отбивается';
+            } else if (isDefending) {
+                // Defend last attack
+                const lastPair = table[table.length - 1];
+                if (lastPair && !lastPair.defend && canBeat(lastPair.attack, card, trumpSuit)) {
+                    lastPair.defend = card;
+                    myHand.splice(selectedCardIndex, 1);
+                    sendMessage({type: 'defend', card: card});
+                    selectedCardIndex = null;
+                    updateUI();
+                } else {
+                    alert('Этой картой нельзя побить');
+                }
+            }
+        }
+
+        function sendBeat() {
+            if (!isHost && isDefending) {
+                // Client confirms beat
+                sendMessage({type: 'beat'});
+            }
+            table = [];
+            renderTable();
+            myTurn = true;
+            isDefending = false;
+            document.getElementById('turnStatus').textContent = 'Ваш ход (атакуете)';
+        }
+
+        function sendTake() {
+            if (isDefending) {
+                // Take all remaining attack cards
+                // In full impl, add to hand
+                sendMessage({type: 'take'});
+                table = [];
+                renderTable();
+                myTurn = false;
+                isDefending = false;
+            }
+        }
+
+        // Boot
+        function init() {
+            console.log('%c[Дурак] Игра загружена. Готов к P2P.', 'color:#eab308');
+            // Initial empty renders
+            renderOpponentHand();
+            document.getElementById('myHand').innerHTML = '<div class="text-slate-500 text-sm p-4">Подключитесь, чтобы начать раздачу</div>';
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
