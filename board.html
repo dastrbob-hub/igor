@@ -321,6 +321,25 @@
             border-radius: 9999px;
             cursor: pointer;
         }
+
+        .clipboard-btn {
+            background: #1e3a5f;
+            color: #90caf9;
+            border: 1px solid #37474f;
+            font-size: 0.8rem;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+            width: 100%;
+        }
+        
+        .clipboard-btn:hover {
+            background: #00bcd4;
+            color: white;
+            border-color: #00d4ff;
+        }
     </style>
 </head>
 <body>
@@ -405,24 +424,35 @@
         <!-- Connection Panel (collapsible) -->
         <div id="connectionPanel" class="connection-panel">
             <div class="steps">
+                <!-- Step 1 -->
                 <div class="step">
                     <h4>① Игрок 1 — создаёт комнату</h4>
                     <button id="createOfferBtn">Создать комнату (Offer)</button>
-                    <textarea id="offerTextarea" readonly placeholder="Offer-код..."></textarea>
-                    <button id="copyOfferBtn" class="copy-btn">📋 Скопировать</button>
+                    
+                    <textarea id="offerTextarea" readonly placeholder="Offer-код появится здесь..."></textarea>
+                    
+                    <button onclick="copyMyCode('offer')" class="clipboard-btn">📋 Скопировать мой Offer</button>
+                    <button id="copyOfferBtn" class="copy-btn" style="display:none;">📋 Старый копировать</button>
                 </div>
                 
+                <!-- Step 2 -->
                 <div class="step">
                     <h4>② Игрок 2 — присоединяется</h4>
                     <textarea id="offerInput" placeholder="Вставьте Offer от Игрока 1"></textarea>
-                    <button id="acceptOfferBtn">Принять (Answer)</button>
-                    <textarea id="answerTextarea" readonly placeholder="Answer-код..."></textarea>
-                    <button id="copyAnswerBtn" class="copy-btn">📋 Скопировать</button>
+                    
+                    <button onclick="pasteFromClipboard('offer')" class="clipboard-btn">📥 Вставить Offer из буфера</button>
+                    <button id="acceptOfferBtn">Принять (Сгенерировать Answer)</button>
+                    
+                    <textarea id="answerTextarea" readonly placeholder="Answer-код появится здесь..."></textarea>
+                    <button onclick="copyMyCode('answer')" class="clipboard-btn">📋 Скопировать мой Answer</button>
                 </div>
                 
+                <!-- Step 3 -->
                 <div class="step">
-                    <h4>③ Игрок 1 — завершает</h4>
-                    <textarea id="answerInput" placeholder="Вставьте Answer"></textarea>
+                    <h4>③ Игрок 1 — завершает подключение</h4>
+                    <textarea id="answerInput" placeholder="Вставьте Answer от Игрока 2"></textarea>
+                    
+                    <button onclick="pasteFromClipboard('answer')" class="clipboard-btn">📥 Вставить Answer из буфера</button>
                     <button id="connectBtn">🚀 Подключиться</button>
                 </div>
             </div>
@@ -545,7 +575,66 @@
             updateConnectionStatus('Соединение устанавливается...');
         }
 
-        // ==================== DRAWING (FIXED) ====================
+        // ==================== CLIPBOARD AUTOMATION (для Wallpaper Engine) ====================
+        async function copyMyCode(type) {
+            let textarea;
+            if (type === 'offer') {
+                textarea = document.getElementById('offerTextarea');
+            } else if (type === 'answer') {
+                textarea = document.getElementById('answerTextarea');
+            }
+
+            if (!textarea || !textarea.value) {
+                alert('Сначала сгенерируйте код!');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                const originalText = event.currentTarget ? event.currentTarget.textContent : '';
+                // Визуальная обратная связь
+                const btns = document.querySelectorAll('.clipboard-btn');
+                btns.forEach(b => {
+                    if (b.textContent.includes('Скопировать')) {
+                        const old = b.textContent;
+                        b.textContent = '✅ Скопировано!';
+                        setTimeout(() => { b.textContent = old; }, 1800);
+                    }
+                });
+            } catch (err) {
+                // Fallback для старых браузеров / Wallpaper Engine
+                textarea.select();
+                document.execCommand('copy');
+                alert('Код скопирован (через fallback)');
+            }
+        }
+
+        async function pasteFromClipboard(type) {
+            let inputField;
+            if (type === 'offer') {
+                inputField = document.getElementById('offerInput');
+            } else if (type === 'answer') {
+                inputField = document.getElementById('answerInput');
+            }
+
+            if (!inputField) return;
+
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    inputField.value = text;
+                    // Визуальная обратная связь
+                    inputField.style.borderColor = '#00d4ff';
+                    setTimeout(() => {
+                        inputField.style.borderColor = '#37474f';
+                    }, 1200);
+                }
+            } catch (err) {
+                alert('Не удалось прочитать буфер обмена.\nВ Wallpaper Engine иногда нужно разрешить доступ к буферу в настройках.\n\nАльтернатива: используйте Ctrl+V вручную.');
+            }
+        }
+
+        // ==================== DRAWING ====================
         function clearCanvas() {
             ctx.fillStyle = '#0d1b2a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -576,7 +665,6 @@
             } else if (brush === 'dashed') {
                 ctx.setLineDash([12, 8]);
             }
-            // For eraser we will set strokeStyle + lineWidth in drawLine
         }
 
         function drawLine(x1, y1, x2, y2, color, size, brush) {
@@ -584,7 +672,7 @@
 
             if (brush === 'eraser') {
                 ctx.strokeStyle = '#0d1b2a';
-                ctx.lineWidth = size;           // ← используем ПРИСЛАННЫЙ size
+                ctx.lineWidth = size;
             } else {
                 ctx.strokeStyle = color;
                 ctx.lineWidth = size;
@@ -758,6 +846,7 @@
             document.getElementById('acceptOfferBtn').addEventListener('click', acceptOffer);
             document.getElementById('connectBtn').addEventListener('click', connectWithAnswer);
 
+            // Старые кнопки копирования (оставлены для совместимости)
             document.getElementById('copyOfferBtn').addEventListener('click', () => {
                 const ta = document.getElementById('offerTextarea');
                 if (ta.value) navigator.clipboard.writeText(ta.value);
