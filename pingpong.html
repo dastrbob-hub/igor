@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сетевой Пинг-Понг • P2P</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 600; }
+        canvas { image-rendering: crisp-edges; }
+        .game-container { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="max-w-5xl mx-auto p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-table-tennis text-white text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tighter title-font">Сетевой Пинг-Понг</h1>
+                    <p class="text-slate-400 text-sm">P2P • WebRTC • Без серверов</p>
+                </div>
+            </div>
+            <div id="connectionStatus" class="px-4 py-2 bg-slate-900 border border-slate-700 rounded-3xl text-sm flex items-center gap-x-2">
+                <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                <span>Ожидание подключения...</span>
+            </div>
+        </div>
+
+        <!-- Signaling Panel -->
+        <div id="signalingPanel" class="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-lg">Подключение игроков</h3>
+                <button onclick="hideSignaling()" class="text-xs px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-2xl">Скрыть</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Create Offer -->
+                <div class="bg-slate-950 border border-slate-700 rounded-2xl p-4">
+                    <div class="text-emerald-400 text-xs font-bold mb-2 flex items-center gap-x-2">
+                        <i class="fa-solid fa-play"></i> <span>ИГРОК 1 (Левая ракетка)</span>
+                    </div>
+                    <button onclick="generateOffer()" 
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 transition-colors text-white font-semibold py-3 rounded-2xl text-sm">
+                        Создать игру (Offer)
+                    </button>
+                    <textarea id="offerTextarea" readonly class="mt-3 w-full h-20 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono resize-none" placeholder="Offer код...">
+</textarea>
+                    <button onclick="copyToClipboard('offerTextarea')" class="mt-2 text-xs w-full py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl">📋 Скопировать</button>
+                </div>
+
+                <!-- Accept Offer -->
+                <div class="bg-slate-950 border border-slate-700 rounded-2xl p-4">
+                    <div class="text-teal-400 text-xs font-bold mb-2 flex items-center gap-x-2">
+                        <i class="fa-solid fa-link"></i> <span>ИГРОК 2 (Правая ракетка)</span>
+                    </div>
+                    <textarea id="offerInput" class="w-full h-20 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono resize-none" placeholder="Вставьте Offer от Игрока 1">
+</textarea>
+                    <button onclick="acceptOffer()" 
+                            class="mt-2 w-full bg-teal-600 hover:bg-teal-500 transition-colors text-white font-semibold py-3 rounded-2xl text-sm">
+                        Принять игру (Answer)
+                    </button>
+                    <textarea id="answerTextarea" readonly class="mt-3 w-full h-20 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono resize-none" placeholder="Answer код...">
+</textarea>
+                    <button onclick="copyToClipboard('answerTextarea')" class="mt-2 text-xs w-full py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl">📋 Скопировать</button>
+                </div>
+
+                <!-- Connect with Answer -->
+                <div class="bg-slate-950 border border-slate-700 rounded-2xl p-4">
+                    <div class="text-sky-400 text-xs font-bold mb-2">ИГРОК 1 — завершить</div>
+                    <textarea id="answerInput" class="w-full h-20 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono resize-none" placeholder="Вставьте Answer от Игрока 2">
+</textarea>
+                    <button onclick="connectWithAnswer()" 
+                            class="mt-2 w-full bg-sky-600 hover:bg-sky-500 transition-colors text-white font-semibold py-3 rounded-2xl text-sm">
+                        Начать соединение
+                    </button>
+                    <div class="mt-4 text-center text-xs text-slate-500">
+                        После соединения панель можно скрыть
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game -->
+        <div class="flex justify-center">
+            <div class="game-container bg-slate-900 border border-slate-700 rounded-3xl p-4">
+                <canvas id="gameCanvas" width="800" height="500" class="rounded-2xl bg-black cursor-crosshair"></canvas>
+                
+                <!-- Controls hint -->
+                <div class="mt-4 flex justify-between text-xs text-slate-400 px-2">
+                    <div id="playerInfo" class="font-medium"></div>
+                    <div>Управление: <span class="font-mono">W / S</span> или <span class="font-mono">↑ / ↓</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score & Status -->
+        <div class="mt-6 flex justify-center items-center gap-x-8 text-center">
+            <div>
+                <div class="text-emerald-400 text-sm font-bold">ЛЕВАЯ</div>
+                <div id="scoreLeft" class="text-6xl font-bold tabular-nums">0</div>
+            </div>
+            <div class="text-slate-500 text-4xl font-light">:</div>
+            <div>
+                <div class="text-teal-400 text-sm font-bold">ПРАВАЯ</div>
+                <div id="scoreRight" class="text-6xl font-bold tabular-nums">0</div>
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <button onclick="resetGame()" class="px-6 py-2 text-sm bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl transition-colors">
+                Сбросить счёт
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#14b8a6');
+        }
+        initializeTailwind();
+
+        // Game constants
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const WIDTH = 800;
+        const HEIGHT = 500;
+        const PADDLE_WIDTH = 12;
+        const PADDLE_HEIGHT = 80;
+        const BALL_RADIUS = 8;
+        const PADDLE_SPEED = 7;
+        const WIN_SCORE = 10;
+
+        // Game state
+        let paddleLeftY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        let paddleRightY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        let ballX = WIDTH / 2;
+        let ballY = HEIGHT / 2;
+        let ballVX = 5;
+        let ballVY = 3;
+        let scoreLeft = 0;
+        let scoreRight = 0;
+        let gameRunning = false;
+        let isHost = false;
+        let mySide = 'left'; // 'left' or 'right'
+        let opponentPaddleY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+        let keys = {};
+
+        // WebRTC
+        let pc = null;
+        let dataChannel = null;
+        let iceCandidates = [];
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ' && gameRunning) e.preventDefault();
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function updatePaddles() {
+            if (!gameRunning) return;
+
+            const speed = PADDLE_SPEED;
+
+            if (isHost) { // Left paddle
+                if (keys['w'] || keys['arrowup']) paddleLeftY -= speed;
+                if (keys['s'] || keys['arrowdown']) paddleLeftY += speed;
+            } else { // Right paddle
+                if (keys['w'] || keys['arrowup']) paddleRightY -= speed;
+                if (keys['s'] || keys['arrowdown']) paddleRightY += speed;
+            }
+
+            // Clamp
+            paddleLeftY = Math.max(0, Math.min(HEIGHT - PADDLE_HEIGHT, paddleLeftY));
+            paddleRightY = Math.max(0, Math.min(HEIGHT - PADDLE_HEIGHT, paddleRightY));
+        }
+
+        function updateBall() {
+            if (!isHost || !gameRunning) return;
+
+            ballX += ballVX;
+            ballY += ballVY;
+
+            // Top and bottom walls
+            if (ballY - BALL_RADIUS < 0 || ballY + BALL_RADIUS > HEIGHT) {
+                ballVY = -ballVY;
+                ballY = Math.max(BALL_RADIUS, Math.min(HEIGHT - BALL_RADIUS, ballY));
+            }
+
+            // Left paddle collision
+            if (ballX - BALL_RADIUS < 25 && 
+                ballY > paddleLeftY && ballY < paddleLeftY + PADDLE_HEIGHT && 
+                ballVX < 0) {
+                ballVX = -ballVX * 1.08;
+                const hitOffset = (ballY - paddleLeftY - PADDLE_HEIGHT / 2) / (PADDLE_HEIGHT / 2);
+                ballVY = hitOffset * 6;
+                ballX = 25 + BALL_RADIUS;
+            }
+
+            // Right paddle collision
+            if (ballX + BALL_RADIUS > WIDTH - 25 && 
+                ballY > paddleRightY && ballY < paddleRightY + PADDLE_HEIGHT && 
+                ballVX > 0) {
+                ballVX = -ballVX * 1.08;
+                const hitOffset = (ballY - paddleRightY - PADDLE_HEIGHT / 2) / (PADDLE_HEIGHT / 2);
+                ballVY = hitOffset * 6;
+                ballX = WIDTH - 25 - BALL_RADIUS;
+            }
+
+            // Scoring
+            if (ballX < 0) {
+                scoreRight++;
+                updateScoreDisplay();
+                sendScoreUpdate();
+                resetBall();
+                checkWin();
+            }
+            if (ballX > WIDTH) {
+                scoreLeft++;
+                updateScoreDisplay();
+                sendScoreUpdate();
+                resetBall();
+                checkWin();
+            }
+
+            // Send ball state to client
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify({
+                    type: 'ball',
+                    x: ballX,
+                    y: ballY,
+                    vx: ballVX,
+                    vy: ballVY
+                }));
+            }
+        }
+
+        function resetBall() {
+            ballX = WIDTH / 2;
+            ballY = HEIGHT / 2;
+            const angle = (Math.random() * 0.6 - 0.3) * Math.PI;
+            const speed = 5.5;
+            ballVX = Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1);
+            ballVY = Math.sin(angle) * speed;
+        }
+
+        function checkWin() {
+            if (scoreLeft >= WIN_SCORE || scoreRight >= WIN_SCORE) {
+                gameRunning = false;
+                const winner = scoreLeft >= WIN_SCORE ? 'ЛЕВАЯ' : 'ПРАВАЯ';
+                setTimeout(() => {
+                    alert(`Победа! ${winner} сторона выиграла со счётом ${scoreLeft}:${scoreRight}`);
+                    // Optional: reset scores
+                    // scoreLeft = 0; scoreRight = 0; updateScoreDisplay();
+                }, 100);
+            }
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            // Middle dashed line
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([15, 15]);
+            ctx.beginPath();
+            ctx.moveTo(WIDTH / 2, 0);
+            ctx.lineTo(WIDTH / 2, HEIGHT);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Paddles
+            ctx.fillStyle = '#14b8a6';
+            ctx.fillRect(15, paddleLeftY, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillRect(WIDTH - 27, paddleRightY, PADDLE_WIDTH, PADDLE_HEIGHT);
+
+            // Ball
+            ctx.fillStyle = '#f1f5f9';
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Subtle glow
+            ctx.shadowColor = '#14b8a6';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('scoreLeft').textContent = scoreLeft;
+            document.getElementById('scoreRight').textContent = scoreRight;
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            updatePaddles();
+            updateBall();
+            draw();
+
+            // Send own paddle position
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const myY = isHost ? paddleLeftY : paddleRightY;
+                dataChannel.send(JSON.stringify({
+                    type: 'paddle',
+                    y: myY
+                }));
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            if (gameRunning) return;
+            gameRunning = true;
+            resetBall();
+            paddleLeftY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+            paddleRightY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+            scoreLeft = 0;
+            scoreRight = 0;
+            updateScoreDisplay();
+            draw();
+            gameLoop();
+        }
+
+        function resetGame() {
+            gameRunning = false;
+            scoreLeft = 0;
+            scoreRight = 0;
+            paddleLeftY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+            paddleRightY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
+            ballX = WIDTH / 2;
+            ballY = HEIGHT / 2;
+            updateScoreDisplay();
+            draw();
+        }
+
+        // WebRTC functions (adapted from Battleship)
+        function updateConnectionStatus(text, connected = false) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.innerHTML = `
+                <div class="w-2.5 h-2.5 ${connected ? 'bg-emerald-400' : 'bg-amber-400'} rounded-full ${connected ? '' : 'animate-pulse'}"></div>
+                <span>${text}</span>
+            `;
+        }
+
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise((resolve) => {
+                if (peerConnection.iceGatheringState === 'complete') {
+                    resolve();
+                    return;
+                }
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => {
+                    peerConnection.removeEventListener('icegatheringstatechange', check);
+                    resolve();
+                }, 4000);
+            });
+        }
+
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateConnectionStatus('Соединение установлено! Игра началась.', true);
+                document.getElementById('signalingPanel').style.display = 'none';
+                
+                // Set player info
+                const info = document.getElementById('playerInfo');
+                info.innerHTML = isHost ? 
+                    '<span class="text-emerald-400">Вы — ЛЕВАЯ ракетка (W/S)</span>' : 
+                    '<span class="text-teal-400">Вы — ПРАВАЯ ракетка (↑/↓)</span>';
+                
+                startGame();
+            };
+
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleGameMessage(msg);
+                } catch (e) {}
+            };
+
+            dc.onclose = () => {
+                updateConnectionStatus('Соединение разорвано', false);
+            };
+        }
+
+        function handleGameMessage(msg) {
+            if (msg.type === 'paddle') {
+                if (isHost) {
+                    opponentPaddleY = msg.y;
+                    paddleRightY = msg.y;
+                } else {
+                    opponentPaddleY = msg.y;
+                    paddleLeftY = msg.y;
+                }
+            }
+            
+            if (msg.type === 'ball' && !isHost) {
+                ballX = msg.x;
+                ballY = msg.y;
+                ballVX = msg.vx;
+                ballVY = msg.vy;
+            }
+            
+            if (msg.type === 'score') {
+                scoreLeft = msg.left;
+                scoreRight = msg.right;
+                updateScoreDisplay();
+            }
+        }
+
+        function sendScoreUpdate() {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify({
+                    type: 'score',
+                    left: scoreLeft,
+                    right: scoreRight
+                }));
+            }
+        }
+
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+            mySide = 'left';
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            dataChannel = pc.createDataChannel('pong-game');
+            setupDataChannel(dataChannel);
+
+            pc.onicecandidate = (e) => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIceGatheringComplete(pc);
+
+            const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerTextarea').value = JSON.stringify(signal, null, 2);
+            updateConnectionStatus('Offer создан. Отправьте Игроку 2.');
+        }
+
+        async function acceptOffer() {
+            const offerText = document.getElementById('offerInput').value.trim();
+            if (!offerText) return alert('Вставьте Offer!');
+
+            try {
+                const offerSignal = JSON.parse(offerText);
+                if (pc) pc.close();
+                iceCandidates = [];
+                isHost = false;
+                mySide = 'right';
+
+                pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                pc.ondatachannel = (e) => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+                pc.onicecandidate = (e) => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+                await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offerSignal.sdp }));
+                for (const cand of offerSignal.iceCandidates || []) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch(e){}
+                }
+
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await waitForIceGatheringComplete(pc);
+
+                const signal = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+                document.getElementById('answerTextarea').value = JSON.stringify(signal, null, 2);
+                updateConnectionStatus('Answer создан. Отправьте Игроку 1.');
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        }
+
+        async function connectWithAnswer() {
+            const answerText = document.getElementById('answerInput').value.trim();
+            if (!answerText || !pc) return alert('Сначала создайте Offer!');
+
+            try {
+                const answerSignal = JSON.parse(answerText);
+                await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSignal.sdp }));
+                for (const cand of answerSignal.iceCandidates || []) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch(e){}
+                }
+                updateConnectionStatus('Соединение устанавливается...');
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        }
+
+        function copyToClipboard(id) {
+            const ta = document.getElementById(id);
+            if (ta.value) {
+                navigator.clipboard.writeText(ta.value).then(() => {
+                    const original = ta.placeholder;
+                    ta.placeholder = 'Скопировано!';
+                    setTimeout(() => ta.placeholder = original, 1500);
+                });
+            }
+        }
+
+        function hideSignaling() {
+            document.getElementById('signalingPanel').style.display = 'none';
+        }
+
+        // Boot
+        function init() {
+            // Initial draw
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = '#14b8a6';
+            ctx.fillRect(15, paddleLeftY, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillRect(WIDTH - 27, paddleRightY, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillStyle = '#f1f5f9';
+            ctx.beginPath();
+            ctx.arc(WIDTH/2, HEIGHT/2, BALL_RADIUS, 0, Math.PI*2);
+            ctx.fill();
+
+            updateScoreDisplay();
+            document.getElementById('playerInfo').innerHTML = 'Подключитесь, чтобы начать';
+
+            // Auto start hint
+            console.log('%c[PingPong] Игра готова. Откройте на двух устройствах.', 'color:#14b8a6');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
