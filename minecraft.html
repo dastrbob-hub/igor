@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft • WebRTC P2P</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --bg: #0a1628;
+            --card: #132238;
+            --accent: #00d4ff;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: #0a1628;
+            color: #e3f2fd;
+            font-family: 'Inter', system_ui, sans-serif;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #threeCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Crosshair */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+        
+        #crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+        
+        #crosshair::after {
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+        
+        /* Block selection bar */
+        #blockBar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: rgba(19, 34, 56, 0.85);
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 2px solid #37474f;
+            z-index: 200;
+        }
+        
+        .block-btn {
+            width: 52px;
+            height: 52px;
+            border: 3px solid #37474f;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .block-btn.active {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .block-btn span {
+            position: absolute;
+            bottom: -18px;
+            font-size: 0.7rem;
+            color: #90caf9;
+            font-weight: 600;
+        }
+        
+        /* Connection panel */
+        #connectionPanel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #132238;
+            border-radius: 14px;
+            padding: 18px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            max-width: 380px;
+            z-index: 300;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        #connectionPanel h3 {
+            color: #00d4ff;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .step {
+            margin-bottom: 14px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #00bcd4, #0097a7);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        
+        button:disabled {
+            background: #37474f;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 70px;
+            background: #0a1628;
+            border: 2px solid #37474f;
+            border-radius: 8px;
+            color: #e3f2fd;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.75rem;
+            padding: 10px;
+            resize: vertical;
+        }
+        
+        .status {
+            padding: 8px 12px;
+            background: #0f1c2e;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff9800;
+        }
+        
+        .status.connected .status-dot {
+            background: #4caf50;
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #90caf9;
+            font-size: 0.85rem;
+            text-align: center;
+            background: rgba(19, 34, 56, 0.7);
+            padding: 6px 14px;
+            border-radius: 9999px;
+            z-index: 150;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="threeCanvas"></canvas>
+        
+        <!-- Crosshair -->
+        <div id="crosshair"></div>
+        
+        <!-- Block selection bar -->
+        <div id="blockBar">
+            <div class="block-btn active" data-type="1" style="background: #4ade80; color: #166534;">
+                🌿<span>1</span>
+            </div>
+            <div class="block-btn" data-type="2" style="background: #854d0e; color: #fefce8;">
+                🟫<span>2</span>
+            </div>
+            <div class="block-btn" data-type="3" style="background: #64748b; color: #f1f5f9;">
+                ⬛<span>3</span>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div id="instructions">
+            Кликни по экрану для захвата мыши • WASD — движение • Пробел — прыжок • ЛКМ — сломать • ПКМ — поставить
+        </div>
+        
+        <!-- Connection Panel -->
+        <div id="connectionPanel">
+            <h3>🔗 Подключение (WebRTC)</h3>
+            
+            <div class="step">
+                <button id="createOfferBtn">Создать комнату (Offer)</button>
+                <textarea id="offerTextarea" readonly placeholder="Offer-код..."></textarea>
+                <button id="copyOfferBtn" style="background:#263238; color:#b0bec5; font-size:0.85rem; padding:6px 12px;">📋 Скопировать</button>
+            </div>
+            
+            <div class="step">
+                <textarea id="offerInput" placeholder="Вставь Offer от первого игрока"></textarea>
+                <button id="acceptOfferBtn">Присоединиться (Answer)</button>
+                <textarea id="answerTextarea" readonly placeholder="Answer-код..."></textarea>
+                <button id="copyAnswerBtn" style="background:#263238; color:#b0bec5; font-size:0.85rem; padding:6px 12px;">📋 Скопировать</button>
+            </div>
+            
+            <div class="step">
+                <textarea id="answerInput" placeholder="Вставь Answer"></textarea>
+                <button id="connectBtn">🚀 Подключиться</button>
+            </div>
+            
+            <div id="connectionStatus" class="status">
+                <div class="status-dot"></div>
+                <span>Ожидание подключения...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ==================== THREE.JS + GAME ====================
+        let scene, camera, renderer;
+        let blocks = new Map(); // key: "x,y,z" -> { mesh, type }
+        let player = { x: 0, y: 3, z: 0, velocityY: 0 };
+        let keys = {};
+        let yaw = 0, pitch = 0;
+        let isLocked = false;
+        let selectedBlockType = 1; // 1=grass, 2=dirt, 3=stone
+        
+        let pc = null;
+        let dataChannel = null;
+        let isHost = false;
+        let iceCandidates = [];
+        let remotePlayerMesh = null;
+        
+        const WORLD_SIZE = 32;
+        const BLOCK_SIZE = 1;
+        const GRAVITY = -25;
+        const JUMP_FORCE = 9;
+        const MOVE_SPEED = 8;
+        
+        function initThree() {
+            const canvas = document.getElementById('threeCanvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x0a1628, 20, 80);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(0, 2, 0);
+            
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            
+            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+            sun.position.set(20, 40, 10);
+            scene.add(sun);
+            
+            // Ground plane (visual)
+            const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.01;
+            scene.add(ground);
+            
+            // Generate world
+            generateWorld();
+            
+            // Remote player avatar (red cube)
+            const remoteGeo = new THREE.BoxGeometry(0.6, 1.6, 0.6);
+            const remoteMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+            remotePlayerMesh = new THREE.Mesh(remoteGeo, remoteMat);
+            remotePlayerMesh.visible = false;
+            scene.add(remotePlayerMesh);
+            
+            // Resize handler
+            window.addEventListener('resize', () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+            });
+            
+            // Pointer lock
+            canvas.addEventListener('click', () => {
+                canvas.requestPointerLock();
+            });
+            
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = document.pointerLockElement === canvas;
+                document.getElementById('instructions').style.display = isLocked ? 'none' : 'block';
+            });
+            
+            // Mouse look
+            document.addEventListener('mousemove', (e) => {
+                if (!isLocked) return;
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, pitch));
+            });
+            
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                if (e.code === 'Digit1') selectBlock(1);
+                if (e.code === 'Digit2') selectBlock(2);
+                if (e.code === 'Digit3') selectBlock(3);
+                if (e.code === 'Escape') document.exitPointerLock();
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            
+            // Mouse buttons (break / place)
+            canvas.addEventListener('mousedown', (e) => {
+                if (!isLocked) return;
+                
+                if (e.button === 0) { // Left click - break
+                    breakBlock();
+                } else if (e.button === 2) { // Right click - place
+                    placeBlock();
+                }
+            });
+            
+            // Prevent context menu on right click
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            // Block bar clicks
+            document.querySelectorAll('.block-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = parseInt(btn.dataset.type);
+                    selectBlock(type);
+                });
+            });
+            
+            // Initial block selection
+            selectBlock(1);
+            
+            // Start animation
+            animate();
+        }
+        
+        function selectBlock(type) {
+            selectedBlockType = type;
+            document.querySelectorAll('.block-btn').forEach(b => {
+                b.classList.toggle('active', parseInt(b.dataset.type) === type);
+            });
+        }
+        
+        function getBlockKey(x, y, z) {
+            return `${Math.floor(x)},${Math.floor(y)},${Math.floor(z)}`;
+        }
+        
+        function getBlock(x, y, z) {
+            return blocks.get(getBlockKey(x, y, z));
+        }
+        
+        function generateWorld() {
+            blocks.clear();
+            
+            const half = WORLD_SIZE / 2;
+            
+            for (let x = -half; x < half; x++) {
+                for (let z = -half; z < half; z++) {
+                    // Grass layer
+                    createBlock(x, 0, z, 1); // Grass
+                    
+                    // Dirt layer below
+                    if (Math.random() > 0.6) {
+                        createBlock(x, -1, z, 2);
+                    }
+                    
+                    // Some stone
+                    if (Math.random() > 0.85) {
+                        createBlock(x, -2, z, 3);
+                    }
+                }
+            }
+            
+            // Add a few random stone pillars for interest
+            for (let i = 0; i < 8; i++) {
+                const px = Math.floor(Math.random() * WORLD_SIZE) - half;
+                const pz = Math.floor(Math.random() * WORLD_SIZE) - half;
+                const height = 2 + Math.floor(Math.random() * 3);
+                for (let y = 1; y <= height; y++) {
+                    createBlock(px, y, pz, 3);
+                }
+            }
+        }
+        
+        function createBlock(x, y, z, type) {
+            const key = getBlockKey(x, y, z);
+            if (blocks.has(key)) return;
+            
+            let color;
+            if (type === 1) color = 0x4ade80;      // Grass
+            else if (type === 2) color = 0x854d0e; // Dirt
+            else color = 0x64748b;                // Stone
+            
+            const geometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            const material = new THREE.MeshLambertMaterial({ color });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+            scene.add(mesh);
+            
+            blocks.set(key, { mesh, type, x, y, z });
+        }
+        
+        function removeBlock(x, y, z) {
+            const key = getBlockKey(x, y, z);
+            const block = blocks.get(key);
+            if (!block) return;
+            
+            scene.remove(block.mesh);
+            blocks.delete(key);
+        }
+        
+        function breakBlock() {
+            if (!dataChannel || dataChannel.readyState !== 'open') return;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            
+            const blockMeshes = Array.from(blocks.values()).map(b => b.mesh);
+            const intersects = raycaster.intersectObjects(blockMeshes, false);
+            
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                const block = Array.from(blocks.values()).find(b => b.mesh === mesh);
+                if (!block) return;
+                
+                removeBlock(block.x, block.y, block.z);
+                
+                // Send to other player
+                dataChannel.send(JSON.stringify({
+                    type: 'BREAK',
+                    x: block.x,
+                    y: block.y,
+                    z: block.z
+                }));
+            }
+        }
+        
+        function placeBlock() {
+            if (!dataChannel || dataChannel.readyState !== 'open') return;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            
+            const blockMeshes = Array.from(blocks.values()).map(b => b.mesh);
+            const intersects = raycaster.intersectObjects(blockMeshes, false);
+            
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const mesh = intersect.object;
+                const block = Array.from(blocks.values()).find(b => b.mesh === mesh);
+                if (!block) return;
+                
+                // Calculate place position based on face
+                const normal = intersect.face.normal;
+                const placeX = block.x + Math.round(normal.x);
+                const placeY = block.y + Math.round(normal.y);
+                const placeZ = block.z + Math.round(normal.z);
+                
+                const key = getBlockKey(placeX, placeY, placeZ);
+                if (blocks.has(key)) return; // Already occupied
+                
+                // Create locally
+                createBlock(placeX, placeY, placeZ, selectedBlockType);
+                
+                // Send to other player
+                dataChannel.send(JSON.stringify({
+                    type: 'PLACE',
+                    x: placeX,
+                    y: placeY,
+                    z: placeZ,
+                    blockType: selectedBlockType
+                }));
+            }
+        }
+        
+        function updatePlayer(delta) {
+            if (!isLocked) return;
+            
+            const speed = MOVE_SPEED * delta;
+            
+            // Direction from yaw
+            const forward = new THREE.Vector3(
+                Math.sin(yaw),
+                0,
+                Math.cos(yaw)
+            );
+            const right = new THREE.Vector3(
+                Math.cos(yaw),
+                0,
+                -Math.sin(yaw)
+            );
+            
+            let moveX = 0, moveZ = 0;
+            
+            if (keys['KeyW']) { moveX += forward.x; moveZ += forward.z; }
+            if (keys['KeyS']) { moveX -= forward.x; moveZ -= forward.z; }
+            if (keys['KeyA']) { moveX -= right.x; moveZ -= right.z; }
+            if (keys['KeyD']) { moveX += right.x; moveZ += right.z; }
+            
+            // Normalize
+            const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
+            if (len > 0) {
+                moveX /= len;
+                moveZ /= len;
+            }
+            
+            // Apply movement with simple collision
+            const newX = player.x + moveX * speed;
+            const newZ = player.z + moveZ * speed;
+            
+            // Check X collision
+            if (!getBlock(newX, player.y - 0.1, player.z) && 
+                !getBlock(newX, player.y + 0.9, player.z)) {
+                player.x = newX;
+            }
+            
+            // Check Z collision
+            if (!getBlock(player.x, player.y - 0.1, newZ) && 
+                !getBlock(player.x, player.y + 0.9, newZ)) {
+                player.z = newZ;
+            }
+            
+            // Gravity & jumping
+            player.velocityY += GRAVITY * delta;
+            
+            const newY = player.y + player.velocityY * delta;
+            
+            // Check ground
+            const onGround = getBlock(player.x, player.y - 1.1, player.z) || 
+                           getBlock(player.x, Math.floor(player.y) - 1, player.z);
+            
+            if (onGround && player.velocityY < 0) {
+                player.velocityY = 0;
+                player.y = Math.floor(player.y) + 0.1;
+                
+                if (keys['Space']) {
+                    player.velocityY = JUMP_FORCE;
+                }
+            } else {
+                player.y = newY;
+            }
+            
+            // Update camera
+            camera.position.set(player.x, player.y + 1.6, player.z);
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+            
+            // Send position to other player (throttled)
+            if (dataChannel && dataChannel.readyState === 'open' && Math.random() < 0.15) {
+                dataChannel.send(JSON.stringify({
+                    type: 'MOVE',
+                    x: player.x,
+                    y: player.y,
+                    z: player.z
+                }));
+            }
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = 1 / 60; // fixed timestep for simplicity
+            
+            updatePlayer(delta);
+            
+            // Update remote player position (simple lerp)
+            if (remotePlayerMesh && remotePlayerMesh.userData.targetX !== undefined) {
+                remotePlayerMesh.position.x = THREE.MathUtils.lerp(
+                    remotePlayerMesh.position.x, 
+                    remotePlayerMesh.userData.targetX, 0.2
+                );
+                remotePlayerMesh.position.y = THREE.MathUtils.lerp(
+                    remotePlayerMesh.position.y, 
+                    remotePlayerMesh.userData.targetY + 0.8, 0.2
+                );
+                remotePlayerMesh.position.z = THREE.MathUtils.lerp(
+                    remotePlayerMesh.position.z, 
+                    remotePlayerMesh.userData.targetZ, 0.2
+                );
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // ==================== WEBRTC (same pattern as battleship) ====================
+        function updateConnectionStatus(text, connected = false) {
+            const el = document.getElementById('connectionStatus');
+            el.innerHTML = `<div class="status-dot"></div><span>${text}</span>`;
+            if (connected) el.classList.add('connected');
+            else el.classList.remove('connected');
+        }
+        
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise(resolve => {
+                if (peerConnection.iceGatheringState === 'complete') return resolve();
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 4000);
+            });
+        }
+        
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateConnectionStatus('Соединено! Играйте вместе.', true);
+                document.getElementById('connectionPanel').style.opacity = '0.15';
+                
+                // Show remote player
+                if (remotePlayerMesh) remotePlayerMesh.visible = true;
+                
+                // Send initial position
+                setTimeout(() => {
+                    if (dataChannel && dataChannel.readyState === 'open') {
+                        dataChannel.send(JSON.stringify({ type: 'MOVE', x: player.x, y: player.y, z: player.z }));
+                    }
+                }, 300);
+            };
+            
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleNetworkMessage(msg);
+                } catch(e) {}
+            };
+            
+            dc.onclose = () => {
+                updateConnectionStatus('Соединение закрыто', false);
+                if (remotePlayerMesh) remotePlayerMesh.visible = false;
+            };
+        }
+        
+        function handleNetworkMessage(msg) {
+            if (msg.type === 'MOVE' && remotePlayerMesh) {
+                remotePlayerMesh.userData.targetX = msg.x;
+                remotePlayerMesh.userData.targetY = msg.y;
+                remotePlayerMesh.userData.targetZ = msg.z;
+            }
+            
+            if (msg.type === 'PLACE') {
+                createBlock(msg.x, msg.y, msg.z, msg.blockType);
+            }
+            
+            if (msg.type === 'BREAK') {
+                removeBlock(msg.x, msg.y, msg.z);
+            }
+        }
+        
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+            
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            dataChannel = pc.createDataChannel('minecraft');
+            setupDataChannel(dataChannel);
+            
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+            
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIceGatheringComplete(pc);
+            
+            const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerTextarea').value = JSON.stringify(signal, null, 2);
+            updateConnectionStatus('Offer создан — отправь второму игроку');
+        }
+        
+        async function acceptOffer() {
+            const txt = document.getElementById('offerInput').value.trim();
+            if (!txt) return;
+            
+            const sig = JSON.parse(txt);
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+            
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+            
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+            }
+            
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGatheringComplete(pc);
+            
+            const ansSig = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('answerTextarea').value = JSON.stringify(ansSig, null, 2);
+            updateConnectionStatus('Answer создан — отправь первому игроку');
+        }
+        
+        async function connectWithAnswer() {
+            const txt = document.getElementById('answerInput').value.trim();
+            if (!txt || !pc) return;
+            
+            const sig = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+            }
+            updateConnectionStatus('Соединение устанавливается...');
+        }
+        
+        // ==================== INIT ====================
+        function init() {
+            initThree();
+            
+            // WebRTC buttons
+            document.getElementById('createOfferBtn').addEventListener('click', generateOffer);
+            document.getElementById('acceptOfferBtn').addEventListener('click', acceptOffer);
+            document.getElementById('connectBtn').addEventListener('click', connectWithAnswer);
+            
+            document.getElementById('copyOfferBtn').addEventListener('click', () => {
+                const ta = document.getElementById('offerTextarea');
+                if (ta.value) navigator.clipboard.writeText(ta.value);
+            });
+            
+            document.getElementById('copyAnswerBtn').addEventListener('click', () => {
+                const ta = document.getElementById('answerTextarea');
+                if (ta.value) navigator.clipboard.writeText(ta.value);
+            });
+            
+            updateConnectionStatus('Создай комнату или присоединись');
+            
+            // Welcome
+            setTimeout(() => {
+                console.log('%c[Minecraft WebRTC] Игра готова. Открой на двух вкладках для теста.', 'color:#4ade80');
+            }, 800);
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
