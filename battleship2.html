@@ -3,139 +3,667 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Морской бой: ПРО</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: 'Inter', system_ui, sans-serif; } canvas { border: 3px solid #334155; border-radius: 12px; }</style>
+    <title>Морской бой: ПРО • 50×50</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --bg: #0a1628;
+            --card: #132238;
+            --accent: #00d4ff;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: linear-gradient(135deg, #0a1628 0%, #0d1b2a 100%);
+            color: #e3f2fd;
+            font-family: 'Inter', system_ui, sans-serif;
+            padding: 16px;
+            min-height: 100vh;
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 20px; }
+        .title { font-size: 2.8rem; font-weight: 700; background: linear-gradient(90deg, #00d4ff, #00bcd4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .section { background: #132238; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(0,212,255,0.1); }
+        
+        .game-area { display: flex; gap: 24px; align-items: flex-start; }
+        
+        .grids-side { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        
+        .chat-side { width: 320px; background: #0f1c2e; border-radius: 14px; padding: 16px; border: 1px solid rgba(0,212,255,0.1); display: flex; flex-direction: column; height: fit-content; }
+        
+        .battleship-grid {
+            display: grid;
+            grid-template-columns: 22px repeat(50, minmax(11px, 14px));
+            grid-template-rows: 22px repeat(50, minmax(11px, 14px));
+            gap: 1px;
+            background: #0d47a1;
+            padding: 3px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            margin: 0 auto;
+        }
+        
+        .battleship-grid .label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 10px;
+            color: #bbdefb;
+            user-select: none;
+        }
+        
+        .cell {
+            background: #4fc3f7;
+            border: 1px solid #0288d1;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            transition: all 0.1s;
+        }
+        
+        .cell:hover:not(.own-cell) { filter: brightness(1.2); }
+        .own-cell { cursor: default; }
+        .enemy-cell { cursor: crosshair; }
+        .cell.miss { background: #81d4fa; }
+        .cell.hit { background: #e53935; }
+        .cell.sunk { background: #b71c1c; }
+        .cell.ship { background: #546e7a; }
+        
+        .turn-indicator { text-align: center; font-size: 1.1rem; font-weight: 700; padding: 10px 20px; background: #1a2f4a; border-radius: 9999px; margin-bottom: 16px; border: 2px solid #00bcd4; }
+        .turn-indicator.your-turn { background: #00695c; border-color: #4caf50; animation: pulse 2s infinite; }
+        
+        #chatLog { flex: 1; overflow-y: auto; background: #0a1628; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.9rem; max-height: 420px; }
+        #chatLog .me { background: #004d40; text-align: right; padding: 4px 8px; border-radius: 6px; margin-bottom: 6px; }
+        #chatLog .opponent { background: #1e3a5f; padding: 4px 8px; border-radius: 6px; margin-bottom: 6px; }
+        
+        .chat-input { display: flex; gap: 8px; }
+        #chatInput { flex: 1; padding: 8px 12px; border-radius: 9999px; border: 2px solid #37474f; background: #0a1628; color: #e3f2fd; font-size: 0.9rem; }
+        
+        button { background: linear-gradient(135deg, #00bcd4, #0097a7); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        button:disabled { background: #37474f; cursor: not-allowed; opacity: 0.6; }
+        
+        .pregame-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,22,40,0.92); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #132238; padding: 40px; border-radius: 20px; text-align: center; max-width: 420px; }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 p-6">
-    <div class="max-w-[1300px] mx-auto">
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-5xl font-bold tracking-tighter text-cyan-400">Морской бой: ПРО</h1>
-                <p class="text-slate-400">50×50 • Энергия • Супер-удары</p>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="title">⚓ Морской бой: ПРО</h1>
+            <p style="color:#90caf9; margin-top:4px;">50×50 • WebRTC P2P • Полноценная версия</p>
+        </header>
+
+        <!-- Connection -->
+        <div class="section">
+            <h2 style="color:#00d4ff; margin-bottom:12px;">🔗 Подключение (WebRTC)</h2>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+                <div>
+                    <button id="createOfferBtn">Создать игру (Offer)</button>
+                    <textarea id="offerTextarea" readonly placeholder="Offer-код..."></textarea>
+                    <button id="copyOfferBtn" style="background:#263238; color:#b0bec5; font-size:0.85rem;">📋 Скопировать Offer</button>
+                </div>
+                <div>
+                    <textarea id="offerInput" placeholder="Вставьте Offer"></textarea>
+                    <button id="acceptOfferBtn">Принять (Answer)</button>
+                    <textarea id="answerTextarea" readonly placeholder="Answer-код..."></textarea>
+                    <button id="copyAnswerBtn" style="background:#263238; color:#b0bec5; font-size:0.85rem;">📋 Скопировать Answer</button>
+                </div>
+                <div>
+                    <textarea id="answerInput" placeholder="Вставьте Answer"></textarea>
+                    <button id="connectBtn">🚀 Подключиться</button>
+                </div>
             </div>
-            <div id="connStatus" class="px-5 py-2 bg-slate-900 border border-cyan-700 rounded-3xl text-sm">Подключено через хаб</div>
+            <div id="connectionStatus" style="margin-top:12px; padding:10px 14px; background:#0f1c2e; border-radius:8px; font-size:0.95rem;">
+                <span>Ожидание действий...</span>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div class="lg:col-span-5">
-                <div class="text-cyan-400 font-bold mb-2">МОЁ ПОЛЕ</div>
-                <canvas id="myCanvas" width="500" height="500" class="bg-[#0a0f1a] rounded-xl"></canvas>
+        <!-- Pre-game -->
+        <div class="section" id="pregameSection" style="display:none;">
+            <h2 style="color:#00d4ff; margin-bottom:12px;">🚢 Расстановка кораблей (50×50)</h2>
+            <div class="pregame-controls">
+                <button id="placeShipsBtn" disabled>🎲 Автоматически расставить</button>
+                <button id="reshuffleBtn" disabled style="display:none; background:#455a64;">🔄 Переставить</button>
+                <button id="readyBtn" disabled>⚔️ Я готов!</button>
             </div>
-            <div class="lg:col-span-5">
-                <div class="text-red-400 font-bold mb-2">ПОЛЕ ВРАГА</div>
-                <canvas id="enemyCanvas" width="500" height="500" class="bg-[#0a0f1a] rounded-xl cursor-crosshair"></canvas>
-            </div>
-            <div class="lg:col-span-2">
-                <div class="bg-slate-900 border border-slate-700 rounded-3xl p-4 mb-4">
-                    <div class="text-amber-400 font-bold mb-3">СПОСОБНОСТИ</div>
-                    <div class="space-y-2 text-sm">
-                        <button onclick="useAbility('sonar')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl">Сонар (20)</button>
-                        <button onclick="useAbility('airstrike')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl">Авиаудар (40)</button>
-                        <button onclick="useAbility('nuke')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl">Ядерный удар (80)</button>
+            <div id="readyStatus" style="margin-top:8px; color:#78909c; font-size:0.9rem;">Ожидание готовности обоих игроков...</div>
+        </div>
+
+        <!-- Game Area with Chat on Right -->
+        <div class="section" id="gameSection" style="display:none;">
+            <div id="turnIndicator" class="turn-indicator">Ожидание начала игры...</div>
+            
+            <div class="game-area">
+                <!-- Grids -->
+                <div class="grids-side">
+                    <div>
+                        <h3 style="text-align:center; margin-bottom:8px; color:#90caf9;">🚢 Моё поле (50×50)</h3>
+                        <div id="myGridContainer"></div>
+                    </div>
+                    <div>
+                        <h3 style="text-align:center; margin-bottom:8px; color:#ef5350;">🎯 Поле противника</h3>
+                        <div id="enemyGridContainer"></div>
                     </div>
                 </div>
-                <button onclick="restartGame()" class="w-full py-3 bg-white text-slate-950 hover:bg-gray-200 font-bold rounded-2xl hidden" id="restartBtn">Играть снова</button>
+
+                <!-- Chat on the right -->
+                <div class="chat-side">
+                    <h4 style="margin-bottom:10px; color:#90caf9; font-size:1rem;">💬 Чат</h4>
+                    <div id="chatLog"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Сообщение..." maxlength="140">
+                        <button id="sendChatBtn" style="width:auto; padding:0 16px;">→</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle"></h2>
+            <p id="modalMessage"></p>
+            <button id="playAgainBtn" style="max-width:220px; margin:20px auto 0;">🔄 Сыграть ещё раз</button>
+        </div>
+    </div>
+
     <script>
-        const GRID_SIZE = 50;
-        const CELL_SIZE = 10;
-
-        let myGrid = [];
-        let enemyGrid = [];
-        let energy = 100;
-        let myTurn = true;
+        // ==================== STATE ====================
+        let pc = null;
+        let dataChannel = null;
+        let isHost = false;
+        let iceCandidates = [];
+        
+        let myShipsGrid = [];
+        let myHitsGrid = [];
+        let myMissesGrid = [];
+        let myShips = [];
+        let myShotsOnEnemy = [];
+        
+        let localReady = false;
+        let opponentReady = false;
+        let myTurn = false;
+        let gameStarted = false;
         let gameOver = false;
+        let waitingForResult = false;
+        
+        const GRID_SIZE = 50;
+        const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        
+        // Для 50x50 сделаем больше кораблей
+        const SHIP_CONFIG = [
+            { size: 5, count: 1 },
+            { size: 4, count: 2 },
+            { size: 3, count: 3 },
+            { size: 2, count: 4 },
+            { size: 1, count: 5 }
+        ];
+        
+        let myGridContainer, enemyGridContainer, chatLog, chatInput;
 
-        function sendToHub(msg) {
-            window.parent.postMessage(JSON.stringify(msg), '*');
+        // ==================== WEBRTC (полностью сохранён) ====================
+        function updateConnectionStatus(text, connected = false) {
+            const el = document.getElementById('connectionStatus');
+            el.innerHTML = `<span>${text}</span>`;
+            if (connected) el.style.border = '1px solid #4caf50';
+            else el.style.border = 'none';
         }
 
-        window.addEventListener('message', (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type === 'shot_result') {
-                    // handle result
-                }
-                if (msg.type === 'connection_ready') {
-                    document.getElementById('connStatus').innerHTML = 'Подключено. Игра началась.';
-                }
-            } catch(e) {}
-        });
+        function waitForIceGatheringComplete(peerConnection) {
+            return new Promise(resolve => {
+                if (peerConnection.iceGatheringState === 'complete') return resolve();
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 4000);
+            });
+        }
 
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateConnectionStatus('Соединение установлено! Можно расставлять корабли.', true);
+                document.getElementById('pregameSection').style.display = 'block';
+                document.getElementById('gameSection').style.display = 'block';
+                document.getElementById('placeShipsBtn').disabled = false;
+                document.getElementById('readyBtn').disabled = false;
+                appendChat('Система', 'Соединение успешно! Расставьте корабли и нажмите "Я готов".');
+            };
+
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleMessage(msg);
+                } catch(e) {}
+            };
+
+            dc.onclose = () => updateConnectionStatus('Соединение закрыто', false);
+        }
+
+        async function generateOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            dataChannel = pc.createDataChannel('battleship-pro');
+            setupDataChannel(dataChannel);
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIceGatheringComplete(pc);
+
+            const signal = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerTextarea').value = JSON.stringify(signal, null, 2);
+            updateConnectionStatus('Offer создан — отправьте второму игроку');
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerInput').value.trim();
+            if (!txt) return;
+            const sig = JSON.parse(txt);
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGatheringComplete(pc);
+
+            const ansSig = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('answerTextarea').value = JSON.stringify(ansSig, null, 2);
+            updateConnectionStatus('Answer создан — отправьте первому игроку');
+        }
+
+        async function connectWithAnswer() {
+            const txt = document.getElementById('answerInput').value.trim();
+            if (!txt || !pc) return;
+            const sig = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sig.sdp }));
+            for (let c of sig.iceCandidates || []) { try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){} }
+            updateConnectionStatus('Соединение устанавливается...');
+        }
+
+        // ==================== GAME LOGIC (адаптировано под 50x50) ====================
         function initGrids() {
-            myGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
-            enemyGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            myShipsGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+            myHitsGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
+            myMissesGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
+            myShips = [];
+            myShotsOnEnemy = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('empty'));
         }
 
-        function drawMyGrid() {
-            const canvas = document.getElementById('myCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0f1a';
-            ctx.fillRect(0, 0, 500, 500);
-            for (let y = 0; y < GRID_SIZE; y++) {
-                for (let x = 0; x < GRID_SIZE; x++) {
-                    if (myGrid[y][x] === 1) {
-                        ctx.fillStyle = '#22c55e';
-                        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+        function canPlaceShip(grid, startX, startY, size, horizontal) {
+            for (let i = 0; i < size; i++) {
+                const x = horizontal ? startX + i : startX;
+                const y = horizontal ? startY : startY + i;
+                if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE || grid[y][x] !== 0) return false;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = x + dx; const ny = y + dy;
+                        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && grid[ny][nx] !== 0) return false;
                     }
                 }
             }
+            return true;
         }
 
-        function drawEnemyGrid() {
-            const canvas = document.getElementById('enemyCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0f1a';
-            ctx.fillRect(0, 0, 500, 500);
-            for (let y = 0; y < GRID_SIZE; y++) {
-                for (let x = 0; x < GRID_SIZE; x++) {
-                    const val = enemyGrid[y][x];
-                    if (val === 2) ctx.fillStyle = '#ef4444';
-                    else if (val === 3) ctx.fillStyle = '#64748b';
-                    else continue;
-                    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+        function placeSingleShip(grid, shipsList, size, id) {
+            let placed = false; let attempts = 0; const maxAttempts = 3000;
+            while (!placed && attempts < maxAttempts) {
+                attempts++;
+                const horizontal = Math.random() > 0.5;
+                const maxStartX = horizontal ? GRID_SIZE - size : GRID_SIZE - 1;
+                const maxStartY = horizontal ? GRID_SIZE - 1 : GRID_SIZE - size;
+                const startX = Math.floor(Math.random() * (maxStartX + 1));
+                const startY = Math.floor(Math.random() * (maxStartY + 1));
+                if (canPlaceShip(grid, startX, startY, size, horizontal)) {
+                    const positions = [];
+                    for (let i = 0; i < size; i++) {
+                        const x = horizontal ? startX + i : startX;
+                        const y = horizontal ? startY : startY + i;
+                        grid[y][x] = id;
+                        positions.push({ x, y });
+                    }
+                    shipsList.push({ id, size, positions, hits: 0, isSunk: false });
+                    placed = true;
+                }
+            }
+            return placed;
+        }
+
+        function autoPlaceShips() {
+            initGrids();
+            let currentId = 1;
+            const shipsToPlace = [];
+            SHIP_CONFIG.forEach(cfg => { for (let i = 0; i < cfg.count; i++) shipsToPlace.push(cfg.size); });
+            shipsToPlace.sort((a,b) => b - a);
+            shipsToPlace.forEach(size => placeSingleShip(myShipsGrid, myShips, size, currentId++));
+            renderMyGrid();
+            renderEnemyGrid();
+            appendChat('Система', 'Корабли расставлены на поле 50×50.');
+        }
+
+        function allMyShipsSunk() {
+            return myShips.length > 0 && myShips.every(s => s.hits === s.size);
+        }
+
+        function getColumnLabel(col) {
+            if (col < 26) return LETTERS[col];
+            return LETTERS[Math.floor(col / 26) - 1] + LETTERS[col % 26];
+        }
+
+        function updateCellVisual(cell, x, y, isEnemy) {
+            cell.innerHTML = '';
+            cell.className = `cell ${isEnemy ? 'enemy-cell' : 'own-cell'}`;
+            cell.style.background = '#4fc3f7';
+
+            if (!isEnemy) {
+                const shipId = myShipsGrid[y][x];
+                const isHit = myHitsGrid[y][x];
+                const isMiss = myMissesGrid[y][x];
+                if (shipId !== 0) {
+                    const ship = myShips.find(s => s.id === shipId);
+                    if (ship && ship.isSunk) { cell.style.background = '#b71c1c'; cell.innerHTML = '☠'; }
+                    else if (isHit) { cell.style.background = '#c62828'; cell.innerHTML = '💥'; }
+                    else { cell.style.background = '#546e7a'; cell.innerHTML = '🚢'; }
+                } else if (isMiss) { cell.style.background = '#81d4fa'; cell.innerHTML = '·'; }
+            } else {
+                const state = myShotsOnEnemy[y][x];
+                if (state === 'miss') { cell.style.background = '#81d4fa'; cell.innerHTML = '·'; }
+                else if (state === 'hit') { cell.style.background = '#ef5350'; cell.innerHTML = '💥'; }
+                else if (state === 'sunk') { cell.style.background = '#b71c1c'; cell.innerHTML = '☠'; }
+            }
+        }
+
+        function createGrid(isEnemy, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'battleship-grid';
+
+            for (let row = 0; row <= GRID_SIZE; row++) {
+                for (let col = 0; col <= GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    if (row === 0 && col === 0) {
+                        cell.className = 'label';
+                    } else if (row === 0) {
+                        cell.className = 'label';
+                        cell.textContent = getColumnLabel(col - 1);
+                    } else if (col === 0) {
+                        cell.className = 'label';
+                        cell.textContent = row;
+                    } else {
+                        const x = col - 1;
+                        const y = row - 1;
+                        cell.className = `cell ${isEnemy ? 'enemy-cell' : 'own-cell'}`;
+                        cell.dataset.x = x;
+                        cell.dataset.y = y;
+                        if (isEnemy) cell.addEventListener('click', () => handleEnemyCellClick(x, y));
+                        updateCellVisual(cell, x, y, isEnemy);
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+            container.appendChild(grid);
+            return grid;
+        }
+
+        function renderMyGrid() { createGrid(false, 'myGridContainer'); }
+        function renderEnemyGrid() { createGrid(true, 'enemyGridContainer'); }
+
+        function updateCell(x, y, isEnemy) {
+            const containerId = isEnemy ? 'enemyGridContainer' : 'myGridContainer';
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const cell = container.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+            if (cell) updateCellVisual(cell, x, y, isEnemy);
+        }
+
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turnIndicator');
+            if (gameOver) { indicator.textContent = 'Игра окончена'; return; }
+            if (!gameStarted) { indicator.textContent = 'Ожидание начала игры...'; indicator.classList.remove('your-turn'); return; }
+            if (myTurn) {
+                indicator.innerHTML = '🎯 <strong>ВАШ ХОД!</strong>';
+                indicator.classList.add('your-turn');
+            } else {
+                indicator.innerHTML = '⏳ Ход противника...';
+                indicator.classList.remove('your-turn');
+            }
+        }
+
+        function handleEnemyCellClick(x, y) {
+            if (!dataChannel || dataChannel.readyState !== 'open' || !myTurn || gameOver || waitingForResult) return;
+            if (myShotsOnEnemy[y][x] !== 'empty') { appendChat('Система', 'Сюда уже стреляли!'); return; }
+
+            waitingForResult = true;
+            myTurn = false;
+            updateTurnIndicator();
+            dataChannel.send(JSON.stringify({ type: 'shot', x, y }));
+            appendChat('Вы', `Выстрел в ${getColumnLabel(x)}${y + 1}`);
+        }
+
+        function handleIncomingShot(x, y) {
+            let result = 'miss';
+            let sunkPositions = null;
+            const shipId = myShipsGrid[y][x];
+
+            if (shipId !== 0) {
+                if (!myHitsGrid[y][x]) {
+                    myHitsGrid[y][x] = true;
+                    const ship = myShips.find(s => s.id === shipId);
+                    if (ship) {
+                        ship.hits++;
+                        if (ship.hits === ship.size) {
+                            ship.isSunk = true;
+                            result = 'sunk';
+                            sunkPositions = ship.positions;
+                        } else result = 'hit';
+                    }
+                    updateCell(x, y, false);
+                }
+            } else {
+                if (!myMissesGrid[y][x]) { myMissesGrid[y][x] = true; updateCell(x, y, false); }
+                result = 'miss';
+            }
+
+            const isGameOverNow = allMyShipsSunk();
+            const response = { type: 'shotResult', x, y, result, gameOver: isGameOverNow };
+            if (sunkPositions) response.sunkPositions = sunkPositions;
+
+            if (dataChannel && dataChannel.readyState === 'open') dataChannel.send(JSON.stringify(response));
+
+            if (result === 'miss' && !isGameOverNow) { myTurn = true; updateTurnIndicator(); }
+            if (isGameOverNow) setTimeout(() => endGame(false), 800);
+        }
+
+        function handleShotResult(msg) {
+            const { x, y, result, gameOver: opponentGameOver, sunkPositions } = msg;
+            if (result === 'miss') myShotsOnEnemy[y][x] = 'miss';
+            else if (result === 'hit') myShotsOnEnemy[y][x] = 'hit';
+            else if (result === 'sunk') {
+                myShotsOnEnemy[y][x] = 'sunk';
+                if (sunkPositions) sunkPositions.forEach(pos => myShotsOnEnemy[pos.y][pos.x] = 'sunk');
+            }
+
+            updateCell(x, y, true);
+            if (sunkPositions) sunkPositions.forEach(pos => updateCell(pos.x, pos.y, true));
+
+            waitingForResult = false;
+            if (opponentGameOver) { setTimeout(() => endGame(true), 600); return; }
+            myTurn = (result !== 'miss');
+            updateTurnIndicator();
+
+            let feedback = result === 'miss' ? 'Мимо!' : result === 'hit' ? 'Попал!' : 'Корабль потоплен!';
+            appendChat('Система', feedback);
+        }
+
+        function handleMessage(msg) {
+            if (msg.type === 'shot') handleIncomingShot(msg.x, msg.y);
+            else if (msg.type === 'shotResult') handleShotResult(msg);
+            else if (msg.type === 'chat') appendChat('Противник', msg.text);
+            else if (msg.type === 'ready') { opponentReady = true; checkBothReady(); appendChat('Система', 'Противник готов!'); }
+            else if (msg.type === 'startGame') {
+                gameStarted = true;
+                myTurn = !!msg.yourTurn;
+                updateTurnIndicator();
+                document.getElementById('placeShipsBtn').disabled = true;
+                document.getElementById('readyBtn').disabled = true;
+                appendChat('Система', 'Игра началась!');
+            }
+        }
+
+        function checkBothReady() {
+            const statusEl = document.getElementById('readyStatus');
+            if (localReady && opponentReady && !gameStarted) {
+                statusEl.textContent = 'Оба готовы! Начинаем...';
+                if (isHost) {
+                    const iStartFirst = Math.random() > 0.5;
+                    myTurn = iStartFirst;
+                    if (dataChannel && dataChannel.readyState === 'open') {
+                        dataChannel.send(JSON.stringify({ type: 'startGame', yourTurn: !iStartFirst }));
+                    }
+                    gameStarted = true;
+                    updateTurnIndicator();
                 }
             }
         }
 
-        function useAbility(type) {
-            if (!myTurn || gameOver) return;
-            sendToHub({ type: 'ability', ability: type });
-            myTurn = false;
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !dataChannel || dataChannel.readyState !== 'open') return;
+            dataChannel.send(JSON.stringify({ type: 'chat', text }));
+            appendChat('Вы', text);
+            input.value = '';
         }
 
-        function restartGame() {
-            initGrids();
-            energy = 100;
+        function appendChat(from, text) {
+            if (!chatLog) return;
+            const div = document.createElement('div');
+            if (from === 'Система') {
+                div.style.color = '#78909c';
+                div.style.fontStyle = 'italic';
+                div.innerHTML = `⚓ ${text}`;
+            } else {
+                div.className = from === 'Вы' ? 'me' : 'opponent';
+                div.innerHTML = `<strong>${from}:</strong> ${text}`;
+            }
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            updateTurnIndicator();
+            const modal = document.getElementById('gameOverModal');
+            const title = document.getElementById('modalTitle');
+            const message = document.getElementById('modalMessage');
+
+            title.textContent = won ? '🎉 ПОБЕДА!' : '😞 ПОРАЖЕНИЕ';
+            title.style.color = won ? '#4caf50' : '#ef5350';
+            message.textContent = won ? 'Вы уничтожили все корабли противника!' : 'Все ваши корабли уничтожены.';
+            modal.style.display = 'flex';
+
+            document.getElementById('playAgainBtn').onclick = () => {
+                modal.style.display = 'none';
+                resetGame();
+            };
+        }
+
+        function resetGame() {
             gameOver = false;
-            drawMyGrid();
-            drawEnemyGrid();
-            document.getElementById('restartBtn').classList.add('hidden');
-            sendToHub({ type: 'RESTART_PRO' });
+            gameStarted = false;
+            myTurn = false;
+            localReady = false;
+            opponentReady = false;
+            waitingForResult = false;
+
+            initGrids();
+            myShotsOnEnemy = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('empty'));
+
+            renderMyGrid();
+            renderEnemyGrid();
+
+            document.getElementById('turnIndicator').innerHTML = 'Ожидание начала игры...';
+            document.getElementById('turnIndicator').classList.remove('your-turn');
+            document.getElementById('placeShipsBtn').disabled = false;
+            document.getElementById('readyBtn').disabled = false;
+            document.getElementById('readyBtn').textContent = '⚔️ Я готов к бою!';
+            document.getElementById('readyStatus').textContent = 'Расставьте корабли и нажмите "Я готов".';
+
+            appendChat('Система', 'Игра сброшена. Можно сыграть ещё раз!');
         }
 
+        // ==================== INIT ====================
         function init() {
-            initGrids();
-            drawMyGrid();
-            drawEnemyGrid();
+            myGridContainer = document.getElementById('myGridContainer');
+            enemyGridContainer = document.getElementById('enemyGridContainer');
+            chatLog = document.getElementById('chatLog');
+            chatInput = document.getElementById('chatInput');
 
-            const enemyCanvas = document.getElementById('enemyCanvas');
-            enemyCanvas.addEventListener('click', (e) => {
-                if (!myTurn || gameOver) return;
-                const rect = enemyCanvas.getBoundingClientRect();
-                const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-                const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
-                sendToHub({ type: 'shot', x, y });
-                myTurn = false;
+            initGrids();
+            renderMyGrid();
+            renderEnemyGrid();
+
+            document.getElementById('createOfferBtn').addEventListener('click', generateOffer);
+            document.getElementById('acceptOfferBtn').addEventListener('click', acceptOffer);
+            document.getElementById('connectBtn').addEventListener('click', connectWithAnswer);
+
+            document.getElementById('copyOfferBtn').addEventListener('click', () => {
+                const ta = document.getElementById('offerTextarea');
+                if (ta.value) navigator.clipboard.writeText(ta.value);
+            });
+            document.getElementById('copyAnswerBtn').addEventListener('click', () => {
+                const ta = document.getElementById('answerTextarea');
+                if (ta.value) navigator.clipboard.writeText(ta.value);
             });
 
-            setTimeout(() => {
-                window.parent.postMessage(JSON.stringify({ type: 'game_loaded', game: 'battleship2' }), '*');
-            }, 300);
+            document.getElementById('placeShipsBtn').addEventListener('click', () => {
+                if (!gameStarted) autoPlaceShips();
+            });
+            document.getElementById('reshuffleBtn').addEventListener('click', () => {
+                if (!gameStarted && !localReady) autoPlaceShips();
+            });
+            document.getElementById('readyBtn').addEventListener('click', () => {
+                if (!localReady && dataChannel && dataChannel.readyState === 'open') {
+                    localReady = true;
+                    document.getElementById('readyBtn').disabled = true;
+                    document.getElementById('readyBtn').textContent = '✅ Готов!';
+                    dataChannel.send(JSON.stringify({ type: 'ready' }));
+                    checkBothReady();
+                }
+            });
+            document.getElementById('sendChatBtn').addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChatMessage(); });
+
+            updateConnectionStatus('Ожидание действий. Создайте игру или примите приглашение.');
+            setTimeout(() => appendChat('Система', 'Добро пожаловать в Морской бой 50×50!'), 600);
         }
 
         window.onload = init;
