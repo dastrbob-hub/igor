@@ -82,7 +82,7 @@
                     <span>Скачать как PDF</span>
                 </button>
             </div>
-            <p class="text-center text-xs text-slate-500 mt-3">Обе кнопки работают. TIFF создается через UTIF.</p>
+            <p class="text-center text-xs text-slate-500 mt-3">Обе кнопки работают. TIFF ченез UTIF.</p>
         </div>
     </div>
 
@@ -206,7 +206,7 @@
             document.getElementById('pagesSection').classList.add('hidden');
         }
 
-        // ==================== RELIABLE TIFF EXPORT USING UTIF ====================
+        // ==================== TIFF via UTIF (improved) ====================
 
         async function downloadAsTIFF() {
             if (pages.length === 0) return alert('Нет страниц');
@@ -223,8 +223,8 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             } catch (err) {
-                console.error(err);
-                alert('Ошибка при создании TIFF. Попробуйте PDF.');
+                console.error('TIFF creation error:', err);
+                alert('Ошибка при создании TIFF: ' + (err.message || err));
             }
         }
 
@@ -235,20 +235,28 @@
                 const ctx = page.canvas.getContext('2d');
                 const imageData = ctx.getImageData(0, 0, page.canvas.width, page.canvas.height);
 
-                // UTIF.encodeImage expects RGBA data
-                const tiffPage = UTIF.encodeImage(imageData.data, page.canvas.width, page.canvas.height);
+                // Try both .buffer and direct data
+                let tiffPage;
+                try {
+                    tiffPage = UTIF.encodeImage(imageData.data.buffer, page.canvas.width, page.canvas.height);
+                } catch (e) {
+                    tiffPage = UTIF.encodeImage(imageData.data, page.canvas.width, page.canvas.height);
+                }
 
-                // Decode the single page to get the IFD object
                 const decoded = UTIF.decode(tiffPage);
-                ifds.push(decoded[0]);
+                if (decoded && decoded.length > 0) {
+                    ifds.push(decoded[0]);
+                } else {
+                    throw new Error('UTIF не смог декодировать созданную страницу');
+                }
             }
 
-            // Encode all IFDs into one multi-page TIFF
-            const multiPageBuffer = UTIF.encode(ifds);
-            return multiPageBuffer;
+            if (ifds.length === 0) throw new Error('Нет IFD для сборки');
+
+            return UTIF.encode(ifds);
         }
 
-        // ==================== PDF EXPORT ====================
+        // ==================== PDF ====================
 
         async function downloadAsPDF() {
             if (pages.length === 0) return alert('Нет страниц');
@@ -276,7 +284,7 @@
 
         function init() {
             setupDropzone();
-            console.log('%c[TIFF Merger] Инструмент готов с UTIF', 'color:#14b8a6');
+            console.log('%c[TIFF Merger] Инструмент готов с UTIF (v2)', 'color:#14b8a6');
         }
 
         window.onload = init;
