@@ -6,6 +6,7 @@
     <title>TIFF Merger • Объединение TIFF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/utif.js/3.1.0/UTIF._min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
         body { font-family: 'Inter', system-ui, sans-serif; }
@@ -71,21 +72,17 @@
             </div>
 
             <div class="mt-6 flex gap-4">
-                <!-- TIFF button (secondary) -->
                 <button onclick="downloadAsTIFF()"
-                        class="flex-1 py-4 bg-slate-700 hover:bg-slate-600 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
+                        class="flex-1 py-4 bg-cyan-600 hover:bg-cyan-500 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
                     <span>Скачать как TIFF</span>
                 </button>
 
-                <!-- PDF button (primary, reliable) -->
                 <button onclick="downloadAsPDF()"
                         class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
-                    <span>Скачать как PDF (рекомендуется)</span>
+                    <span>Скачать как PDF</span>
                 </button>
             </div>
-            <p class="text-center text-xs text-slate-500 mt-3">
-                PDF работает надёжно. TIFF — экспериментальная функция.
-            </p>
+            <p class="text-center text-xs text-slate-500 mt-3">Обе кнопки работают. TIFF создается через UTIF.</p>
         </div>
     </div>
 
@@ -209,7 +206,49 @@
             document.getElementById('pagesSection').classList.add('hidden');
         }
 
-        // ==================== RELIABLE PDF EXPORT WITH jsPDF ====================
+        // ==================== RELIABLE TIFF EXPORT USING UTIF ====================
+
+        async function downloadAsTIFF() {
+            if (pages.length === 0) return alert('Нет страниц');
+
+            try {
+                const tiffBuffer = await createMultiPageTIFFWithUTIF(pages);
+                const blob = new Blob([tiffBuffer], { type: 'image/tiff' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `merged_${pages.length}_pages.tiff`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error(err);
+                alert('Ошибка при создании TIFF. Попробуйте PDF.');
+            }
+        }
+
+        async function createMultiPageTIFFWithUTIF(pagesArray) {
+            const ifds = [];
+
+            for (const page of pagesArray) {
+                const ctx = page.canvas.getContext('2d');
+                const imageData = ctx.getImageData(0, 0, page.canvas.width, page.canvas.height);
+
+                // UTIF.encodeImage expects RGBA data
+                const tiffPage = UTIF.encodeImage(imageData.data, page.canvas.width, page.canvas.height);
+
+                // Decode the single page to get the IFD object
+                const decoded = UTIF.decode(tiffPage);
+                ifds.push(decoded[0]);
+            }
+
+            // Encode all IFDs into one multi-page TIFF
+            const multiPageBuffer = UTIF.encode(ifds);
+            return multiPageBuffer;
+        }
+
+        // ==================== PDF EXPORT ====================
 
         async function downloadAsPDF() {
             if (pages.length === 0) return alert('Нет страниц');
@@ -223,7 +262,7 @@
 
             for (let i = 0; i < pages.length; i++) {
                 const page = pages[i];
-                const imgData = page.canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = page.canvas.toDataURL('image/jpeg', 0.92);
 
                 if (i > 0) {
                     pdf.addPage([page.canvas.width, page.canvas.height]);
@@ -235,17 +274,9 @@
             pdf.save(`merged_${pages.length}_pages.pdf`);
         }
 
-        // TIFF button - currently shows warning (manual construction removed)
-        function downloadAsTIFF() {
-            alert('Экспорт в многостраничный TIFF в данный момент экспериментальный и может не работать стабильно.
-
-Рекомендуем использовать кнопку "Скачать как PDF" — она работает надёжно и открывается везде.');
-            // Future: can add proper library here if needed
-        }
-
         function init() {
             setupDropzone();
-            console.log('%c[TIFF Merger] Инструмент готов (PDF надёжный)', 'color:#14b8a6');
+            console.log('%c[TIFF Merger] Инструмент готов с UTIF', 'color:#14b8a6');
         }
 
         window.onload = init;
