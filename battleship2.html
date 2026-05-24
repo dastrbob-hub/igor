@@ -102,7 +102,7 @@
     <div class="container">
         <header>
             <h1 class="title">⚓ Морской бой: ПРО</h1>
-            <p style="color:#90caf9; margin-top:4px;">50×50 • WebRTC P2P • Полноценная версия</p>
+            <p style="color:#90caf9; margin-top:4px;">50×50 • Уникальные корабли • Способности</p>
         </header>
 
         <!-- Connection -->
@@ -202,19 +202,17 @@
         
         const GRID_SIZE = 50;
         const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        
-        // Для 50x50 сделаем больше кораблей
-        const SHIP_CONFIG = [
-            { size: 5, count: 1 },
-            { size: 4, count: 2 },
-            { size: 3, count: 3 },
-            { size: 2, count: 4 },
-            { size: 1, count: 5 }
-        ];
-        
-        let myGridContainer, enemyGridContainer, chatLog, chatInput;
 
-        // ==================== WEBRTC (полностью сохранён) ====================
+        // ==================== УНИКАЛЬНЫЕ КОРАБЛИ И СПОСОБНОСТИ ====================
+        const SHIP_TYPES = {
+            destroyer:  { size: 2, count: 6, name: "Эсминец",   ability: "evasive" },
+            cruiser:    { size: 3, count: 4, name: "Крейсер",    ability: "none" },
+            battleship: { size: 4, count: 2, name: "Линкор",     ability: "armor" },
+            carrier:    { size: 5, count: 1, name: "Авианосец",  ability: "none" },
+            submarine:  { size: 3, count: 2, name: "Подлодка",   ability: "stealth" }
+        };
+
+        // ==================== WEBRTC ====================
         function updateConnectionStatus(text, connected = false) {
             const el = document.getElementById('connectionStatus');
             el.innerHTML = `<span>${text}</span>`;
@@ -307,7 +305,7 @@
             updateConnectionStatus('Соединение устанавливается...');
         }
 
-        // ==================== GAME LOGIC (адаптировано под 50x50) ====================
+        // ==================== GAME LOGIC ====================
         function initGrids() {
             myShipsGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
             myHitsGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false));
@@ -332,24 +330,38 @@
             return true;
         }
 
-        function placeSingleShip(grid, shipsList, size, id) {
-            let placed = false; let attempts = 0; const maxAttempts = 3000;
+        function placeSingleShip(grid, shipsList, typeKey, id) {
+            const type = SHIP_TYPES[typeKey];
+            let placed = false;
+            let attempts = 0;
+            const maxAttempts = 4000;
+
             while (!placed && attempts < maxAttempts) {
                 attempts++;
                 const horizontal = Math.random() > 0.5;
-                const maxStartX = horizontal ? GRID_SIZE - size : GRID_SIZE - 1;
-                const maxStartY = horizontal ? GRID_SIZE - 1 : GRID_SIZE - size;
+                const maxStartX = horizontal ? GRID_SIZE - type.size : GRID_SIZE - 1;
+                const maxStartY = horizontal ? GRID_SIZE - 1 : GRID_SIZE - type.size;
                 const startX = Math.floor(Math.random() * (maxStartX + 1));
                 const startY = Math.floor(Math.random() * (maxStartY + 1));
-                if (canPlaceShip(grid, startX, startY, size, horizontal)) {
+
+                if (canPlaceShip(grid, startX, startY, type.size, horizontal)) {
                     const positions = [];
-                    for (let i = 0; i < size; i++) {
+                    for (let i = 0; i < type.size; i++) {
                         const x = horizontal ? startX + i : startX;
                         const y = horizontal ? startY : startY + i;
                         grid[y][x] = id;
                         positions.push({ x, y });
                     }
-                    shipsList.push({ id, size, positions, hits: 0, isSunk: false });
+                    shipsList.push({
+                        id,
+                        type: typeKey,
+                        name: type.name,
+                        size: type.size,
+                        ability: type.ability,
+                        positions,
+                        hits: 0,
+                        isSunk: false
+                    });
                     placed = true;
                 }
             }
@@ -359,17 +371,22 @@
         function autoPlaceShips() {
             initGrids();
             let currentId = 1;
-            const shipsToPlace = [];
-            SHIP_CONFIG.forEach(cfg => { for (let i = 0; i < cfg.count; i++) shipsToPlace.push(cfg.size); });
-            shipsToPlace.sort((a,b) => b - a);
-            shipsToPlace.forEach(size => placeSingleShip(myShipsGrid, myShips, size, currentId++));
+
+            // Расставляем по типам
+            Object.keys(SHIP_TYPES).forEach(typeKey => {
+                const type = SHIP_TYPES[typeKey];
+                for (let i = 0; i < type.count; i++) {
+                    placeSingleShip(myShipsGrid, myShips, typeKey, currentId++);
+                }
+            });
+
             renderMyGrid();
             renderEnemyGrid();
-            appendChat('Система', 'Корабли расставлены на поле 50×50.');
+            appendChat('Система', 'Флот расставлен (Эсминцы, Крейсера, Линкоры, Авианосец, Подлодки).');
         }
 
         function allMyShipsSunk() {
-            return myShips.length > 0 && myShips.every(s => s.hits === s.size);
+            return myShips.length > 0 && myShips.every(s => s.hits >= s.size);
         }
 
         function getColumnLabel(col) {
@@ -388,10 +405,20 @@
                 const isMiss = myMissesGrid[y][x];
                 if (shipId !== 0) {
                     const ship = myShips.find(s => s.id === shipId);
-                    if (ship && ship.isSunk) { cell.style.background = '#b71c1c'; cell.innerHTML = '☠'; }
-                    else if (isHit) { cell.style.background = '#c62828'; cell.innerHTML = '💥'; }
-                    else { cell.style.background = '#546e7a'; cell.innerHTML = '🚢'; }
-                } else if (isMiss) { cell.style.background = '#81d4fa'; cell.innerHTML = '·'; }
+                    if (ship && ship.isSunk) {
+                        cell.style.background = '#b71c1c';
+                        cell.innerHTML = '☠';
+                    } else if (isHit) {
+                        cell.style.background = '#c62828';
+                        cell.innerHTML = '💥';
+                    } else {
+                        cell.style.background = '#546e7a';
+                        cell.innerHTML = '🚢';
+                    }
+                } else if (isMiss) {
+                    cell.style.background = '#81d4fa';
+                    cell.innerHTML = '·';
+                }
             } else {
                 const state = myShotsOnEnemy[y][x];
                 if (state === 'miss') { cell.style.background = '#81d4fa'; cell.innerHTML = '·'; }
@@ -474,21 +501,46 @@
             const shipId = myShipsGrid[y][x];
 
             if (shipId !== 0) {
-                if (!myHitsGrid[y][x]) {
+                const ship = myShips.find(s => s.id === shipId);
+                if (ship && !myHitsGrid[y][x]) {
                     myHitsGrid[y][x] = true;
-                    const ship = myShips.find(s => s.id === shipId);
-                    if (ship) {
+
+                    // === СПОСОБНОСТИ ===
+                    let actualHit = true;
+
+                    // 1. Evasive (Эсминец) — шанс увернуться
+                    if (ship.ability === 'evasive' && !ship.isSunk) {
+                        if (Math.random() < 0.25) {
+                            actualHit = false;
+                            appendChat('Система', 'Эсминец увернулся от попадания!');
+                        }
+                    }
+
+                    if (actualHit) {
                         ship.hits++;
-                        if (ship.hits === ship.size) {
+
+                        // 2. Heavy Armor (Линкор) — нужно на 1 попадание больше
+                        const requiredHits = (ship.ability === 'armor') ? ship.size + 1 : ship.size;
+
+                        if (ship.hits >= requiredHits) {
                             ship.isSunk = true;
                             result = 'sunk';
                             sunkPositions = ship.positions;
-                        } else result = 'hit';
+                        } else {
+                            result = 'hit';
+                        }
+                    } else {
+                        result = 'miss';
+                        myHitsGrid[y][x] = false; // отменяем попадание
                     }
+
                     updateCell(x, y, false);
                 }
             } else {
-                if (!myMissesGrid[y][x]) { myMissesGrid[y][x] = true; updateCell(x, y, false); }
+                if (!myMissesGrid[y][x]) {
+                    myMissesGrid[y][x] = true;
+                    updateCell(x, y, false);
+                }
                 result = 'miss';
             }
 
@@ -496,14 +548,22 @@
             const response = { type: 'shotResult', x, y, result, gameOver: isGameOverNow };
             if (sunkPositions) response.sunkPositions = sunkPositions;
 
-            if (dataChannel && dataChannel.readyState === 'open') dataChannel.send(JSON.stringify(response));
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify(response));
+            }
 
-            if (result === 'miss' && !isGameOverNow) { myTurn = true; updateTurnIndicator(); }
-            if (isGameOverNow) setTimeout(() => endGame(false), 800);
+            if (result === 'miss' && !isGameOverNow) {
+                myTurn = true;
+                updateTurnIndicator();
+            }
+            if (isGameOverNow) {
+                setTimeout(() => endGame(false), 800);
+            }
         }
 
         function handleShotResult(msg) {
             const { x, y, result, gameOver: opponentGameOver, sunkPositions } = msg;
+
             if (result === 'miss') myShotsOnEnemy[y][x] = 'miss';
             else if (result === 'hit') myShotsOnEnemy[y][x] = 'hit';
             else if (result === 'sunk') {
@@ -515,12 +575,21 @@
             if (sunkPositions) sunkPositions.forEach(pos => updateCell(pos.x, pos.y, true));
 
             waitingForResult = false;
-            if (opponentGameOver) { setTimeout(() => endGame(true), 600); return; }
+
+            if (opponentGameOver) {
+                setTimeout(() => endGame(true), 600);
+                return;
+            }
+
             myTurn = (result !== 'miss');
             updateTurnIndicator();
 
-            let feedback = result === 'miss' ? 'Мимо!' : result === 'hit' ? 'Попал!' : 'Корабль потоплен!';
-            appendChat('Система', feedback);
+            let feedback = '';
+            if (result === 'miss') feedback = 'Мимо!';
+            else if (result === 'hit') feedback = 'Попал!';
+            else if (result === 'sunk') feedback = 'Корабль потоплен!';
+
+            if (feedback) appendChat('Система', feedback);
         }
 
         function handleMessage(msg) {
@@ -620,7 +689,6 @@
             appendChat('Система', 'Игра сброшена. Можно сыграть ещё раз!');
         }
 
-        // ==================== INIT ====================
         function init() {
             myGridContainer = document.getElementById('myGridContainer');
             enemyGridContainer = document.getElementById('enemyGridContainer');
@@ -663,7 +731,7 @@
             chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChatMessage(); });
 
             updateConnectionStatus('Ожидание действий. Создайте игру или примите приглашение.');
-            setTimeout(() => appendChat('Система', 'Добро пожаловать в Морской бой 50×50!'), 600);
+            setTimeout(() => appendChat('Система', 'Добро пожаловать в Морской бой: ПРО (50×50 с уникальными кораблями)!'), 600);
         }
 
         window.onload = init;
