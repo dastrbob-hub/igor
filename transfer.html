@@ -6,7 +6,6 @@
     <title>Transfer • P2P Файлообменник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
         body { font-family: 'Inter', system_ui, sans-serif; }
@@ -38,11 +37,10 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <!-- QR Code with white background container -->
-                <div class="flex justify-center mb-6">
-                    <div id="qrcode-container" style="background: white; padding: 16px; display: inline-block; border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
-                        <div id="qrcode"></div>
-                    </div>
+                <!-- QR Code Container with white background -->
+                <div id="qrcode-container" 
+                     style="background: white; padding: 16px; display: none; border-radius: 12px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); text-align: center;">
+                    <img id="qr-image" src="" alt="QR Code" style="display: block; margin: 0 auto; border-radius: 4px;">
                 </div>
 
                 <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4">
@@ -142,22 +140,18 @@
         }
 
         function generateQRCode(peerId) {
-            const qrContainer = document.getElementById("qrcode");
-            if (!qrContainer) return;
+            const container = document.getElementById("qrcode-container");
+            const img = document.getElementById("qr-image");
 
-            // Очищаем контейнер
-            qrContainer.innerHTML = "";
+            if (!container || !img) return;
 
             const fullUrl = window.location.origin + window.location.pathname + '?room=' + peerId;
 
-            // Генерируем QR-код (чёрный на белом)
-            new QRCode(qrContainer, {
-                text: fullUrl,
-                width: 200,
-                height: 200,
-                colorDark : "#000000",
-                colorLight : "#ffffff"
-            });
+            // Генерируем QR через стабильное API
+            const qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(fullUrl);
+
+            img.src = qrImageUrl;
+            container.style.display = "inline-block";
         }
 
         function setupConnection(connection) {
