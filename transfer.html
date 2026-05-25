@@ -46,7 +46,7 @@
                 <div id="host-preparing" class="mt-4">
                     <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
                         <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
-                        <span class="text-sm font-medium text-amber-300">Подготовка комнаты...</span>
+                        <span id="host-preparing-text" class="text-sm font-medium text-amber-300">Подготовка комнаты...</span>
                     </div>
                 </div>
 
@@ -132,16 +132,14 @@
                 peer.on('open', () => {
                     document.getElementById('guest-status-text').textContent = 'Подключение...';
 
-                    // Clear any previous timeout
                     if (connectionTimeout) clearTimeout(connectionTimeout);
 
-                    // Try to connect
                     conn = peer.connect(currentRoomId);
                     setupConnection(conn);
 
-                    // Set a timeout - if not connected in 9 seconds, show retry
                     connectionTimeout = setTimeout(() => {
-                        if (document.getElementById('connectScreen').style.display !== 'none') {
+                        const connectScreen = document.getElementById('connectScreen');
+                        if (connectScreen && !connectScreen.classList.contains('hidden')) {
                             document.getElementById('guest-status-text').textContent = 'Не удалось подключиться';
                             document.getElementById('retry-btn').classList.remove('hidden');
                         }
@@ -175,8 +173,14 @@
 
                 peer.on('error', (err) => {
                     console.error('Host Peer error:', err);
-                    document.getElementById('host-preparing').innerHTML = 
-                        '<span class="text-red-400">Ошибка создания комнаты</span>';
+                    const preparing = document.getElementById('host-preparing');
+                    preparing.innerHTML = `
+                        <div class="text-red-400 text-sm">
+                            Не удалось создать комнату<br>
+                            <span class="text-xs opacity-70">(${err.type || 'unknown error'})</span>
+                        </div>
+                    `;
+                    document.getElementById('retry-btn').classList.remove('hidden');
                 });
             }
         }
@@ -201,13 +205,19 @@
 
             connection.on('error', (err) => {
                 console.error('Connection error:', err);
-                document.getElementById('guest-status-text').textContent = 'Ошибка канала';
-                document.getElementById('retry-btn').classList.remove('hidden');
+                if (isGuestMode()) {
+                    document.getElementById('guest-status-text').textContent = 'Ошибка канала';
+                    document.getElementById('retry-btn').classList.remove('hidden');
+                }
             });
 
             connection.on('close', () => {
                 console.log('Connection closed');
             });
+        }
+
+        function isGuestMode() {
+            return document.getElementById('guest-connecting').classList.contains('hidden') === false;
         }
 
         function handleFileSelect(e) {
@@ -298,8 +308,20 @@
             document.getElementById('retry-btn').classList.add('hidden');
             if (peer) peer.destroy();
             if (connectionTimeout) clearTimeout(connectionTimeout);
+
+            // Reset UI
+            document.getElementById('host-preparing').style.display = 'block';
+            document.getElementById('host-preparing').innerHTML = `
+                <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
+                    <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-medium text-amber-300">Подготовка комнаты...</span>
+                </div>
+            `;
+            document.getElementById('qrcode-container').style.display = 'none';
+            document.getElementById('guest-connecting').classList.add('hidden');
             document.getElementById('guest-status-text').textContent = 'Подключение к комнате...';
-            setTimeout(initPeer, 300);
+
+            setTimeout(initPeer, 400);
         }
 
         function init() { initPeer(); }
