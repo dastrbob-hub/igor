@@ -130,18 +130,18 @@
                     setupConnection(conn);
                 });
             } else {
-                // Host mode - generate everything immediately
+                // Host mode - show QR immediately
                 currentRoomId = generateRoomId();
                 document.getElementById('roomId').textContent = currentRoomId;
 
-                // Показываем QR-код СРАЗУ, без ожидания PeerJS
+                // Показываем QR-код СРАЗУ
                 showQRCodeImmediately(currentRoomId);
 
                 // Подключаем PeerJS в фоне
                 peer = new Peer(currentRoomId);
 
                 peer.on('open', (id) => {
-                    console.log('PeerJS готов, ID:', id);
+                    console.log('PeerJS подключён:', id);
                 });
 
                 peer.on('connection', (connection) => {
@@ -152,17 +152,23 @@
         }
 
         function showQRCodeImmediately(roomId) {
-            const container = document.getElementById("qrcode-container");
-            const status = document.getElementById("qr-status");
-            const img = document.getElementById("qr-image");
+            const container = document.getElementById('qrcode-container');
+            const status = document.getElementById('qr-status');
+            const img = document.getElementById('qr-image');
+
+            if (!container || !status || !img) {
+                console.error('QR elements not found');
+                return;
+            }
 
             const fullUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
-            const qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(fullUrl);
+            const qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(fullUrl);
 
-            status.style.display = "none";
+            // Прячем статус и показываем картинку
+            status.style.display = 'none';
             img.src = qrImageUrl;
-            img.style.display = "block";
-            container.style.display = "inline-block";
+            img.style.display = 'block';
+            container.style.display = 'inline-block';
         }
 
         function setupConnection(connection) {
