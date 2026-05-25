@@ -37,18 +37,20 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <!-- QR Code (только для хоста) -->
-                <div id="qrcode-container" 
-                     style="background: white; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px auto; text-align: center; min-width: 200px; min-height: 200px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
-                    
-                    <div id="qr-status" style="color: #000; font-family: sans-serif; font-size: 14px; margin-top: 85px;">
-                        Генерация QR...
-                    </div>
-                    
-                    <img id="qr-image" src="" alt="QR Code" style="display: none; margin: 0 auto; border-radius: 4px;">
+                <!-- QR Code Container -->
+                <div id="qrcode-container" style="background: white; padding: 16px; display: none; border-radius: 12px; margin: 20px auto; text-align: center; min-width: 200px; min-height: 200px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
+                    <img id="qr-image" src="" alt="QR Code" style="display: block; margin: 0 auto; border-radius: 4px;">
                 </div>
 
-                <!-- Статус подключения (для гостя) -->
+                <!-- Host preparing -->
+                <div id="host-preparing" class="mt-4">
+                    <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
+                        <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium text-amber-300">Подготовка комнаты...</span>
+                    </div>
+                </div>
+
+                <!-- Guest connecting -->
                 <div id="guest-connecting" class="hidden mt-4">
                     <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
                         <div class="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse"></div>
@@ -61,14 +63,11 @@
                     <div id="roomId" class="font-mono text-lg text-cyan-400 break-all"></div>
                 </div>
 
-                <button onclick="copyLink()" 
-                        class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium transition-colors">
+                <button onclick="copyLink()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium transition-colors">
                     📋 Скопировать ссылку
                 </button>
 
-                <!-- Кнопка повтора для гостя -->
-                <button id="retry-btn" onclick="retryConnection()" 
-                        class="hidden mt-4 px-5 py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded-2xl">
+                <button id="retry-btn" onclick="retryConnection()" class="hidden mt-4 px-5 py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded-2xl">
                     🔄 Попробовать снова
                 </button>
             </div>
@@ -83,319 +82,183 @@
                 </div>
             </div>
 
-            <!-- File Upload -->
             <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8">
                 <h3 class="text-xl font-semibold mb-4">Отправить файлы</h3>
                 
                 <div class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center mb-6 hover:border-slate-600 transition-colors">
                     <input type="file" id="fileInput" multiple class="hidden">
-                    <button onclick="document.getElementById('fileInput').click()"
-                            class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-2xl font-semibold transition-colors">
+                    <button onclick="document.getElementById('fileInput').click()" class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-2xl font-semibold transition-colors">
                         📁 Выбрать файлы
                     </button>
                     <p class="text-xs text-slate-500 mt-3">Или перетащите файлы сюда</p>
                 </div>
 
-                <!-- Progress -->
                 <div id="progressContainer" class="hidden mb-4">
                     <div class="flex justify-between text-sm mb-1">
                         <span id="progressFileName"></span>
                         <span id="progressPercent">0%</span>
                     </div>
                     <div class="w-full bg-slate-800 rounded-full h-2">
-                        <div id="progressBar" 
-                             class="progress-bar bg-cyan-500 h-2 rounded-full" 
-                             style="width: 0%"></div>
+                        <div id="progressBar" class="progress-bar bg-cyan-500 h-2 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Received Files -->
             <div class="mt-8">
                 <h3 class="text-xl font-semibold mb-4">Полученные файлы</h3>
-                <div id="receivedFiles" class="space-y-3">
-                    <!-- Received file cards will appear here -->
-                </div>
+                <div id="receivedFiles" class="space-y-3"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let peer;
-        let conn;
-        let currentRoomId = '';
-        let receivedChunks = {};
-        let isGuest = false;
+        let peer, conn, currentRoomId = '', receivedChunks = {}, isGuest = false;
 
         function generateRoomId() {
             return Math.random().toString(36).substring(2, 10);
         }
 
         function initPeer() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomFromUrl = urlParams.get('room');
+            const roomFromUrl = new URLSearchParams(window.location.search).get('room');
 
             if (roomFromUrl) {
-                // === РЕЖИМ ГОСТЯ ===
+                // GUEST
                 isGuest = true;
                 currentRoomId = roomFromUrl;
                 document.getElementById('roomId').textContent = currentRoomId;
-
-                // Прячем QR, показываем статус
                 document.getElementById('qrcode-container').style.display = 'none';
+                document.getElementById('host-preparing').style.display = 'none';
                 document.getElementById('guest-connecting').classList.remove('hidden');
 
                 peer = new Peer();
-                
                 peer.on('open', () => {
-                    console.log('[Guest] PeerJS готов');
                     document.getElementById('guest-status-text').textContent = 'Подключение...';
-                    
-                    // Небольшая задержка, чтобы хост успел зарегистрироваться
                     setTimeout(() => {
-                        if (peer && peer.id) {
-                            conn = peer.connect(currentRoomId);
-                            setupConnection(conn);
-                        }
-                    }, 800);
+                        conn = peer.connect(currentRoomId);
+                        setupConnection(conn);
+                    }, 700);
                 });
-
-                peer.on('error', (err) => {
-                    console.error('[Guest] Ошибка PeerJS:', err);
+                peer.on('error', () => {
                     document.getElementById('guest-status-text').textContent = 'Ошибка подключения';
                     document.getElementById('retry-btn').classList.remove('hidden');
                 });
             } else {
-                // === РЕЖИМ ХОСТА ===
+                // HOST
                 currentRoomId = generateRoomId();
                 document.getElementById('roomId').textContent = currentRoomId;
-
-                showQRCodeImmediately(currentRoomId);
+                document.getElementById('host-preparing').style.display = 'block';
+                document.getElementById('qrcode-container').style.display = 'none';
 
                 peer = new Peer(currentRoomId);
-
                 peer.on('open', (id) => {
-                    console.log('[Host] PeerJS готов:', id);
+                    document.getElementById('host-preparing').style.display = 'none';
+                    showQRCode(id);
                 });
-
-                peer.on('connection', (connection) => {
-                    console.log('[Host] Новое подключение!');
-                    conn = connection;
-                    setupConnection(conn);
-                });
-
-                peer.on('error', (err) => {
-                    console.error('[Host] PeerJS ошибка:', err);
-                });
+                peer.on('connection', (c) => { conn = c; setupConnection(c); });
             }
         }
 
-        function showQRCodeImmediately(roomId) {
+        function showQRCode(roomId) {
             const container = document.getElementById('qrcode-container');
-            const status = document.getElementById('qr-status');
             const img = document.getElementById('qr-image');
-
-            const fullUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
-            const qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(fullUrl);
-
-            status.style.display = 'none';
-            img.src = qrImageUrl;
-            img.style.display = 'block';
+            const url = window.location.origin + window.location.pathname + '?room=' + roomId;
+            img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
             container.style.display = 'inline-block';
         }
 
         function setupConnection(connection) {
             connection.on('open', () => {
-                console.log('DataChannel открыт!');
                 document.getElementById('connectScreen').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
-
                 document.getElementById('fileInput').addEventListener('change', handleFileSelect);
             });
-
-            connection.on('data', (data) => {
-                handleIncomingData(data);
-            });
-
-            connection.on('close', () => {
-                alert('Соединение закрыто');
-            });
-
-            connection.on('error', (err) => {
-                console.error('Ошибка соединения:', err);
-            });
-        }
-
-        function retryConnection() {
-            document.getElementById('retry-btn').classList.add('hidden');
-            document.getElementById('guest-status-text').textContent = 'Подключение...';
-            
-            if (peer) peer.destroy();
-            
-            setTimeout(() => {
-                initPeer();
-            }, 300);
+            connection.on('data', handleIncomingData);
         }
 
         function handleFileSelect(e) {
-            const files = e.target.files;
-            if (!files.length || !conn || conn.open === false) return;
-
-            for (const file of files) {
-                sendFile(file);
-            }
+            for (const file of e.target.files) sendFile(file);
             e.target.value = '';
         }
 
         async function sendFile(file) {
             const chunkSize = 64 * 1024;
-            const totalChunks = Math.ceil(file.size / chunkSize);
-            
-            conn.send({
-                type: 'file-meta',
-                name: file.name,
-                size: file.size,
-                totalChunks: totalChunks
-            });
+            const total = Math.ceil(file.size / chunkSize);
+            conn.send({ type: 'file-meta', name: file.name, size: file.size, totalChunks: total });
 
             const progressContainer = document.getElementById('progressContainer');
-            const progressBar = document.getElementById('progressBar');
-            const progressPercent = document.getElementById('progressPercent');
-            const progressFileName = document.getElementById('progressFileName');
+            const bar = document.getElementById('progressBar');
+            const pct = document.getElementById('progressPercent');
+            const nameEl = document.getElementById('progressFileName');
 
             progressContainer.classList.remove('hidden');
-            progressFileName.textContent = file.name;
-            progressBar.style.width = '0%';
-            progressPercent.textContent = '0%';
+            nameEl.textContent = file.name;
+            bar.style.width = '0%';
+            pct.textContent = '0%';
 
             const reader = new FileReader();
-            let offset = 0;
-            let chunkIndex = 0;
+            let offset = 0, idx = 0;
 
-            reader.onload = function(e) {
-                const chunk = new Uint8Array(e.target.result);
-                
-                conn.send({
-                    type: 'file-chunk',
-                    name: file.name,
-                    chunkIndex: chunkIndex,
-                    data: Array.from(chunk)
-                });
-
-                chunkIndex++;
-                const percent = Math.round((chunkIndex / totalChunks) * 100);
-                progressBar.style.width = percent + '%';
-                progressPercent.textContent = percent + '%';
+            reader.onload = e => {
+                conn.send({ type: 'file-chunk', name: file.name, chunkIndex: idx, data: Array.from(new Uint8Array(e.target.result)) });
+                idx++;
+                const percent = Math.round((idx / total) * 100);
+                bar.style.width = percent + '%';
+                pct.textContent = percent + '%';
 
                 if (offset < file.size) {
                     offset += chunkSize;
-                    readNextChunk();
+                    reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
                 } else {
-                    setTimeout(() => {
-                        progressContainer.classList.add('hidden');
-                    }, 800);
+                    setTimeout(() => progressContainer.classList.add('hidden'), 700);
                 }
             };
-
-            function readNextChunk() {
-                const slice = file.slice(offset, offset + chunkSize);
-                reader.readAsArrayBuffer(slice);
-            }
-
-            readNextChunk();
+            reader.readAsArrayBuffer(file.slice(0, chunkSize));
         }
-
-        let receivedFiles = {};
 
         function handleIncomingData(data) {
             if (data.type === 'file-meta') {
-                receivedFiles[data.name] = {
-                    name: data.name,
-                    size: data.size,
-                    totalChunks: data.totalChunks,
-                    chunks: [],
-                    receivedChunks: 0
-                };
+                receivedChunks[data.name] = { chunks: [], total: data.totalChunks, size: data.size };
             }
-
             if (data.type === 'file-chunk') {
-                const fileData = receivedFiles[data.name];
-                if (!fileData) return;
-
-                fileData.chunks[data.chunkIndex] = new Uint8Array(data.data);
-                fileData.receivedChunks++;
-
-                if (fileData.receivedChunks === fileData.totalChunks) {
-                    const blob = new Blob(fileData.chunks);
-                    showReceivedFile(fileData.name, blob, fileData.size);
-                    delete receivedFiles[data.name];
+                const f = receivedChunks[data.name];
+                if (!f) return;
+                f.chunks[data.chunkIndex] = new Uint8Array(data.data);
+                if (f.chunks.length === f.total) {
+                    const blob = new Blob(f.chunks);
+                    showReceivedFile(data.name, blob, f.size);
+                    delete receivedChunks[data.name];
                 }
             }
         }
 
         function showReceivedFile(name, blob, size) {
-            const container = document.getElementById('receivedFiles');
-            
-            const card = document.createElement('div');
-            card.className = 'file-card bg-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center justify-between';
-            
-            const sizeMB = (size / (1024 * 1024)).toFixed(2);
-            
-            card.innerHTML = `
-                <div>
-                    <div class="font-medium">${name}</div>
-                    <div class="text-sm text-slate-400">${sizeMB} MB</div>
-                </div>
-                <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-sm font-medium transition-colors">
-                    Скачать
-                </button>
+            const el = document.createElement('div');
+            el.className = 'file-card bg-slate-900 border border-slate-700 rounded-2xl p-4 flex justify-between items-center';
+            el.innerHTML = `
+                <div><div class="font-medium">${name}</div><div class="text-sm text-slate-400">${(size/1024/1024).toFixed(2)} MB</div></div>
+                <button class="px-5 py-2 bg-emerald-600 rounded-2xl text-sm">Скачать</button>
             `;
-
-            const button = card.querySelector('button');
-            button.onclick = () => {
-                const url = URL.createObjectURL(blob);
+            el.querySelector('button').onclick = () => {
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = URL.createObjectURL(blob);
                 a.download = name;
-                document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
             };
-
-            container.appendChild(card);
+            document.getElementById('receivedFiles').appendChild(el);
         }
 
         function copyLink() {
-            const fullUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
-            navigator.clipboard.writeText(fullUrl).then(() => {
-                const btn = event.currentTarget;
-                const origText = btn ? btn.innerText : '';
-                if (btn) btn.innerText = '✓ Скопировано!';
-                setTimeout(() => {
-                    if (btn) btn.innerText = origText;
-                }, 1500);
-            });
+            const url = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
+            navigator.clipboard.writeText(url);
         }
 
-        function init() {
-            initPeer();
-
-            document.addEventListener('dragover', (e) => e.preventDefault());
-
-            document.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const connectedScreen = document.getElementById('connectedScreen');
-                if (!connectedScreen.classList.contains('hidden') && e.dataTransfer.files.length > 0) {
-                    const input = document.getElementById('fileInput');
-                    const dt = new DataTransfer();
-                    for (let file of e.dataTransfer.files) dt.items.add(file);
-                    input.files = dt.files;
-                    handleFileSelect({ target: input });
-                }
-            });
+        function retryConnection() {
+            document.getElementById('retry-btn').classList.add('hidden');
+            if (peer) peer.destroy();
+            setTimeout(initPeer, 300);
         }
 
+        function init() { initPeer(); }
         window.onload = init;
     </script>
 </body>
