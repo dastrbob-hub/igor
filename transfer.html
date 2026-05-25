@@ -42,7 +42,7 @@
                     <img id="qr-image" src="" alt="QR Code" style="display: block; margin: 0 auto; border-radius: 4px;">
                 </div>
 
-                <!-- Host preparing -->
+                <!-- Host preparing status -->
                 <div id="host-preparing" class="mt-4">
                     <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
                         <div class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></div>
@@ -50,7 +50,7 @@
                     </div>
                 </div>
 
-                <!-- Guest connecting -->
+                <!-- Guest connecting status -->
                 <div id="guest-connecting" class="hidden mt-4">
                     <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
                         <div class="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse"></div>
@@ -112,18 +112,14 @@
     </div>
 
     <script>
-        let peer, conn, currentRoomId = '', receivedChunks = {}, isGuest = false;
-
-        function generateRoomId() {
-            return Math.random().toString(36).substring(2, 10);
-        }
+        let peer, conn, currentRoomId = '', receivedChunks = {};
 
         function initPeer() {
-            const roomFromUrl = new URLSearchParams(window.location.search).get('room');
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomFromUrl = urlParams.get('room');
 
             if (roomFromUrl) {
                 // GUEST
-                isGuest = true;
                 currentRoomId = roomFromUrl;
                 document.getElementById('roomId').textContent = currentRoomId;
                 document.getElementById('qrcode-container').style.display = 'none';
@@ -136,25 +132,36 @@
                     setTimeout(() => {
                         conn = peer.connect(currentRoomId);
                         setupConnection(conn);
-                    }, 700);
+                    }, 600);
                 });
-                peer.on('error', () => {
+                peer.on('error', (err) => {
+                    console.error('Guest error:', err);
                     document.getElementById('guest-status-text').textContent = 'Ошибка подключения';
                     document.getElementById('retry-btn').classList.remove('hidden');
                 });
             } else {
-                // HOST
-                currentRoomId = generateRoomId();
-                document.getElementById('roomId').textContent = currentRoomId;
+                // HOST - Let PeerJS generate the ID (most reliable way)
                 document.getElementById('host-preparing').style.display = 'block';
                 document.getElementById('qrcode-container').style.display = 'none';
 
-                peer = new Peer(currentRoomId);
+                peer = new Peer();   // ← No custom ID, let PeerJS generate one
+
                 peer.on('open', (id) => {
+                    currentRoomId = id;
+                    document.getElementById('roomId').textContent = id;
                     document.getElementById('host-preparing').style.display = 'none';
                     showQRCode(id);
                 });
-                peer.on('connection', (c) => { conn = c; setupConnection(c); });
+
+                peer.on('connection', (connection) => {
+                    conn = connection;
+                    setupConnection(conn);
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Host error:', err);
+                    document.getElementById('host-preparing-text').innerText = 'Ошибка создания комнаты';
+                });
             }
         }
 
@@ -223,8 +230,8 @@
                 const f = receivedChunks[data.name];
                 if (!f) return;
                 f.chunks[data.chunkIndex] = new Uint8Array(data.data);
-                if (f.chunks.length === f.total) {
-                    const blob = new Blob(f.chunks);
+                if (Object.keys(f.chunks).length === f.total) {
+                    const blob = new Blob(Object.values(f.chunks));
                     showReceivedFile(data.name, blob, f.size);
                     delete receivedChunks[data.name];
                 }
@@ -249,7 +256,14 @@
 
         function copyLink() {
             const url = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
-            navigator.clipboard.writeText(url);
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.currentTarget;
+                if (btn) {
+                    const orig = btn.innerText;
+                    btn.innerText = '✓ Скопировано!';
+                    setTimeout(() => { if (btn) btn.innerText = orig; }, 1400);
+                }
+            });
         }
 
         function retryConnection() {
