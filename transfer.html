@@ -6,11 +6,12 @@
     <title>Transfer • P2P Файлообменник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
-        body { font-family: 'Inter', system-ui, sans-serif; }
-        .title-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', system_ui, sans-serif; }
         .file-card {
             transition: all 0.2s ease;
         }
@@ -38,8 +39,9 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <div id="qrContainer" class="flex justify-center mb-6">
-                    <!-- QR code will be inserted here -->
+                <!-- QR Code Container -->
+                <div class="flex justify-center mb-6">
+                    <div id="qrcode" class="p-4 bg-white rounded-2xl"></div>
                 </div>
 
                 <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4">
@@ -140,19 +142,22 @@
             }
         }
 
-        function generateQRCode(roomId) {
-            const qrContainer = document.getElementById('qrContainer');
-            qrContainer.innerHTML = '';
+        function generateQRCode(peerId) {
+            const qrContainer = document.getElementById("qrcode");
+            if (!qrContainer) return;
 
-            const fullUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+            // Очищаем контейнер
+            qrContainer.innerHTML = "";
 
+            const fullUrl = window.location.origin + window.location.pathname + '?room=' + peerId;
+
+            // Генерируем QR-код
             new QRCode(qrContainer, {
                 text: fullUrl,
-                width: 220,
-                height: 220,
-                colorDark: "#e0f2fe",
-                colorLight: "#0f172a",
-                correctLevel: QRCode.CorrectLevel.H
+                width: 256,
+                height: 256,
+                colorDark : "#000000",
+                colorLight : "#ffffff"
             });
         }
 
@@ -217,7 +222,7 @@
                     type: 'file-chunk',
                     name: file.name,
                     chunkIndex: chunkIndex,
-                    data: Array.from(chunk)  // Convert to regular array for JSON
+                    data: Array.from(chunk)
                 });
 
                 chunkIndex++;
@@ -229,7 +234,6 @@
                     offset += chunkSize;
                     readNextChunk();
                 } else {
-                    // Done sending
                     setTimeout(() => {
                         progressContainer.classList.add('hidden');
                     }, 800);
@@ -265,7 +269,6 @@
                 fileData.receivedChunks++;
 
                 if (fileData.receivedChunks === fileData.totalChunks) {
-                    // File complete - assemble it
                     const blob = new Blob(fileData.chunks);
                     showReceivedFile(fileData.name, blob, fileData.size);
                     delete receivedFiles[data.name];
@@ -309,29 +312,25 @@
         function copyLink() {
             const fullUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
             navigator.clipboard.writeText(fullUrl).then(() => {
-                const origText = event.target.innerText;
-                event.target.innerText = '✓ Скопировано!';
+                const btn = event.currentTarget;
+                const origText = btn.innerText;
+                btn.innerText = '✓ Скопировано!';
                 setTimeout(() => {
-                    if (event.target) event.target.innerText = origText;
+                    if (btn) btn.innerText = origText;
                 }, 1500);
             });
         }
 
-        // Initialize
         function init() {
             initPeer();
 
-            // Allow drag and drop on the whole page when connected
-            document.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
+            document.addEventListener('dragover', (e) => e.preventDefault());
 
             document.addEventListener('drop', (e) => {
                 e.preventDefault();
-                const connected = !document.getElementById('connectedScreen').classList.contains('hidden');
-                if (connected && e.dataTransfer.files.length > 0) {
+                const connectedScreen = document.getElementById('connectedScreen');
+                if (!connectedScreen.classList.contains('hidden') && e.dataTransfer.files.length > 0) {
                     const input = document.getElementById('fileInput');
-                    // Simulate file selection
                     const dt = new DataTransfer();
                     for (let file of e.dataTransfer.files) dt.items.add(file);
                     input.files = dt.files;
