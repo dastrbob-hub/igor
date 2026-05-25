@@ -37,10 +37,17 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <!-- QR Code Container with white background -->
+                <!-- QR Code Container -->
                 <div id="qrcode-container" 
-                     style="background: white; padding: 16px; display: none; border-radius: 12px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); text-align: center;">
-                    <img id="qr-image" src="" alt="QR Code" style="display: block; margin: 0 auto; border-radius: 4px;">
+                     style="background: white; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px auto; text-align: center; min-width: 200px; min-height: 200px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
+                    
+                    <!-- Статус загрузки -->
+                    <div id="qr-status" style="color: #000; font-family: sans-serif; font-size: 14px; margin-top: 85px;">
+                        Генерация QR...
+                    </div>
+                    
+                    <!-- Сам QR-код -->
+                    <img id="qr-image" src="" alt="QR Code" style="display: none; margin: 0 auto; border-radius: 4px;">
                 </div>
 
                 <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4">
@@ -116,6 +123,7 @@
             const roomFromUrl = urlParams.get('room');
 
             if (roomFromUrl) {
+                // === РЕЖИМ ГОСТЯ ===
                 currentRoomId = roomFromUrl;
                 peer = new Peer();
                 
@@ -124,12 +132,23 @@
                     setupConnection(conn);
                 });
             } else {
+                // === РЕЖИМ ХОСТА (создаём комнату) ===
                 currentRoomId = generateRoomId();
                 peer = new Peer(currentRoomId);
                 
                 peer.on('open', (id) => {
+                    console.log('Мой Peer ID:', id);
                     document.getElementById('roomId').textContent = id;
-                    generateQRCode(id);
+
+                    // Формируем ссылку
+                    let fullUrl = window.location.origin + window.location.pathname + '?room=' + id;
+                    let qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(fullUrl);
+
+                    // Прячем статус и показываем QR-код
+                    document.getElementById("qr-status").style.display = "none";
+                    let qrImg = document.getElementById("qr-image");
+                    qrImg.src = qrImageUrl;
+                    qrImg.style.display = "block";
                 });
 
                 peer.on('connection', (connection) => {
@@ -137,21 +156,6 @@
                     setupConnection(conn);
                 });
             }
-        }
-
-        function generateQRCode(peerId) {
-            const container = document.getElementById("qrcode-container");
-            const img = document.getElementById("qr-image");
-
-            if (!container || !img) return;
-
-            const fullUrl = window.location.origin + window.location.pathname + '?room=' + peerId;
-
-            // Генерируем QR через стабильное API
-            const qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(fullUrl);
-
-            img.src = qrImageUrl;
-            container.style.display = "inline-block";
         }
 
         function setupConnection(connection) {
