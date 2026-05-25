@@ -37,7 +37,7 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <!-- QR Code Container (только для хоста) -->
+                <!-- QR Code (только для хоста) -->
                 <div id="qrcode-container" 
                      style="background: white; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px auto; text-align: center; min-width: 200px; min-height: 200px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
                     
@@ -48,11 +48,11 @@
                     <img id="qr-image" src="" alt="QR Code" style="display: none; margin: 0 auto; border-radius: 4px;">
                 </div>
 
-                <!-- Статус для гостя -->
-                <div id="guest-status" class="hidden mt-4">
-                    <div class="inline-flex items-center gap-x-2 px-4 py-2 bg-slate-800 rounded-2xl">
-                        <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                        <span id="guest-status-text" class="text-sm">Подключение к комнате...</span>
+                <!-- Статус подключения (для гостя) -->
+                <div id="guest-connecting" class="hidden mt-4">
+                    <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
+                        <div class="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse"></div>
+                        <span id="guest-status-text" class="text-sm font-medium">Подключение к комнате...</span>
                     </div>
                 </div>
 
@@ -64,6 +64,12 @@
                 <button onclick="copyLink()" 
                         class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium transition-colors">
                     📋 Скопировать ссылку
+                </button>
+
+                <!-- Кнопка повтора для гостя -->
+                <button id="retry-btn" onclick="retryConnection()" 
+                        class="hidden mt-4 px-5 py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded-2xl">
+                    🔄 Попробовать снова
                 </button>
             </div>
         </div>
@@ -119,6 +125,7 @@
         let conn;
         let currentRoomId = '';
         let receivedChunks = {};
+        let isGuest = false;
 
         function generateRoomId() {
             return Math.random().toString(36).substring(2, 10);
@@ -129,31 +136,37 @@
             const roomFromUrl = urlParams.get('room');
 
             if (roomFromUrl) {
-                // === РЕЖИМ ГОСТЯ (телефон) ===
+                // === РЕЖИМ ГОСТЯ ===
+                isGuest = true;
                 currentRoomId = roomFromUrl;
                 document.getElementById('roomId').textContent = currentRoomId;
 
-                // Прячем QR и показываем статус подключения
+                // Прячем QR, показываем статус
                 document.getElementById('qrcode-container').style.display = 'none';
-                document.getElementById('guest-status').classList.remove('hidden');
+                document.getElementById('guest-connecting').classList.remove('hidden');
 
                 peer = new Peer();
                 
                 peer.on('open', () => {
-                    console.log('[Guest] PeerJS готов, подключаемся к комнате:', currentRoomId);
+                    console.log('[Guest] PeerJS готов');
                     document.getElementById('guest-status-text').textContent = 'Подключение...';
                     
-                    conn = peer.connect(currentRoomId);
-                    setupConnection(conn);
+                    // Небольшая задержка, чтобы хост успел зарегистрироваться
+                    setTimeout(() => {
+                        if (peer && peer.id) {
+                            conn = peer.connect(currentRoomId);
+                            setupConnection(conn);
+                        }
+                    }, 800);
                 });
 
                 peer.on('error', (err) => {
-                    console.error('[Guest] PeerJS ошибка:', err);
+                    console.error('[Guest] Ошибка PeerJS:', err);
                     document.getElementById('guest-status-text').textContent = 'Ошибка подключения';
-                    alert('Не удалось подключиться к комнате. Попробуйте обновить страницу.');
+                    document.getElementById('retry-btn').classList.remove('hidden');
                 });
             } else {
-                // === РЕЖИМ ХОСТА (ПК) ===
+                // === РЕЖИМ ХОСТА ===
                 currentRoomId = generateRoomId();
                 document.getElementById('roomId').textContent = currentRoomId;
 
@@ -166,7 +179,7 @@
                 });
 
                 peer.on('connection', (connection) => {
-                    console.log('[Host] Входящее подключение!');
+                    console.log('[Host] Новое подключение!');
                     conn = connection;
                     setupConnection(conn);
                 });
@@ -193,7 +206,7 @@
 
         function setupConnection(connection) {
             connection.on('open', () => {
-                console.log('DataChannel открыт! Переходим на экран передачи файлов.');
+                console.log('DataChannel открыт!');
                 document.getElementById('connectScreen').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
 
@@ -209,8 +222,19 @@
             });
 
             connection.on('error', (err) => {
-                console.error('Ошибка DataChannel:', err);
+                console.error('Ошибка соединения:', err);
             });
+        }
+
+        function retryConnection() {
+            document.getElementById('retry-btn').classList.add('hidden');
+            document.getElementById('guest-status-text').textContent = 'Подключение...';
+            
+            if (peer) peer.destroy();
+            
+            setTimeout(() => {
+                initPeer();
+            }, 300);
         }
 
         function handleFileSelect(e) {
