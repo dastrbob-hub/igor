@@ -37,7 +37,7 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <!-- QR Code Container -->
+                <!-- QR Code Container (только для хоста) -->
                 <div id="qrcode-container" 
                      style="background: white; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px auto; text-align: center; min-width: 200px; min-height: 200px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
                     
@@ -48,7 +48,15 @@
                     <img id="qr-image" src="" alt="QR Code" style="display: none; margin: 0 auto; border-radius: 4px;">
                 </div>
 
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4">
+                <!-- Статус для гостя -->
+                <div id="guest-status" class="hidden mt-4">
+                    <div class="inline-flex items-center gap-x-2 px-4 py-2 bg-slate-800 rounded-2xl">
+                        <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                        <span id="guest-status-text" class="text-sm">Подключение к комнате...</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mt-6 mb-4">
                     <div class="text-xs text-slate-500 mb-1">ID комнаты</div>
                     <div id="roomId" class="font-mono text-lg text-cyan-400 break-all"></div>
                 </div>
@@ -123,40 +131,48 @@
             if (roomFromUrl) {
                 // === РЕЖИМ ГОСТЯ (телефон) ===
                 currentRoomId = roomFromUrl;
-                
-                // Сразу прячем QR и показываем статус подключения
-                document.getElementById('qrcode-container').style.display = 'none';
                 document.getElementById('roomId').textContent = currentRoomId;
+
+                // Прячем QR и показываем статус подключения
+                document.getElementById('qrcode-container').style.display = 'none';
+                document.getElementById('guest-status').classList.remove('hidden');
 
                 peer = new Peer();
                 
                 peer.on('open', () => {
-                    console.log('Guest connected to signaling, connecting to room:', currentRoomId);
+                    console.log('[Guest] PeerJS готов, подключаемся к комнате:', currentRoomId);
+                    document.getElementById('guest-status-text').textContent = 'Подключение...';
+                    
                     conn = peer.connect(currentRoomId);
                     setupConnection(conn);
                 });
 
                 peer.on('error', (err) => {
-                    console.error('Peer error on guest:', err);
-                    alert('Ошибка подключения: ' + err.type);
+                    console.error('[Guest] PeerJS ошибка:', err);
+                    document.getElementById('guest-status-text').textContent = 'Ошибка подключения';
+                    alert('Не удалось подключиться к комнате. Попробуйте обновить страницу.');
                 });
             } else {
                 // === РЕЖИМ ХОСТА (ПК) ===
                 currentRoomId = generateRoomId();
                 document.getElementById('roomId').textContent = currentRoomId;
 
-                // Показываем QR сразу
                 showQRCodeImmediately(currentRoomId);
 
                 peer = new Peer(currentRoomId);
 
                 peer.on('open', (id) => {
-                    console.log('Host Peer ready:', id);
+                    console.log('[Host] PeerJS готов:', id);
                 });
 
                 peer.on('connection', (connection) => {
+                    console.log('[Host] Входящее подключение!');
                     conn = connection;
                     setupConnection(conn);
+                });
+
+                peer.on('error', (err) => {
+                    console.error('[Host] PeerJS ошибка:', err);
                 });
             }
         }
@@ -177,7 +193,7 @@
 
         function setupConnection(connection) {
             connection.on('open', () => {
-                console.log('DataChannel is open!');
+                console.log('DataChannel открыт! Переходим на экран передачи файлов.');
                 document.getElementById('connectScreen').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
 
@@ -190,6 +206,10 @@
 
             connection.on('close', () => {
                 alert('Соединение закрыто');
+            });
+
+            connection.on('error', (err) => {
+                console.error('Ошибка DataChannel:', err);
             });
         }
 
