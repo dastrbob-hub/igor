@@ -41,12 +41,10 @@
                 <div id="qrcode-container" 
                      style="background: white; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px auto; text-align: center; min-width: 200px; min-height: 200px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
                     
-                    <!-- Статус загрузки -->
                     <div id="qr-status" style="color: #000; font-family: sans-serif; font-size: 14px; margin-top: 85px;">
                         Генерация QR...
                     </div>
                     
-                    <!-- Сам QR-код -->
                     <img id="qr-image" src="" alt="QR Code" style="display: none; margin: 0 auto; border-radius: 4px;">
                 </div>
 
@@ -123,7 +121,7 @@
             const roomFromUrl = urlParams.get('room');
 
             if (roomFromUrl) {
-                // === РЕЖИМ ГОСТЯ ===
+                // Guest mode
                 currentRoomId = roomFromUrl;
                 peer = new Peer();
                 
@@ -132,23 +130,18 @@
                     setupConnection(conn);
                 });
             } else {
-                // === РЕЖИМ ХОСТА (создаём комнату) ===
+                // Host mode - generate everything immediately
                 currentRoomId = generateRoomId();
+                document.getElementById('roomId').textContent = currentRoomId;
+
+                // Показываем QR-код СРАЗУ, без ожидания PeerJS
+                showQRCodeImmediately(currentRoomId);
+
+                // Подключаем PeerJS в фоне
                 peer = new Peer(currentRoomId);
-                
+
                 peer.on('open', (id) => {
-                    console.log('Мой Peer ID:', id);
-                    document.getElementById('roomId').textContent = id;
-
-                    // Формируем ссылку
-                    let fullUrl = window.location.origin + window.location.pathname + '?room=' + id;
-                    let qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(fullUrl);
-
-                    // Прячем статус и показываем QR-код
-                    document.getElementById("qr-status").style.display = "none";
-                    let qrImg = document.getElementById("qr-image");
-                    qrImg.src = qrImageUrl;
-                    qrImg.style.display = "block";
+                    console.log('PeerJS готов, ID:', id);
                 });
 
                 peer.on('connection', (connection) => {
@@ -156,6 +149,20 @@
                     setupConnection(conn);
                 });
             }
+        }
+
+        function showQRCodeImmediately(roomId) {
+            const container = document.getElementById("qrcode-container");
+            const status = document.getElementById("qr-status");
+            const img = document.getElementById("qr-image");
+
+            const fullUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
+            const qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(fullUrl);
+
+            status.style.display = "none";
+            img.src = qrImageUrl;
+            img.style.display = "block";
+            container.style.display = "inline-block";
         }
 
         function setupConnection(connection) {
