@@ -113,6 +113,7 @@
 
     <script>
         let peer, conn, currentRoomId = '', receivedChunks = {};
+        let connectionTimeout = null;
 
         function initPeer() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -127,24 +128,38 @@
                 document.getElementById('guest-connecting').classList.remove('hidden');
 
                 peer = new Peer();
+
                 peer.on('open', () => {
                     document.getElementById('guest-status-text').textContent = 'Подключение...';
-                    setTimeout(() => {
-                        conn = peer.connect(currentRoomId);
-                        setupConnection(conn);
-                    }, 600);
+
+                    // Clear any previous timeout
+                    if (connectionTimeout) clearTimeout(connectionTimeout);
+
+                    // Try to connect
+                    conn = peer.connect(currentRoomId);
+                    setupConnection(conn);
+
+                    // Set a timeout - if not connected in 9 seconds, show retry
+                    connectionTimeout = setTimeout(() => {
+                        if (document.getElementById('connectScreen').style.display !== 'none') {
+                            document.getElementById('guest-status-text').textContent = 'Не удалось подключиться';
+                            document.getElementById('retry-btn').classList.remove('hidden');
+                        }
+                    }, 9000);
                 });
+
                 peer.on('error', (err) => {
-                    console.error('Guest error:', err);
+                    console.error('Guest Peer error:', err);
                     document.getElementById('guest-status-text').textContent = 'Ошибка подключения';
                     document.getElementById('retry-btn').classList.remove('hidden');
+                    if (connectionTimeout) clearTimeout(connectionTimeout);
                 });
             } else {
-                // HOST - Let PeerJS generate the ID (most reliable way)
+                // HOST
                 document.getElementById('host-preparing').style.display = 'block';
                 document.getElementById('qrcode-container').style.display = 'none';
 
-                peer = new Peer();   // ← No custom ID, let PeerJS generate one
+                peer = new Peer();
 
                 peer.on('open', (id) => {
                     currentRoomId = id;
@@ -159,8 +174,9 @@
                 });
 
                 peer.on('error', (err) => {
-                    console.error('Host error:', err);
-                    document.getElementById('host-preparing-text').innerText = 'Ошибка создания комнаты';
+                    console.error('Host Peer error:', err);
+                    document.getElementById('host-preparing').innerHTML = 
+                        '<span class="text-red-400">Ошибка создания комнаты</span>';
                 });
             }
         }
@@ -175,11 +191,23 @@
 
         function setupConnection(connection) {
             connection.on('open', () => {
+                if (connectionTimeout) clearTimeout(connectionTimeout);
                 document.getElementById('connectScreen').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
                 document.getElementById('fileInput').addEventListener('change', handleFileSelect);
             });
+
             connection.on('data', handleIncomingData);
+
+            connection.on('error', (err) => {
+                console.error('Connection error:', err);
+                document.getElementById('guest-status-text').textContent = 'Ошибка канала';
+                document.getElementById('retry-btn').classList.remove('hidden');
+            });
+
+            connection.on('close', () => {
+                console.log('Connection closed');
+            });
         }
 
         function handleFileSelect(e) {
@@ -269,6 +297,8 @@
         function retryConnection() {
             document.getElementById('retry-btn').classList.add('hidden');
             if (peer) peer.destroy();
+            if (connectionTimeout) clearTimeout(connectionTimeout);
+            document.getElementById('guest-status-text').textContent = 'Подключение к комнате...';
             setTimeout(initPeer, 300);
         }
 
