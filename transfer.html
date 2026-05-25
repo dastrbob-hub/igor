@@ -189,7 +189,11 @@
             const container = document.getElementById('qrcode-container');
             const img = document.getElementById('qr-image');
             const url = window.location.origin + window.location.pathname + '?room=' + roomId;
-            img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+            
+            // Используем QuickChart вместо qrserver (меньше проблем с CORS)
+            const qrImageUrl = `https://quickchart.io/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(url)}`;
+            
+            img.src = qrImageUrl;
             container.style.display = 'inline-block';
         }
 
@@ -205,7 +209,7 @@
 
             connection.on('error', (err) => {
                 console.error('Connection error:', err);
-                if (isGuestMode()) {
+                if (!document.getElementById('guest-connecting').classList.contains('hidden')) {
                     document.getElementById('guest-status-text').textContent = 'Ошибка канала';
                     document.getElementById('retry-btn').classList.remove('hidden');
                 }
@@ -214,10 +218,6 @@
             connection.on('close', () => {
                 console.log('Connection closed');
             });
-        }
-
-        function isGuestMode() {
-            return document.getElementById('guest-connecting').classList.contains('hidden') === false;
         }
 
         function handleFileSelect(e) {
@@ -309,7 +309,6 @@
             if (peer) peer.destroy();
             if (connectionTimeout) clearTimeout(connectionTimeout);
 
-            // Reset UI
             document.getElementById('host-preparing').style.display = 'block';
             document.getElementById('host-preparing').innerHTML = `
                 <div class="inline-flex items-center gap-x-3 px-5 py-3 bg-slate-800 rounded-2xl">
