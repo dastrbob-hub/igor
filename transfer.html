@@ -6,7 +6,6 @@
     <title>Transfer • P2P Файлообменник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
@@ -39,9 +38,11 @@
                 <h2 class="text-2xl font-semibold mb-2">Подключение</h2>
                 <p class="text-slate-400 mb-6">Откройте эту страницу на втором устройстве или отсканируйте QR-код</p>
 
-                <!-- QR Code Container -->
+                <!-- QR Code with white background container -->
                 <div class="flex justify-center mb-6">
-                    <div id="qrcode" class="p-4 bg-white rounded-2xl"></div>
+                    <div id="qrcode-container" style="background: white; padding: 16px; display: inline-block; border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
+                        <div id="qrcode"></div>
+                    </div>
                 </div>
 
                 <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4">
@@ -117,7 +118,6 @@
             const roomFromUrl = urlParams.get('room');
 
             if (roomFromUrl) {
-                // Guest mode - join existing room
                 currentRoomId = roomFromUrl;
                 peer = new Peer();
                 
@@ -126,7 +126,6 @@
                     setupConnection(conn);
                 });
             } else {
-                // Host mode - create new room
                 currentRoomId = generateRoomId();
                 peer = new Peer(currentRoomId);
                 
@@ -151,11 +150,11 @@
 
             const fullUrl = window.location.origin + window.location.pathname + '?room=' + peerId;
 
-            // Генерируем QR-код
+            // Генерируем QR-код (чёрный на белом)
             new QRCode(qrContainer, {
                 text: fullUrl,
-                width: 256,
-                height: 256,
+                width: 200,
+                height: 200,
                 colorDark : "#000000",
                 colorLight : "#ffffff"
             });
@@ -166,7 +165,6 @@
                 document.getElementById('connectScreen').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
 
-                // Enable file input
                 document.getElementById('fileInput').addEventListener('change', handleFileSelect);
             });
 
@@ -190,10 +188,9 @@
         }
 
         async function sendFile(file) {
-            const chunkSize = 64 * 1024; // 64KB chunks
+            const chunkSize = 64 * 1024;
             const totalChunks = Math.ceil(file.size / chunkSize);
             
-            // Send file metadata first
             conn.send({
                 type: 'file-meta',
                 name: file.name,
@@ -313,8 +310,8 @@
             const fullUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
             navigator.clipboard.writeText(fullUrl).then(() => {
                 const btn = event.currentTarget;
-                const origText = btn.innerText;
-                btn.innerText = '✓ Скопировано!';
+                const origText = btn ? btn.innerText : '';
+                if (btn) btn.innerText = '✓ Скопировано!';
                 setTimeout(() => {
                     if (btn) btn.innerText = origText;
                 }, 1500);
