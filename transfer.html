@@ -121,27 +121,37 @@
             const roomFromUrl = urlParams.get('room');
 
             if (roomFromUrl) {
-                // Guest mode
+                // === РЕЖИМ ГОСТЯ (телефон) ===
                 currentRoomId = roomFromUrl;
+                
+                // Сразу прячем QR и показываем статус подключения
+                document.getElementById('qrcode-container').style.display = 'none';
+                document.getElementById('roomId').textContent = currentRoomId;
+
                 peer = new Peer();
                 
                 peer.on('open', () => {
+                    console.log('Guest connected to signaling, connecting to room:', currentRoomId);
                     conn = peer.connect(currentRoomId);
                     setupConnection(conn);
                 });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error on guest:', err);
+                    alert('Ошибка подключения: ' + err.type);
+                });
             } else {
-                // Host mode - show QR immediately
+                // === РЕЖИМ ХОСТА (ПК) ===
                 currentRoomId = generateRoomId();
                 document.getElementById('roomId').textContent = currentRoomId;
 
-                // Показываем QR-код СРАЗУ
+                // Показываем QR сразу
                 showQRCodeImmediately(currentRoomId);
 
-                // Подключаем PeerJS в фоне
                 peer = new Peer(currentRoomId);
 
                 peer.on('open', (id) => {
-                    console.log('PeerJS подключён:', id);
+                    console.log('Host Peer ready:', id);
                 });
 
                 peer.on('connection', (connection) => {
@@ -156,15 +166,9 @@
             const status = document.getElementById('qr-status');
             const img = document.getElementById('qr-image');
 
-            if (!container || !status || !img) {
-                console.error('QR elements not found');
-                return;
-            }
-
             const fullUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
             const qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(fullUrl);
 
-            // Прячем статус и показываем картинку
             status.style.display = 'none';
             img.src = qrImageUrl;
             img.style.display = 'block';
@@ -173,6 +177,7 @@
 
         function setupConnection(connection) {
             connection.on('open', () => {
+                console.log('DataChannel is open!');
                 document.getElementById('connectScreen').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
 
