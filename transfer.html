@@ -3,25 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transfer • Локальный P2P файлообмен</title>
+    <title>Transfer • P2P Файлообмен</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
         body { font-family: 'Inter', system_ui, sans-serif; }
         .title-font { font-family: 'Space Grotesk', system_ui, sans-serif; }
         .section { background: #0f172a; border: 1px solid #1e2937; }
-        .file-card { transition: all 0.2s ease; }
         .status-dot { animation: pulse 2s infinite; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
     <div class="max-w-4xl mx-auto px-6 py-8">
-        <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-bold tracking-tighter title-font">Transfer</h1>
-                <p class="text-slate-400">Локальный P2P файлообмен между ПК и телефоном</p>
+                <p class="text-slate-400">Простой P2P файлообмен между устройствами</p>
             </div>
             <a href="index.html" class="text-sm px-4 py-2 rounded-2xl bg-slate-900 hover:bg-slate-800 transition-colors">
                 ← В хаб
@@ -30,22 +29,17 @@
 
         <!-- Mode Selection -->
         <div id="modeSelection" class="section rounded-3xl p-8 mb-8">
-            <h2 class="text-2xl font-semibold mb-6 text-center">Выбери устройство</h2>
+            <h2 class="text-2xl font-semibold mb-6 text-center">Выбери, на каком устройстве ты сейчас</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- PC Mode -->
-                <div onclick="selectMode('pc')" 
-                     class="cursor-pointer border border-slate-700 hover:border-cyan-500 transition-all rounded-2xl p-8 text-center group">
+                <div onclick="selectMode('pc')" class="cursor-pointer border border-slate-700 hover:border-cyan-500 transition-all rounded-2xl p-8 text-center group">
                     <div class="text-6xl mb-4">💻</div>
-                    <div class="text-2xl font-semibold mb-2 group-hover:text-cyan-400 transition-colors">Я на компьютере</div>
-                    <p class="text-slate-400 text-sm">Создам подключение и покажу QR-код</p>
+                    <div class="text-2xl font-semibold mb-2 group-hover:text-cyan-400">Я на компьютере (ПК)</div>
+                    <p class="text-slate-400 text-sm mt-2">Создам комнату и покажу короткий код</p>
                 </div>
-                
-                <!-- Phone Mode -->
-                <div onclick="selectMode('phone')" 
-                     class="cursor-pointer border border-slate-700 hover:border-emerald-500 transition-all rounded-2xl p-8 text-center group">
+                <div onclick="selectMode('phone')" class="cursor-pointer border border-slate-700 hover:border-emerald-500 transition-all rounded-2xl p-8 text-center group">
                     <div class="text-6xl mb-4">📱</div>
-                    <div class="text-2xl font-semibold mb-2 group-hover:text-emerald-400 transition-colors">Я на телефоне</div>
-                    <p class="text-slate-400 text-sm">Отсканирую QR-код с компьютера</p>
+                    <div class="text-2xl font-semibold mb-2 group-hover:text-emerald-400">Я на телефоне</div>
+                    <p class="text-slate-400 text-sm mt-2">Подключусь по коду или QR</p>
                 </div>
             </div>
         </div>
@@ -54,58 +48,37 @@
         <div id="pcMode" class="hidden section rounded-3xl p-8">
             <div class="flex items-center gap-x-3 mb-6">
                 <div class="text-3xl">💻</div>
-                <div>
-                    <div class="text-2xl font-semibold">Режим компьютера</div>
-                    <div class="text-sm text-slate-400">Создай подключение и покажи QR-код телефону</div>
-                </div>
+                <div class="text-2xl font-semibold">Режим компьютера</div>
             </div>
 
             <div id="pcStatus" class="mb-6 p-4 bg-slate-900 rounded-2xl text-sm">
-                Нажми кнопку ниже, чтобы создать подключение
+                Нажми кнопку, чтобы создать комнату
             </div>
 
-            <button onclick="createOfferPC()" id="createOfferBtn"
+            <button onclick="createRoomPC()" id="createRoomBtn"
                     class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 rounded-2xl font-semibold text-lg transition-colors">
-                Создать подключение (показать QR)
+                Создать комнату
             </button>
 
-            <!-- Offer QR -->
-            <div id="offerQRSection" class="hidden mt-8">
+            <div id="roomInfo" class="hidden mt-8">
                 <div class="text-center mb-4">
-                    <div class="font-semibold mb-2">Отсканируй этот QR-код с телефона</div>
-                    <div class="text-xs text-slate-400">Или скопируй код ниже</div>
-                </div>
-                
-                <div class="flex justify-center mb-4">
-                    <div id="offerQR" class="bg-white p-4 rounded-2xl shadow-xl"></div>
+                    <div class="text-sm text-slate-400 mb-1">Короткий код комнаты</div>
+                    <div id="shortCode" class="text-6xl font-bold tracking-[6px] text-cyan-400 font-mono mb-2"></div>
+                    <div class="text-xs text-slate-500">Покажи этот код телефону или отсканируй QR</div>
                 </div>
 
-                <div class="bg-slate-900 rounded-2xl p-4 mb-4">
-                    <div class="text-xs text-slate-500 mb-1">Offer-код (скопируй если нужно)</div>
-                    <textarea id="offerCode" readonly class="w-full bg-transparent text-xs font-mono h-24 resize-none"></textarea>
+                <div class="flex justify-center mb-6">
+                    <div id="pcQR" class="bg-white p-4 rounded-2xl shadow-xl"></div>
                 </div>
 
-                <button onclick="copyOfferCode()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm">
-                    📋 Скопировать Offer-код
+                <div class="bg-slate-900 rounded-2xl p-4">
+                    <div class="text-xs text-slate-500 mb-1">Полный код (если нужно)</div>
+                    <textarea id="fullCodePC" readonly class="w-full bg-transparent text-xs font-mono h-20 resize-y"></textarea>
+                </div>
+
+                <button onclick="copyFullCode()" class="mt-3 w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm">
+                    📋 Скопировать полный код
                 </button>
-            </div>
-
-            <!-- Answer Input -->
-            <div id="answerInputSection" class="hidden mt-8">
-                <div class="font-semibold mb-3">Вставь Answer с телефона</div>
-                <textarea id="answerInput" placeholder="Вставь Answer-код с телефона..." 
-                          class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 h-32 font-mono text-sm"></textarea>
-                
-                <div class="flex gap-3 mt-3">
-                    <button onclick="connectWithAnswer()" 
-                            class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-semibold">
-                        Подключиться
-                    </button>
-                    <button onclick="pasteFromClipboard('answerInput')" 
-                            class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl">
-                        📋 Вставить
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -113,46 +86,31 @@
         <div id="phoneMode" class="hidden section rounded-3xl p-8">
             <div class="flex items-center gap-x-3 mb-6">
                 <div class="text-3xl">📱</div>
-                <div>
-                    <div class="text-2xl font-semibold">Режим телефона</div>
-                    <div class="text-sm text-slate-400">Отсканирую QR-код с компьютера</div>
-                </div>
+                <div class="text-2xl font-semibold">Режим телефона</div>
             </div>
 
             <div id="phoneStatus" class="mb-6 p-4 bg-slate-900 rounded-2xl text-sm">
-                Нажми кнопку ниже и отсканируй QR-код с компьютера
+                Введи код с компьютера или отсканируй QR
             </div>
 
-            <button onclick="startPhoneScan()" id="scanBtn"
-                    class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-semibold text-lg transition-colors">
-                📷 Отсканировать QR-код с ПК
-            </button>
-
-            <!-- Manual Offer Input (fallback) -->
-            <div class="mt-6">
-                <div class="text-sm text-slate-400 mb-2">Или вставь код вручную:</div>
+            <div class="mb-6">
+                <div class="text-sm text-slate-400 mb-2">Код комнаты (6 символов)</div>
                 <div class="flex gap-2">
-                    <textarea id="offerInputPhone" placeholder="Вставь Offer-код с компьютера..." 
-                              class="flex-1 bg-slate-900 border border-slate-700 rounded-2xl p-3 h-20 font-mono text-xs"></textarea>
-                    <button onclick="connectPhoneWithOffer()" 
-                            class="px-6 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-sm font-semibold">
+                    <input id="shortCodeInput" type="text" maxlength="8" placeholder="K7P9X2"
+                           class="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-6 py-4 text-2xl font-mono tracking-[4px] text-center uppercase">
+                    <button onclick="connectWithShortCode()"
+                            class="px-8 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-semibold">
                         Подключиться
                     </button>
                 </div>
             </div>
 
-            <!-- Answer QR for PC -->
-            <div id="answerQRSection" class="hidden mt-8">
-                <div class="text-center mb-4">
-                    <div class="font-semibold mb-2 text-emerald-400">Покажи этот QR-код компьютеру</div>
-                </div>
-                <div class="flex justify-center mb-4">
-                    <div id="answerQR" class="bg-white p-4 rounded-2xl shadow-xl"></div>
-                </div>
-                <button onclick="copyAnswerCode()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm">
-                    📋 Скопировать Answer-код
-                </button>
-            </div>
+            <div class="text-center text-sm text-slate-400 mb-4">или</div>
+
+            <button onclick="startPhoneScan()" 
+                    class="w-full py-4 border border-emerald-600 hover:bg-emerald-950 rounded-2xl font-semibold text-emerald-400 transition-colors">
+                📷 Отсканировать QR-код с ПК
+            </button>
         </div>
 
         <!-- Connected Screen -->
@@ -192,7 +150,7 @@
         </div>
     </div>
 
-    <!-- QR Scanner Modal -->
+    <!-- Scanner Modal -->
     <div id="scannerModal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
         <div class="bg-slate-900 rounded-3xl p-6 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
@@ -200,283 +158,185 @@
                 <button onclick="closeScanner()" class="text-slate-400 hover:text-white">✕</button>
             </div>
             <div id="qr-reader" class="rounded-2xl overflow-hidden"></div>
-            <div class="text-center text-xs text-slate-400 mt-3">Наведи камеру на QR-код с компьютера</div>
         </div>
     </div>
 
     <script>
-        let pc = null;
-        let dataChannel = null;
-        let isHost = false;
-        let receivedChunks = {};
+        let peer = null;
+        let conn = null;
+        let currentRoomId = '';
         let html5QrcodeScanner = null;
-
-        const ICE_SERVERS = [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
-            },
-            {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
-            }
-        ];
-
-        function waitForIceGatheringComplete(peerConnection, timeoutMs = 4000) {
-            return new Promise((resolve) => {
-                if (peerConnection.iceGatheringState === 'complete') {
-                    return resolve();
-                }
-
-                const timeout = setTimeout(() => {
-                    peerConnection.removeEventListener('icegatheringstatechange', checkState);
-                    resolve();
-                }, timeoutMs);
-
-                const checkState = () => {
-                    if (peerConnection.iceGatheringState === 'complete') {
-                        clearTimeout(timeout);
-                        peerConnection.removeEventListener('icegatheringstatechange', checkState);
-                        resolve();
-                    }
-                };
-
-                peerConnection.addEventListener('icegatheringstatechange', checkState);
-            });
-        }
+        let receivedChunks = {};
 
         function selectMode(mode) {
             document.getElementById('modeSelection').classList.add('hidden');
-            
             if (mode === 'pc') {
                 document.getElementById('pcMode').classList.remove('hidden');
-                isHost = true;
             } else {
                 document.getElementById('phoneMode').classList.remove('hidden');
-                isHost = false;
             }
         }
 
-        // ==================== PC SIDE ====================
-        async function createOfferPC() {
+        // ==================== PC (Host) ====================
+        function createRoomPC() {
             const status = document.getElementById('pcStatus');
-            status.innerHTML = 'Создаём подключение...';
+            status.innerHTML = 'Создаём комнату...';
 
-            if (pc) pc.close();
+            if (peer) peer.destroy();
 
-            pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+            peer = new Peer();
 
-            dataChannel = pc.createDataChannel('file-transfer');
-            setupDataChannel(dataChannel);
+            peer.on('open', (id) => {
+                currentRoomId = id;
+                document.getElementById('shortCode').textContent = id.toUpperCase();
+                document.getElementById('fullCodePC').value = id;
+                document.getElementById('roomInfo').classList.remove('hidden');
+                document.getElementById('createRoomBtn').classList.add('hidden');
+                status.innerHTML = '<span class="text-emerald-400">Комната создана. Покажи код телефону.</span>';
 
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
+                // Generate QR
+                const qrContainer = document.getElementById('pcQR');
+                qrContainer.innerHTML = '';
+                const qrUrl = `https://quickchart.io/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(id)}`;
+                const img = document.createElement('img');
+                img.src = qrUrl;
+                img.className = 'rounded-xl';
+                qrContainer.appendChild(img);
 
-            // Ждём сбора ICE-кандидатов (гораздо быстрее, чем фиксированный таймаут)
-            await waitForIceGatheringComplete(pc, 4000);
+                // Listen for incoming connections
+                peer.on('connection', (connection) => {
+                    conn = connection;
+                    setupConnection(conn);
+                });
+            });
 
-            const offerData = {
-                type: 'offer',
-                sdp: pc.localDescription.sdp
-            };
-
-            const offerStr = JSON.stringify(offerData);
-
-            // Show QR
-            document.getElementById('offerQRSection').classList.remove('hidden');
-            document.getElementById('createOfferBtn').classList.add('hidden');
-            
-            const qrContainer = document.getElementById('offerQR');
-            qrContainer.innerHTML = '';
-            
-            const qrUrl = `https://quickchart.io/chart?cht=qr&chs=220x220&chl=${encodeURIComponent(offerStr)}`;
-            const img = document.createElement('img');
-            img.src = qrUrl;
-            img.className = 'rounded-xl';
-            qrContainer.appendChild(img);
-
-            document.getElementById('offerCode').value = offerStr;
-            status.innerHTML = '<span class="text-emerald-400">QR-код готов. Отсканируй его с телефона.</span>';
-            
-            document.getElementById('answerInputSection').classList.remove('hidden');
-        }
-
-        function copyOfferCode() {
-            const ta = document.getElementById('offerCode');
-            navigator.clipboard.writeText(ta.value).then(() => {
-                const btn = event.currentTarget;
-                if (btn) btn.innerText = '✓ Скопировано!';
-                setTimeout(() => { if (btn) btn.innerText = '📋 Скопировать Offer-код'; }, 1500);
+            peer.on('error', (err) => {
+                console.error(err);
+                status.innerHTML = `<span class="text-red-400">Ошибка: ${err.type}</span>`;
             });
         }
 
-        async function connectWithAnswer() {
-            const answerText = document.getElementById('answerInput').value.trim();
-            if (!answerText || !pc) return;
-
-            try {
-                const answerData = JSON.parse(answerText);
-                await pc.setRemoteDescription(new RTCSessionDescription(answerData));
-                document.getElementById('pcStatus').innerHTML = '<span class="text-emerald-400">Подключение устанавливается...</span>';
-            } catch (e) {
-                alert('Неверный формат Answer');
-            }
+        function copyFullCode() {
+            const ta = document.getElementById('fullCodePC');
+            navigator.clipboard.writeText(ta.value).then(() => {
+                const originalText = event.currentTarget ? event.currentTarget.innerText : '';
+                if (event.currentTarget) event.currentTarget.innerText = '✓ Скопировано!';
+                setTimeout(() => {
+                    if (event.currentTarget) event.currentTarget.innerText = '📋 Скопировать полный код';
+                }, 1500);
+            });
         }
 
-        // ==================== PHONE SIDE ====================
+        // ==================== Phone (Client) ====================
+        function connectWithShortCode() {
+            const code = document.getElementById('shortCodeInput').value.trim().toLowerCase();
+            if (!code) return;
+
+            const status = document.getElementById('phoneStatus');
+            status.innerHTML = 'Подключаемся...';
+
+            if (peer) peer.destroy();
+
+            peer = new Peer();
+
+            peer.on('open', () => {
+                conn = peer.connect(code);
+                setupConnection(conn);
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                status.innerHTML = `<span class="text-red-400">Не удалось подключиться: ${err.type}</span>`;
+            });
+        }
+
         function startPhoneScan() {
             const modal = document.getElementById('scannerModal');
             modal.classList.remove('hidden');
 
             html5QrcodeScanner = new Html5Qrcode("qr-reader");
-            
+
             html5QrcodeScanner.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 (decodedText) => {
                     html5QrcodeScanner.stop();
                     modal.classList.add('hidden');
-                    handleScannedOffer(decodedText);
+                    connectWithShortCodeFromQR(decodedText);
                 },
-                (errorMessage) => {
-                    // ignore scanning errors
-                }
-            ).catch(err => {
-                console.error(err);
+                () => {}
+            ).catch(() => {
                 modal.classList.add('hidden');
-                alert('Не удалось запустить камеру. Вставь код вручную.');
+                alert('Не удалось запустить камеру');
+            });
+        }
+
+        function connectWithShortCodeFromQR(code) {
+            const status = document.getElementById('phoneStatus');
+            status.innerHTML = 'Подключаемся...';
+
+            if (peer) peer.destroy();
+
+            peer = new Peer();
+
+            peer.on('open', () => {
+                conn = peer.connect(code.toLowerCase());
+                setupConnection(conn);
+            });
+
+            peer.on('error', (err) => {
+                status.innerHTML = `<span class="text-red-400">Ошибка: ${err.type}</span>`;
             });
         }
 
         function closeScanner() {
             const modal = document.getElementById('scannerModal');
             if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    modal.classList.add('hidden');
-                }).catch(() => {
-                    modal.classList.add('hidden');
-                });
+                html5QrcodeScanner.stop().then(() => modal.classList.add('hidden')).catch(() => modal.classList.add('hidden'));
             } else {
                 modal.classList.add('hidden');
             }
         }
 
-        async function handleScannedOffer(offerStr) {
-            try {
-                const offerData = JSON.parse(offerStr);
-                await createAnswerPhone(offerData);
-            } catch (e) {
-                alert('Не удалось прочитать QR-код');
-            }
-        }
-
-        async function createAnswerPhone(offerData) {
-            const status = document.getElementById('phoneStatus');
-            status.innerHTML = 'Создаём ответ...';
-
-            if (pc) pc.close();
-
-            pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-
-            pc.ondatachannel = (event) => {
-                dataChannel = event.channel;
-                setupDataChannel(dataChannel);
-            };
-
-            await pc.setRemoteDescription(new RTCSessionDescription(offerData));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            // Ждём ICE gathering (быстрее, чем фиксированный таймаут)
-            await waitForIceGatheringComplete(pc, 4000);
-
-            const answerData = {
-                type: 'answer',
-                sdp: pc.localDescription.sdp
-            };
-            const answerStr = JSON.stringify(answerData);
-
-            // Show Answer QR
-            document.getElementById('answerQRSection').classList.remove('hidden');
-            const qrContainer = document.getElementById('answerQR');
-            qrContainer.innerHTML = '';
-
-            const qrUrl = `https://quickchart.io/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(answerStr)}`;
-            const img = document.createElement('img');
-            img.src = qrUrl;
-            img.className = 'rounded-xl';
-            qrContainer.appendChild(img);
-
-            status.innerHTML = '<span class="text-emerald-400">Покажи этот QR-код компьютеру или скопируй код.</span>';
-            window.lastAnswerCode = answerStr;
-        }
-
-        function copyAnswerCode() {
-            if (!window.lastAnswerCode) return;
-            navigator.clipboard.writeText(window.lastAnswerCode).then(() => {
-                alert('Answer скопирован в буфер обмена');
-            });
-        }
-
-        async function connectPhoneWithOffer() {
-            const offerText = document.getElementById('offerInputPhone').value.trim();
-            if (!offerText) return;
-            try {
-                const offerData = JSON.parse(offerText);
-                await createAnswerPhone(offerData);
-            } catch (e) {
-                alert('Неверный формат Offer');
-            }
-        }
-
-        // ==================== DATA CHANNEL ====================
-        function setupDataChannel(channel) {
-            channel.onopen = () => {
-                document.getElementById('modeSelection').classList.add('hidden');
+        // ==================== Connection ====================
+        function setupConnection(connection) {
+            connection.on('open', () => {
                 document.getElementById('pcMode').classList.add('hidden');
                 document.getElementById('phoneMode').classList.add('hidden');
                 document.getElementById('connectedScreen').classList.remove('hidden');
 
                 document.getElementById('fileInput').addEventListener('change', handleFileSelect);
-            };
+            });
 
-            channel.onmessage = (event) => {
-                handleIncomingData(event.data);
-            };
+            connection.on('data', (data) => {
+                handleIncomingData(data);
+            });
 
-            channel.onclose = () => {
-                console.log('DataChannel closed');
-            };
+            connection.on('close', () => {
+                console.log('Connection closed');
+            });
         }
 
         function handleFileSelect(e) {
-            const files = e.target.files;
-            for (const file of files) {
-                sendFile(file);
-            }
+            for (const file of e.target.files) sendFile(file);
             e.target.value = '';
         }
 
         async function sendFile(file) {
-            if (!dataChannel || dataChannel.readyState !== 'open') {
-                alert('Соединение не установлено');
+            if (!conn || conn.open === false) {
+                alert('Соединение потеряно');
                 return;
             }
 
             const chunkSize = 64 * 1024;
             const totalChunks = Math.ceil(file.size / chunkSize);
 
-            dataChannel.send(JSON.stringify({
+            conn.send({
                 type: 'file-meta',
                 name: file.name,
                 size: file.size,
                 totalChunks: totalChunks
-            }));
+            });
 
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
@@ -494,12 +354,12 @@
 
             reader.onload = function(e) {
                 const chunk = new Uint8Array(e.target.result);
-                dataChannel.send(JSON.stringify({
+                conn.send({
                     type: 'file-chunk',
                     name: file.name,
                     chunkIndex: chunkIndex,
                     data: Array.from(chunk)
-                }));
+                });
 
                 chunkIndex++;
                 const percent = Math.round((chunkIndex / totalChunks) * 100);
@@ -510,9 +370,7 @@
                     offset += chunkSize;
                     readNextChunk();
                 } else {
-                    setTimeout(() => {
-                        progressContainer.classList.add('hidden');
-                    }, 600);
+                    setTimeout(() => progressContainer.classList.add('hidden'), 600);
                 }
             };
 
@@ -524,73 +382,53 @@
             readNextChunk();
         }
 
-        function handleIncomingData(dataStr) {
-            try {
-                const data = JSON.parse(dataStr);
+        function handleIncomingData(data) {
+            if (data.type === 'file-meta') {
+                receivedChunks[data.name] = {
+                    chunks: [],
+                    total: data.totalChunks,
+                    size: data.size
+                };
+            }
 
-                if (data.type === 'file-meta') {
-                    receivedChunks[data.name] = {
-                        chunks: [],
-                        total: data.totalChunks,
-                        size: data.size
-                    };
+            if (data.type === 'file-chunk') {
+                const fileData = receivedChunks[data.name];
+                if (!fileData) return;
+
+                fileData.chunks[data.chunkIndex] = new Uint8Array(data.data);
+
+                if (Object.keys(fileData.chunks).length === fileData.total) {
+                    const blob = new Blob(fileData.chunks);
+                    showReceivedFile(data.name, blob, fileData.size);
+                    delete receivedChunks[data.name];
                 }
-
-                if (data.type === 'file-chunk') {
-                    const fileData = receivedChunks[data.name];
-                    if (!fileData) return;
-
-                    fileData.chunks[data.chunkIndex] = new Uint8Array(data.data);
-
-                    if (Object.keys(fileData.chunks).length === fileData.total) {
-                        const blob = new Blob(fileData.chunks);
-                        showReceivedFile(data.name, blob, fileData.size);
-                        delete receivedChunks[data.name];
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to parse incoming data', e);
             }
         }
 
         function showReceivedFile(name, blob, size) {
             const container = document.getElementById('receivedFiles');
             const card = document.createElement('div');
-            card.className = 'file-card bg-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center justify-between';
-            
-            const sizeMB = (size / (1024 * 1024)).toFixed(2);
-            
+            card.className = 'file-card bg-slate-900 border border-slate-700 rounded-2xl p-4 flex justify-between items-center';
+
+            const sizeMB = (size / 1024 / 1024).toFixed(2);
+
             card.innerHTML = `
                 <div>
                     <div class="font-medium">${name}</div>
                     <div class="text-sm text-slate-400">${sizeMB} MB</div>
                 </div>
-                <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-sm font-medium transition-colors">
-                    Скачать
-                </button>
+                <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-sm">Скачать</button>
             `;
 
-            const button = card.querySelector('button');
-            button.onclick = () => {
+            card.querySelector('button').onclick = () => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = name;
-                document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
             };
 
             container.appendChild(card);
-        }
-
-        function pasteFromClipboard(targetId) {
-            navigator.clipboard.readText().then(text => {
-                document.getElementById(targetId).value = text;
-            }).catch(() => {
-                alert('Не удалось прочитать буфер обмена');
-            });
         }
 
         function init() {
