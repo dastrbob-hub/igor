@@ -180,7 +180,10 @@
         // ==================== PC (Host) ====================
         function createRoomPC() {
             const status = document.getElementById('pcStatus');
+            const btn = document.getElementById('createRoomBtn');
+
             status.innerHTML = 'Создаём комнату...';
+            btn.disabled = true;
 
             if (peer) peer.destroy();
 
@@ -191,7 +194,7 @@
                 document.getElementById('shortCode').textContent = id.toUpperCase();
                 document.getElementById('fullCodePC').value = id;
                 document.getElementById('roomInfo').classList.remove('hidden');
-                document.getElementById('createRoomBtn').classList.add('hidden');
+                btn.classList.add('hidden');
                 status.innerHTML = '<span class="text-emerald-400">Комната создана. Покажи код телефону.</span>';
 
                 // Generate QR
@@ -203,7 +206,6 @@
                 img.className = 'rounded-xl';
                 qrContainer.appendChild(img);
 
-                // Listen for incoming connections
                 peer.on('connection', (connection) => {
                     conn = connection;
                     setupConnection(conn);
@@ -211,19 +213,26 @@
             });
 
             peer.on('error', (err) => {
-                console.error(err);
-                status.innerHTML = `<span class="text-red-400">Ошибка: ${err.type}</span>`;
+                console.error('PeerJS error:', err);
+                btn.disabled = false;
+
+                if (err.type === 'server-error') {
+                    status.innerHTML = `
+                        <span class="text-red-400">Сервер сигналинга временно недоступен.</span><br>
+                        <span class="text-xs text-slate-400">Попробуйте ещё раз через 5–10 секунд.</span>
+                    `;
+                } else {
+                    status.innerHTML = `<span class="text-red-400">Ошибка: ${err.type}</span>`;
+                }
             });
         }
 
         function copyFullCode() {
             const ta = document.getElementById('fullCodePC');
             navigator.clipboard.writeText(ta.value).then(() => {
-                const originalText = event.currentTarget ? event.currentTarget.innerText : '';
-                if (event.currentTarget) event.currentTarget.innerText = '✓ Скопировано!';
-                setTimeout(() => {
-                    if (event.currentTarget) event.currentTarget.innerText = '📋 Скопировать полный код';
-                }, 1500);
+                const btn = event.currentTarget;
+                if (btn) btn.innerText = '✓ Скопировано!';
+                setTimeout(() => { if (btn) btn.innerText = '📋 Скопировать полный код'; }, 1500);
             });
         }
 
@@ -246,7 +255,11 @@
 
             peer.on('error', (err) => {
                 console.error(err);
-                status.innerHTML = `<span class="text-red-400">Не удалось подключиться: ${err.type}</span>`;
+                if (err.type === 'peer-unavailable') {
+                    status.innerHTML = `<span class="text-red-400">Комната с таким кодом не найдена</span>`;
+                } else {
+                    status.innerHTML = `<span class="text-red-400">Не удалось подключиться: ${err.type}</span>`;
+                }
             });
         }
 
