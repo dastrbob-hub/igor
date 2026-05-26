@@ -115,7 +115,7 @@
                 <div class="text-3xl">📱</div>
                 <div>
                     <div class="text-2xl font-semibold">Режим телефона</div>
-                    <div class="text-sm text-slate-400">Отсканируй QR-код с компьютера</div>
+                    <div class="text-sm text-slate-400">Отсканирую QR-код с компьютера</div>
                 </div>
             </div>
 
@@ -211,6 +211,45 @@
         let receivedChunks = {};
         let html5QrcodeScanner = null;
 
+        const ICE_SERVERS = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
+        ];
+
+        function waitForIceGatheringComplete(peerConnection, timeoutMs = 4000) {
+            return new Promise((resolve) => {
+                if (peerConnection.iceGatheringState === 'complete') {
+                    return resolve();
+                }
+
+                const timeout = setTimeout(() => {
+                    peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                    resolve();
+                }, timeoutMs);
+
+                const checkState = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        clearTimeout(timeout);
+                        peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                        resolve();
+                    }
+                };
+
+                peerConnection.addEventListener('icegatheringstatechange', checkState);
+            });
+        }
+
         function selectMode(mode) {
             document.getElementById('modeSelection').classList.add('hidden');
             
@@ -230,24 +269,16 @@
 
             if (pc) pc.close();
 
-            pc = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
+            pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
             dataChannel = pc.createDataChannel('file-transfer');
             setupDataChannel(dataChannel);
 
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    // We collect candidates in the offer
-                }
-            };
-
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            // Wait a bit for ICE gathering
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Ждём сбора ICE-кандидатов (гораздо быстрее, чем фиксированный таймаут)
+            await waitForIceGatheringComplete(pc, 4000);
 
             const offerData = {
                 type: 'offer',
@@ -272,7 +303,6 @@
             document.getElementById('offerCode').value = offerStr;
             status.innerHTML = '<span class="text-emerald-400">QR-код готов. Отсканируй его с телефона.</span>';
             
-            // Show answer input section
             document.getElementById('answerInputSection').classList.remove('hidden');
         }
 
@@ -351,9 +381,7 @@
 
             if (pc) pc.close();
 
-            pc = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
+            pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
             pc.ondatachannel = (event) => {
                 dataChannel = event.channel;
@@ -364,7 +392,8 @@
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
-            await new Promise(resolve => setTimeout(resolve, 1200));
+            // Ждём ICE gathering (быстрее, чем фиксированный таймаут)
+            await waitForIceGatheringComplete(pc, 4000);
 
             const answerData = {
                 type: 'answer',
@@ -565,7 +594,6 @@
         }
 
         function init() {
-            // Allow drag and drop on connected screen
             const connected = document.getElementById('connectedScreen');
             connected.addEventListener('dragover', e => e.preventDefault());
             connected.addEventListener('drop', e => {
