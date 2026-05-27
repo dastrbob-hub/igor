@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIFF Merger • Объединение TIFF</title>
+    <title>TIFF → PDF • Объединение</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/utif.js/3.1.0/UTIF._min.js"></script>
@@ -21,9 +21,6 @@
         .page-item {
             transition: all 0.2s ease;
         }
-        .page-item:hover {
-            background-color: #1e2937;
-        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
@@ -31,8 +28,8 @@
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h1 class="text-4xl font-bold tracking-tighter title-font">TIFF Merger</h1>
-                <p class="text-slate-400 mt-1">Объединение нескольких TIFF в один многостраничный файл</p>
+                <h1 class="text-4xl font-bold tracking-tighter title-font">TIFF → PDF</h1>
+                <p class="text-slate-400 mt-1">Объедини несколько TIFF файлов в один PDF с нужным порядком страниц</p>
             </div>
             <a href="index.html" class="text-sm px-4 py-2 rounded-2xl bg-slate-900 hover:bg-slate-800 transition-colors flex items-center gap-x-2">
                 <span>← Назад в хаб</span>
@@ -47,47 +44,41 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
             </div>
-            <h3 class="text-xl font-semibold mb-1">Перетащите TIFF файлы сюда</h3>
-            <p class="text-slate-400 mb-4">или нажмите для выбора</p>
-            <input type="file" id="fileInput" multiple accept="image/tiff,.tif" class="hidden">
+            <h3 class="text-xl font-semibold mb-1">Перетащи TIFF файлы сюда</h3>
+            <p class="text-slate-400 mb-4">или нажми для выбора</p>
+            <input type="file" id="fileInput" multiple accept="image/tiff,.tif,.tiff" class="hidden">
             <button onclick="document.getElementById('fileInput').click()"
                     class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium transition-colors">
-                Выбрать файлы
+                Выбрать TIFF файлы
             </button>
-            <p class="text-xs text-slate-500 mt-4">Поддерживаются обычные RGB и Grayscale TIFF</p>
+            <p class="text-xs text-slate-500 mt-4">Поддерживаются многостраничные и обычные TIFF</p>
         </div>
 
         <!-- Pages List -->
         <div id="pagesSection" class="hidden mt-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold">Загруженные страницы <span id="pageCount" class="text-slate-400 font-normal">(0)</span></h2>
-                <button onclick="clearAll()"
-                        class="text-sm px-4 py-2 text-red-400 hover:text-red-300 transition-colors flex items-center gap-x-2">
-                    <span>Очистить все</span>
+                <h2 class="text-xl font-semibold">Страницы <span id="pageCount" class="text-slate-400 font-normal">(0)</span></h2>
+                <button onclick="clearAll()" class="text-sm px-4 py-2 text-red-400 hover:text-red-300 transition-colors">
+                    Очистить всё
                 </button>
             </div>
 
-            <div id="pagesList" class="space-y-2 bg-slate-900 border border-slate-800 rounded-3xl p-2">
+            <div id="pagesList" class="space-y-2 bg-slate-900 border border-slate-800 rounded-3xl p-2 max-h-[420px] overflow-y-auto">
                 <!-- JS populated -->
             </div>
 
-            <div class="mt-6 flex gap-4">
-                <button onclick="downloadAsTIFF()"
-                        class="flex-1 py-4 bg-cyan-600 hover:bg-cyan-500 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
-                    <span>Скачать как TIFF</span>
-                </button>
-
+            <div class="mt-6">
                 <button onclick="downloadAsPDF()"
-                        class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
-                    <span>Скачать как PDF</span>
+                        class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
+                    <span>Скачать как PDF (с выбранным порядком)</span>
                 </button>
             </div>
-            <p class="text-center text-xs text-slate-500 mt-3">Обе кнопки работают. TIFF ченез UTIF.</p>
+            <p class="text-center text-xs text-slate-500 mt-3">Порядок страниц можно менять стрелками ↑ ↓</p>
         </div>
     </div>
 
     <script>
-        let pages = []; // { id, name, canvas }
+        let pages = []; // { id, name, canvas, width, height }
 
         function setupDropzone() {
             const dropzone = document.getElementById('dropzone');
@@ -100,9 +91,7 @@
                 dropzone.classList.add('dragover');
             });
 
-            dropzone.addEventListener('dragleave', () => {
-                dropzone.classList.remove('dragover');
-            });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
 
             dropzone.addEventListener('drop', (e) => {
                 e.preventDefault();
@@ -118,11 +107,13 @@
 
         async function handleFiles(fileList) {
             const files = Array.from(fileList).filter(f => 
-                f.type === 'image/tiff' || f.name.toLowerCase().endsWith('.tif') || f.name.toLowerCase().endsWith('.tiff')
+                f.type.includes('tiff') || 
+                f.name.toLowerCase().endsWith('.tif') || 
+                f.name.toLowerCase().endsWith('.tiff')
             );
 
             if (files.length === 0) {
-                alert('Пожалуйста, загружайте только TIFF файлы');
+                alert('Загружай только TIFF файлы (.tif / .tiff)');
                 return;
             }
 
@@ -130,40 +121,62 @@
 
             for (const file of files) {
                 try {
-                    const canvas = await fileToCanvas(file);
-                    pages.push({ id: Date.now() + Math.random(), name: file.name, canvas });
+                    const canvases = await tiffFileToCanvases(file);
+                    canvases.forEach((canvas, idx) => {
+                        pages.push({
+                            id: Date.now() + Math.random(),
+                            name: canvases.length > 1 ? `${file.name} (стр. ${idx + 1})` : file.name,
+                            canvas: canvas,
+                            width: canvas.width,
+                            height: canvas.height
+                        });
+                    });
                 } catch (err) {
-                    alert(`Не удалось обработать: ${file.name}`);
+                    console.error(err);
+                    alert(`Не удалось обработать файл: ${file.name}`);
                 }
             }
             renderPagesList();
         }
 
-        async function fileToCanvas(file) {
+        // Proper TIFF decoding using UTIF
+        async function tiffFileToCanvases(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        resolve(canvas);
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
+                reader.onload = function(e) {
+                    try {
+                        const ifds = UTIF.decode(e.target.result);
+                        const canvases = [];
+
+                        for (let i = 0; i < ifds.length; i++) {
+                            const ifd = ifds[i];
+                            UTIF.decodeImage(e.target.result, ifd);
+                            
+                            const rgba = UTIF.toRGBA8(ifd);
+                            const canvas = document.createElement('canvas');
+                            canvas.width = ifd.width;
+                            canvas.height = ifd.height;
+                            
+                            const ctx = canvas.getContext('2d');
+                            const imageData = ctx.createImageData(ifd.width, ifd.height);
+                            imageData.data.set(rgba);
+                            ctx.putImageData(imageData, 0, 0);
+                            
+                            canvases.push(canvas);
+                        }
+                        resolve(canvases);
+                    } catch (err) {
+                        reject(err);
+                    }
                 };
                 reader.onerror = reject;
-                reader.readAsDataURL(file);
+                reader.readAsArrayBuffer(file);
             });
         }
 
         function renderPagesList() {
             const container = document.getElementById('pagesList');
             container.innerHTML = '';
-
             document.getElementById('pageCount').textContent = `(${pages.length})`;
 
             pages.forEach((page, index) => {
@@ -172,24 +185,24 @@
 
                 div.innerHTML = `
                     <div class="flex items-center gap-x-4">
-                        <div class="w-9 h-9 bg-slate-700 rounded-xl flex items-center justify-center text-xs font-mono">${index + 1}</div>
-                        <div>
-                            <div class="font-medium text-sm">${page.name}</div>
-                            <div class="text-xs text-slate-500">${page.canvas.width} × ${page.canvas.height}</div>
+                        <div class="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center text-xs font-mono font-bold">${index + 1}</div>
+                        <div class="min-w-0">
+                            <div class="font-medium text-sm truncate max-w-[280px]">${page.name}</div>
+                            <div class="text-xs text-slate-500">${page.width} × ${page.height}</div>
                         </div>
                     </div>
-                    <div class="flex gap-x-1">
-                        <button onclick="movePage(${index}, -1)" class="px-3 py-1 text-slate-400 hover:text-white">↑</button>
-                        <button onclick="movePage(${index}, 1)" class="px-3 py-1 text-slate-400 hover:text-white">↓</button>
-                        <button onclick="deletePage(${index})" class="px-3 py-1 text-red-400 hover:text-red-300">✕</button>
+                    <div class="flex items-center gap-x-1">
+                        <button onclick="movePage(${index}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl">↑</button>
+                        <button onclick="movePage(${index}, 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl">↓</button>
+                        <button onclick="deletePage(${index})" class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-slate-700 rounded-xl">✕</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function movePage(index, dir) {
-            const newIndex = index + dir;
+        function movePage(index, direction) {
+            const newIndex = index + direction;
             if (newIndex < 0 || newIndex >= pages.length) return;
             [pages[index], pages[newIndex]] = [pages[newIndex], pages[index]];
             renderPagesList();
@@ -198,6 +211,9 @@
         function deletePage(index) {
             pages.splice(index, 1);
             renderPagesList();
+            if (pages.length === 0) {
+                document.getElementById('pagesSection').classList.add('hidden');
+            }
         }
 
         function clearAll() {
@@ -206,66 +222,17 @@
             document.getElementById('pagesSection').classList.add('hidden');
         }
 
-        // ==================== TIFF via UTIF (improved) ====================
-
-        async function downloadAsTIFF() {
-            if (pages.length === 0) return alert('Нет страниц');
-
-            try {
-                const tiffBuffer = await createMultiPageTIFFWithUTIF(pages);
-                const blob = new Blob([tiffBuffer], { type: 'image/tiff' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `merged_${pages.length}_pages.tiff`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (err) {
-                console.error('TIFF creation error:', err);
-                alert('Ошибка при создании TIFF: ' + (err.message || err));
-            }
-        }
-
-        async function createMultiPageTIFFWithUTIF(pagesArray) {
-            const ifds = [];
-
-            for (const page of pagesArray) {
-                const ctx = page.canvas.getContext('2d');
-                const imageData = ctx.getImageData(0, 0, page.canvas.width, page.canvas.height);
-
-                // Try both .buffer and direct data
-                let tiffPage;
-                try {
-                    tiffPage = UTIF.encodeImage(imageData.data.buffer, page.canvas.width, page.canvas.height);
-                } catch (e) {
-                    tiffPage = UTIF.encodeImage(imageData.data, page.canvas.width, page.canvas.height);
-                }
-
-                const decoded = UTIF.decode(tiffPage);
-                if (decoded && decoded.length > 0) {
-                    ifds.push(decoded[0]);
-                } else {
-                    throw new Error('UTIF не смог декодировать созданную страницу');
-                }
-            }
-
-            if (ifds.length === 0) throw new Error('Нет IFD для сборки');
-
-            return UTIF.encode(ifds);
-        }
-
-        // ==================== PDF ====================
-
         async function downloadAsPDF() {
-            if (pages.length === 0) return alert('Нет страниц');
+            if (pages.length === 0) return;
 
             const { jsPDF } = window.jspdf;
+            
+            // Use first page size as base
+            const firstPage = pages[0];
             const pdf = new jsPDF({
-                orientation: 'portrait',
+                orientation: firstPage.width > firstPage.height ? 'landscape' : 'portrait',
                 unit: 'px',
-                format: [pages[0].canvas.width, pages[0].canvas.height]
+                format: [firstPage.width, firstPage.height]
             });
 
             for (let i = 0; i < pages.length; i++) {
@@ -273,10 +240,10 @@
                 const imgData = page.canvas.toDataURL('image/jpeg', 0.92);
 
                 if (i > 0) {
-                    pdf.addPage([page.canvas.width, page.canvas.height]);
+                    pdf.addPage([page.width, page.height]);
                 }
 
-                pdf.addImage(imgData, 'JPEG', 0, 0, page.canvas.width, page.canvas.height);
+                pdf.addImage(imgData, 'JPEG', 0, 0, page.width, page.height);
             }
 
             pdf.save(`merged_${pages.length}_pages.pdf`);
@@ -284,7 +251,7 @@
 
         function init() {
             setupDropzone();
-            console.log('%c[TIFF Merger] Инструмент готов с UTIF (v2)', 'color:#14b8a6');
+            console.log('%c[TIFF → PDF] Инструмент готов (упрощённая версия)', 'color:#14b8a6');
         }
 
         window.onload = init;
