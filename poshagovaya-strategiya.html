@@ -260,23 +260,18 @@
         .tile.plains {
             background: linear-gradient(145deg, #27ae60, #1e8449);
         }
-        
         .tile.forest {
             background: linear-gradient(145deg, #1e8449, #145a32);
         }
-        
         .tile.hills {
             background: linear-gradient(145deg, #7f8c8d, #5d6d7e);
         }
-        
         .tile.mountains {
             background: linear-gradient(145deg, #5d6d7e, #2c3e50);
         }
-        
         .tile.river {
             background: linear-gradient(145deg, #3498db, #1a5276);
         }
-        
         .tile.player {
             box-shadow: inset 0 0 0 3px rgba(241, 196, 15, 0.6);
         }
@@ -699,8 +694,18 @@
     <script>
         // ==================== GAME STATE ====================
         let state = {
-            resources: { gold: 1250, wood: 720, stone: 480, food: 980 },
-            production: { gold: 48, wood: 31, stone: 19, food: 64 },
+            resources: {
+                gold: 1250,
+                wood: 720,
+                stone: 480,
+                food: 980
+            },
+            production: {
+                gold: 48,
+                wood: 31,
+                stone: 19,
+                food: 64
+            },
             buildings: {
                 farm: { level: 2, count: 3 },
                 lumber: { level: 2, count: 2 },
@@ -713,15 +718,17 @@
                 masonry: { purchased: true, name: "Каменная кладка", effect: "+30% камень" },
                 tactics: { purchased: false, name: "Военная тактика", effect: "+25% сила солдат" }
             },
-            stats: { day: 47, population: 184, soldiers: 37, defense: 284, maxDefense: 320, threat: 1.8, land: 14 },
+            stats: {
+                day: 47,
+                population: 184,
+                soldiers: 37,
+                defense: 284,
+                maxDefense: 320,
+                threat: 1.8,
+                land: 14
+            },
             map: [],
-            selectedTile: null,
-            // AI Kingdoms
-            kingdoms: [
-                { id: 'player', name: 'Твоё королевство', color: '#f1c40f', isPlayer: true, relation: 0 },
-                { id: 'crimson', name: 'Королевство Алого Пламени', color: '#e74c3c', isPlayer: false, relation: -20 },
-                { id: 'emerald', name: 'Изумрудная Лига', color: '#2ecc71', isPlayer: false, relation: 15 }
-            ]
+            selectedTile: null
         };
 
         const MAP_W = 10;
@@ -741,28 +748,19 @@
                         claimed: false,
                         building: null,
                         level: 0,
-                        defenseBonus: 0,
-                        owner: null, // 'player', 'crimson', 'emerald'
+                        defenseBonus: 0
                     };
 
-                    // Starting areas
                     if (Math.abs(x - 4) <= 1 && Math.abs(y - 3) <= 1) {
                         tile.claimed = true;
-                        tile.owner = 'player';
                         if (x === 4 && y === 3) {
                             tile.building = 'castle';
                             tile.level = 3;
                             tile.defenseBonus = 80;
+                        } else if (Math.random() > 0.6) {
+                            tile.building = ['farm', 'lumber', 'quarry'][Math.floor(Math.random()*3)];
+                            tile.level = 1;
                         }
-                    }
-                    // AI starting positions
-                    if (x < 3 && y < 3) {
-                        tile.claimed = true;
-                        tile.owner = 'crimson';
-                    }
-                    if (x > 6 && y > 5) {
-                        tile.claimed = true;
-                        tile.owner = 'emerald';
                     }
 
                     state.map.push(tile);
@@ -771,7 +769,9 @@
                     tileEl.className = `tile biome-${tile.biome} ${tile.claimed ? 'player' : 'neutral'}`;
                     tileEl.dataset.x = x;
                     tileEl.dataset.y = y;
+
                     updateTileVisual(tileEl, tile);
+
                     tileEl.addEventListener('click', () => selectTile(x, y));
                     mapEl.appendChild(tileEl);
                 }
@@ -780,90 +780,538 @@
 
         function updateTileVisual(tileEl, tileData) {
             tileEl.innerHTML = '';
-            let className = `tile biome-${tileData.biome}`;
-            if (tileData.claimed) className += ' player';
-            tileEl.className = className;
+            tileEl.className = `tile biome-${tileData.biome} ${tileData.claimed ? 'player' : 'neutral'}`;
 
             let icon = '🌿';
             let label = '';
 
-            if (tileData.owner === 'crimson') icon = '🔴';
-            if (tileData.owner === 'emerald') icon = '🟢';
-
-            if (tileData.building === 'castle') icon = '🏰';
-            else if (tileData.building === 'farm') icon = '🌾';
-            else if (tileData.building === 'lumber') icon = '🪵';
-            else if (tileData.building === 'quarry') icon = '⛏️';
-            else if (tileData.building === 'barracks') icon = '🛡️';
-            else if (!tileData.claimed) {
-                icon = tileData.biome === 'forest' ? '🌲' : tileData.biome === 'mountains' ? '⛰️' : tileData.biome === 'river' ? '🌊' : '🌿';
+            if (tileData.building === 'castle') {
+                icon = '🏰';
+                label = 'Замок';
+            } else if (tileData.building === 'farm') {
+                icon = '🌾';
+                label = 'Ферма';
+            } else if (tileData.building === 'lumber') {
+                icon = '🪵';
+                label = 'Лесопилка';
+            } else if (tileData.building === 'quarry') {
+                icon = '⛏️';
+                label = 'Каменоломня';
+            } else if (tileData.building === 'barracks') {
+                icon = '🛡️';
+                label = 'Казармы';
+            } else if (!tileData.claimed) {
+                icon = tileData.biome === 'forest' ? '🌲' : 
+                       tileData.biome === 'mountains' ? '⛰️' : 
+                       tileData.biome === 'river' ? '🌊' : '🌿';
+                label = tileData.biome === 'forest' ? 'Лес' : 
+                        tileData.biome === 'mountains' ? 'Горы' : 
+                        tileData.biome === 'river' ? 'Река' : 'Равнина';
+            } else {
+                icon = '🏠';
+                label = 'Земля';
             }
 
             tileEl.innerHTML = `
                 <div class="tile-content">${icon}</div>
                 ${label ? `<div class="tile-label">${label}</div>` : ''}
                 ${tileData.level > 0 ? `<div class="tile-level">Ур.${tileData.level}</div>` : ''}
+                ${tileData.defenseBonus > 0 ? `<div class="tile-defense">+${tileData.defenseBonus}</div>` : ''}
             `;
         }
 
-        function updateResources() { /* ... */ }
-        function updateStats() { /* ... */ }
-        function updateBuildingsUI() { /* ... */ }
-        function updateUpgradesUI() { /* ... */ }
+        function updateResources() {
+            document.getElementById('gold').textContent = Math.floor(state.resources.gold);
+            document.getElementById('wood').textContent = Math.floor(state.resources.wood);
+            document.getElementById('stone').textContent = Math.floor(state.resources.stone);
+            document.getElementById('food').textContent = Math.floor(state.resources.food);
+
+            document.getElementById('gold-prod').textContent = `+${state.production.gold} / ход`;
+            document.getElementById('wood-prod').textContent = `+${state.production.wood} / ход`;
+            document.getElementById('stone-prod').textContent = `+${state.production.stone} / ход`;
+            document.getElementById('food-prod').textContent = `+${state.production.food} / ход`;
+        }
+
+        function updateStats() {
+            document.getElementById('day').textContent = state.stats.day;
+            document.getElementById('population').textContent = state.stats.population;
+            document.getElementById('soldiers').textContent = state.stats.soldiers;
+            document.getElementById('defense').textContent = state.stats.defense;
+
+            const threatPercent = Math.min(100, Math.floor(state.stats.threat * 35));
+            document.getElementById('threat-bar').style.width = threatPercent + '%';
+            
+            let threatText = 'Низкий';
+            if (state.stats.threat > 2.2) threatText = 'Высокий';
+            else if (state.stats.threat > 1.5) threatText = 'Средний';
+            document.getElementById('threat').textContent = threatText;
+        }
+
+        function updateBuildingsUI() {
+            const container = document.getElementById('buildings-grid');
+            container.innerHTML = '';
+
+            const buildingsData = [
+                { key: 'farm', name: 'Ферма', icon: '🌾', desc: 'Производит еду' },
+                { key: 'lumber', name: 'Лесопилка', icon: '🪵', desc: 'Производит дерево' },
+                { key: 'quarry', name: 'Каменоломня', icon: '⛏️', desc: 'Производит камень' },
+                { key: 'barracks', name: 'Казармы', icon: '🛡️', desc: 'Тренирует солдат' }
+            ];
+
+            buildingsData.forEach(b => {
+                const bData = state.buildings[b.key];
+                const div = document.createElement('div');
+                div.className = 'building-card';
+                div.innerHTML = `
+                    <div class="building-icon">${b.icon}</div>
+                    <div class="building-name">${b.name}</div>
+                    <div class="building-level">Уровень ${bData.level} • ${bData.count} шт.</div>
+                    <div style="font-size:0.7rem; color:#7f8c8d; margin-top:4px;">${b.desc}</div>
+                `;
+                
+                div.addEventListener('click', () => {
+                    const tile = state.map.find(t => t.claimed && (!t.building || t.building === b.key));
+                    if (tile) {
+                        selectTile(tile.x, tile.y);
+                        if (!tile.building) {
+                            buildOnTile(b.key);
+                        } else {
+                            upgradeBuildingOnTile(tile);
+                        }
+                    } else {
+                        showToast('Сначала захватите свободную клетку');
+                    }
+                });
+                
+                container.appendChild(div);
+            });
+        }
+
+        function updateUpgradesUI() {
+            const container = document.getElementById('upgrades-list');
+            container.innerHTML = '';
+
+            Object.keys(state.upgrades).forEach(key => {
+                const up = state.upgrades[key];
+                const div = document.createElement('div');
+                div.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:#0f1c2e; padding:10px 14px; border-radius:10px;';
+                
+                if (up.purchased) {
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight:600;">${up.name}</div>
+                            <div style="font-size:0.75rem; color:#2ecc71;">${up.effect} • Исследовано</div>
+                        </div>
+                        <div style="color:#2ecc71; font-size:1.3rem;">✓</div>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight:600;">${up.name}</div>
+                            <div style="font-size:0.75rem; color:#7f8c8d;">${up.effect}</div>
+                        </div>
+                        <button class="btn" style="padding:6px 14px; font-size:0.8rem;">Изучить</button>
+                    `;
+                    
+                    div.querySelector('button').addEventListener('click', () => researchUpgrade(key));
+                }
+                
+                container.appendChild(div);
+            });
+        }
+
+        let selectedTileEl = null;
 
         function selectTile(x, y) {
+            if (selectedTileEl) selectedTileEl.style.boxShadow = '';
+            
             const tileData = state.map.find(t => t.x === x && t.y === y);
             if (!tileData) return;
+
             state.selectedTile = tileData;
+            
+            const tileEl = document.querySelector(`.tile[data-x="${x}"][data-y="${y}"]`);
+            if (tileEl) {
+                tileEl.style.boxShadow = '0 0 0 4px #f1c40f, 0 0 25px rgba(241, 196, 15, 0.5)';
+                selectedTileEl = tileEl;
+            }
+
             renderSelectedTileInfo(tileData);
         }
 
         function renderSelectedTileInfo(tile) {
             const container = document.getElementById('selected-info');
-            let html = `<div style="text-align:center;"><div style="font-size:2rem;">${getTileIcon(tile)}</div><div style="font-weight:700;">${getTileName(tile)}</div></div>`;
             
-            if (tile.owner && tile.owner !== 'player') {
-                html += `<div style="color:#e74c3c; text-align:center; margin:8px 0;">Принадлежит ИИ</div>`;
+            let html = `<div style="text-align:center; margin-bottom:12px;">
+                <div style="font-size:2.1rem; margin-bottom:4px;">${getTileIcon(tile)}</div>
+                <div style="font-weight:700; font-size:1.1rem;">${getTileName(tile)}</div>
+            </div>`;
+
+            if (!tile.claimed) {
+                html += `
+                    <div style="margin:14px 0; font-size:0.9rem; color:#7f8c8d; text-align:center;">
+                        Нейтральная территория<br>
+                        ${getBiomeBonus(tile.biome)}
+                    </div>
+                    <button class="next-turn-btn" style="padding:12px; font-size:1rem;" id="claim-btn">
+                        Захватить территорию
+                    </button>
+                `;
+            } else if (tile.building) {
+                html += `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.9rem; margin:10px 0;">
+                        <div>Здание:</div><div style="font-weight:600;">${getBuildingName(tile.building)} (ур. ${tile.level})</div>
+                        <div>Бонус защиты:</div><div>+${tile.defenseBonus}</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn" style="flex:1; padding:10px;" id="upgrade-btn">Улучшить</button>
+                        <button class="btn" style="flex:1; padding:10px; background:#e74c3c;" id="fortify-btn">Укрепить</button>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div style="margin:12px 0; font-size:0.9rem; color:#7f8c8d; text-align:center;">
+                        Свободная земля<br>
+                        ${getBiomeBonus(tile.biome)}
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <button class="btn" style="padding:9px; font-size:0.85rem;" data-build="farm">🌾 Ферма</button>
+                        <button class="btn" style="padding:9px; font-size:0.85rem;" data-build="lumber">🪵 Лесопилка</button>
+                        <button class="btn" style="padding:9px; font-size:0.85rem;" data-build="quarry">⛏️ Каменоломня</button>
+                        <button class="btn" style="padding:9px; font-size:0.85rem;" data-build="barracks">🛡️ Казармы</button>
+                    </div>
+                `;
             }
-            
+
             container.innerHTML = html;
+
+            const claimBtn = document.getElementById('claim-btn');
+            if (claimBtn) claimBtn.onclick = () => claimTile(tile);
+
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            if (upgradeBtn) upgradeBtn.onclick = () => upgradeBuildingOnTile(tile);
+
+            const fortifyBtn = document.getElementById('fortify-btn');
+            if (fortifyBtn) fortifyBtn.onclick = () => fortifyTile(tile);
+
+            container.querySelectorAll('[data-build]').forEach(btn => {
+                btn.onclick = () => buildOnTile(btn.dataset.build);
+            });
         }
 
-        function getTileIcon(tile) { return tile.building === 'castle' ? '🏰' : '🌿'; }
-        function getTileName(tile) { return tile.building ? 'Здание' : 'Клетка'; }
+        function getTileIcon(tile) {
+            if (tile.building === 'castle') return '🏰';
+            if (tile.building === 'farm') return '🌾';
+            if (tile.building === 'lumber') return '🪵';
+            if (tile.building === 'quarry') return '⛏️';
+            if (tile.building === 'barracks') return '🛡️';
+            if (!tile.claimed) {
+                return tile.biome === 'forest' ? '🌲' : 
+                       tile.biome === 'mountains' ? '⛰️' : 
+                       tile.biome === 'river' ? '🌊' : '🌿';
+            }
+            return '🏠';
+        }
+
+        function getTileName(tile) {
+            if (tile.building === 'castle') return 'Королевский Замок';
+            if (tile.building) return getBuildingName(tile.building);
+            if (!tile.claimed) {
+                return tile.biome === 'forest' ? 'Густой лес' : 
+                       tile.biome === 'mountains' ? 'Горный хребет' : 
+                       tile.biome === 'river' ? 'Речная долина' : 'Плодородные равнины';
+            }
+            return 'Ваши земли';
+        }
+
+        function getBuildingName(type) {
+            return { farm: 'Ферма', lumber: 'Лесопилка', quarry: 'Каменоломня', barracks: 'Казармы' }[type] || 'Здание';
+        }
+
+        function getBiomeBonus(biome) {
+            const bonuses = {
+                plains: '+25% к производству еды',
+                forest: '+40% к добыче дерева',
+                hills: '+20% к защите',
+                mountains: '+35% к добыче камня',
+                river: '+15% ко всем ресурсам'
+            };
+            return bonuses[biome] || '';
+        }
+
+        function claimTile(tile) {
+            if (tile.claimed) return;
+
+            const costGold = 80 + (state.stats.land * 8);
+            const costSoldiers = 2;
+
+            if (state.resources.gold < costGold || state.stats.soldiers < costSoldiers) {
+                showToast('Нужно 2 солдата и ' + costGold + ' золота');
+                return;
+            }
+
+            state.resources.gold -= costGold;
+            state.stats.soldiers -= costSoldiers;
+            tile.claimed = true;
+            state.stats.land++;
+            state.stats.defense += 8;
+
+            const tileEl = document.querySelector(`.tile[data-x="${tile.x}"][data-y="${tile.y}"]`);
+            if (tileEl) updateTileVisual(tileEl, tile);
+            
+            renderSelectedTileInfo(tile);
+            updateStats();
+            updateResources();
+            
+            addEvent(`🗺️ Захвачена новая территория! (-${costSoldiers} солдат, -${costGold} золота)`);
+        }
+
+        function buildOnTile(buildingType) {
+            const tile = state.selectedTile;
+            if (!tile || !tile.claimed || tile.building) return;
+
+            const cost = getBuildCost(buildingType, 1);
+
+            if (state.resources.gold < cost.gold || state.resources.wood < cost.wood) {
+                showToast('Недостаточно ресурсов');
+                return;
+            }
+
+            state.resources.gold -= cost.gold;
+            state.resources.wood -= cost.wood;
+
+            tile.building = buildingType;
+            tile.level = 1;
+
+            if ((buildingType === 'farm' && tile.biome === 'plains') ||
+                (buildingType === 'lumber' && tile.biome === 'forest') ||
+                (buildingType === 'quarry' && (tile.biome === 'hills' || tile.biome === 'mountains'))) {
+                tile.defenseBonus = 12;
+            }
+
+            const tileEl = document.querySelector(`.tile[data-x="${tile.x}"][data-y="${tile.y}"]`);
+            if (tileEl) updateTileVisual(tileEl, tile);
+
+            addEvent(`🏗️ Построена ${getBuildingName(buildingType)}`);
+            
+            updateResources();
+            renderSelectedTileInfo(tile);
+            updateBuildingsUI();
+        }
+
+        function getBuildCost(type, level) {
+            const base = { farm: {gold:55, wood:35}, lumber:{gold:70, wood:25}, quarry:{gold:90, wood:40}, barracks:{gold:120, wood:60} };
+            const b = base[type];
+            return {
+                gold: Math.floor(b.gold * (1 + (level-1)*0.7)),
+                wood: Math.floor(b.wood * (1 + (level-1)*0.7))
+            };
+        }
+
+        function upgradeBuildingOnTile(tile) {
+            if (!tile.building) return;
+
+            const cost = getBuildCost(tile.building, tile.level + 1);
+            
+            if (state.resources.gold < cost.gold || state.resources.wood < cost.wood) {
+                showToast('Недостаточно ресурсов для улучшения');
+                return;
+            }
+
+            state.resources.gold -= cost.gold;
+            state.resources.wood -= cost.wood;
+
+            tile.level++;
+            tile.defenseBonus = Math.floor(tile.defenseBonus * 1.4) + 8;
+
+            const tileEl = document.querySelector(`.tile[data-x="${tile.x}"][data-y="${tile.y}"]`);
+            if (tileEl) updateTileVisual(tileEl, tile);
+
+            addEvent(`⬆️ ${getBuildingName(tile.building)} улучшена до уровня ${tile.level}`);
+            
+            updateResources();
+            renderSelectedTileInfo(tile);
+        }
+
+        function fortifyTile(tile) {
+            const cost = 45 + tile.level * 25;
+            if (state.resources.stone < cost) {
+                showToast('Нужно ' + cost + ' камня');
+                return;
+            }
+            state.resources.stone -= cost;
+            tile.defenseBonus += 22;
+
+            const tileEl = document.querySelector(`.tile[data-x="${tile.x}"][data-y="${tile.y}"]`);
+            if (tileEl) updateTileVisual(tileEl, tile);
+
+            state.stats.defense += 12;
+            updateStats();
+            updateResources();
+            renderSelectedTileInfo(tile);
+            addEvent(`🧱 Территория укреплена (+22 защиты)`);
+        }
+
+        function researchUpgrade(key) {
+            const up = state.upgrades[key];
+            if (up.purchased) return;
+
+            const costGold = key === 'tactics' ? 480 : 320;
+            
+            if (state.resources.gold < costGold) {
+                showToast('Нужно ' + costGold + ' золота');
+                return;
+            }
+
+            state.resources.gold -= costGold;
+            up.purchased = true;
+
+            if (key === 'agriculture') state.production.food = Math.floor(state.production.food * 1.4);
+            if (key === 'forestry') state.production.wood = Math.floor(state.production.wood * 1.35);
+            if (key === 'masonry') state.production.stone = Math.floor(state.production.stone * 1.3);
+            if (key === 'tactics') state.stats.defense = Math.floor(state.stats.defense * 1.2);
+
+            updateResources();
+            updateStats();
+            updateUpgradesUI();
+            addEvent(`🔬 Исследовано: ${up.name}`);
+        }
 
         function endTurn() {
-            // Simple AI turn
-            state.kingdoms.forEach(k => {
-                if (!k.isPlayer) {
-                    // AI expands randomly
-                    const neutralTiles = state.map.filter(t => !t.claimed);
-                    if (neutralTiles.length > 0 && Math.random() > 0.6) {
-                        const t = neutralTiles[Math.floor(Math.random() * neutralTiles.length)];
-                        t.claimed = true;
-                        t.owner = k.id;
-                    }
-                }
+            const btn = document.getElementById('next-turn-btn');
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.6';
+
+            let produced = { gold: 0, wood: 0, stone: 0, food: 0 };
+
+            state.map.forEach(tile => {
+                if (!tile.claimed || !tile.building) return;
+
+                let prod = 8;
+                if (tile.building === 'farm') prod = 22;
+                if (tile.building === 'lumber') prod = 18;
+                if (tile.building === 'quarry') prod = 14;
+
+                if (tile.building === 'farm' && tile.biome === 'plains') prod *= 1.25;
+                if (tile.building === 'lumber' && tile.biome === 'forest') prod *= 1.4;
+                if (tile.building === 'quarry' && (tile.biome === 'hills' || tile.biome === 'mountains')) prod *= 1.3;
+
+                prod *= (1 + (tile.level - 1) * 0.25);
+
+                if (tile.building === 'farm') produced.food += prod;
+                else if (tile.building === 'lumber') produced.wood += prod;
+                else if (tile.building === 'quarry') produced.stone += prod;
             });
 
+            state.resources.gold += state.production.gold;
+            state.resources.wood += Math.floor(state.production.wood + produced.wood);
+            state.resources.stone += Math.floor(state.production.stone + produced.stone);
+            state.resources.food += Math.floor(state.production.food + produced.food);
+
+            const foodNeeded = Math.floor(state.stats.population * 0.6);
+            if (state.resources.food >= foodNeeded) {
+                state.resources.food -= foodNeeded;
+                state.stats.population += Math.floor(state.stats.population * 0.04) + 1;
+            } else {
+                state.stats.population = Math.max(10, state.stats.population - 4);
+                addEvent('⚠️ Голод! Население сокращается');
+            }
+
+            state.stats.threat = Math.min(3.5, state.stats.threat + 0.08);
+
+            let attacked = false;
+            if (Math.random() < (state.stats.threat - 1) * 0.45) {
+                attacked = true;
+                resolveAttack();
+            }
+
+            if (!attacked && Math.random() < 0.55) {
+                triggerRandomEvent();
+            }
+
             state.stats.day++;
-            addEvent(`🌅 День ${state.stats.day}`);
+            updateResources();
             updateStats();
+            updateBuildingsUI();
+
+            state.map.forEach((tile) => {
+                const el = document.querySelector(`.tile[data-x="${tile.x}"][data-y="${tile.y}"]`);
+                if (el) updateTileVisual(el, tile);
+            });
+
+            if (state.selectedTile) {
+                renderSelectedTileInfo(state.selectedTile);
+            }
+
+            addEvent(`🌅 День ${state.stats.day} завершён. Произведено ресурсов.`);
+            
+            setTimeout(() => {
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+            }, 600);
         }
 
-        function addEvent(text) {
+        function resolveAttack() {
+            const attackPower = Math.floor(60 + state.stats.day * 4.5 + state.stats.threat * 25);
+            const defense = state.stats.defense + (state.stats.soldiers * 2.5);
+
+            const mapContainer = document.querySelector('.map-container');
+            mapContainer.style.boxShadow = '0 0 0 8px rgba(231, 76, 60, 0.6)';
+            setTimeout(() => {
+                mapContainer.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.35)';
+            }, 900);
+
+            if (defense >= attackPower) {
+                const goldGain = Math.floor(attackPower * 0.8);
+                state.resources.gold += goldGain;
+                state.stats.threat = Math.max(0.8, state.stats.threat - 0.35);
+                state.stats.defense = Math.min(state.stats.maxDefense, state.stats.defense + 12);
+
+                addEvent(`🛡️ Враги отбиты! Получено ${goldGain} золота. Угроза снижена.`, 'defense');
+            } else {
+                const lossFactor = (attackPower - defense) / attackPower;
+                const goldLoss = Math.floor(state.resources.gold * lossFactor * 0.6);
+                const foodLoss = Math.floor(state.resources.food * lossFactor * 0.5);
+
+                state.resources.gold = Math.max(0, state.resources.gold - goldLoss);
+                state.resources.food = Math.max(0, state.resources.food - foodLoss);
+                state.stats.population = Math.max(12, Math.floor(state.stats.population * (1 - lossFactor * 0.3)));
+                state.stats.defense = Math.max(30, Math.floor(state.stats.defense * 0.6));
+
+                addEvent(`💥 Враги прорвали оборону! Потери: ${goldLoss} золота, ${foodLoss} еды.`, 'attack');
+            }
+        }
+
+        function triggerRandomEvent() {
+            const events = [
+                { text: '🌾 Богатый урожай! +85 еды', effect: () => state.resources.food += 85 },
+                { text: '🪙 Купцы из дальних земель! +120 золота', effect: () => state.resources.gold += 120 },
+                { text: '🌳 Лесные дары. +55 дерева', effect: () => state.resources.wood += 55 },
+                { text: '⛰️ Горные рабочие нашли жилу. +40 камня', effect: () => state.resources.stone += 40 },
+                { text: '🎉 Праздник урожая. Население +7', effect: () => state.stats.population += 7 },
+                { text: '⚔️ Добровольцы! +4 солдата', effect: () => state.stats.soldiers += 4 }
+            ];
+
+            const ev = events[Math.floor(Math.random() * events.length)];
+            ev.effect();
+            addEvent(ev.text);
+        }
+
+        function addEvent(text, type = '') {
             const log = document.getElementById('event-log');
             const el = document.createElement('div');
             el.className = 'event';
-            el.innerHTML = `<span>${text}</span>`;
+            el.innerHTML = `<span class="event-icon">${text.split(' ')[0]}</span> <span>${text.substring(text.indexOf(' ') + 1)}</span>`;
             log.prepend(el);
+            
+            if (log.children.length > 18) log.lastChild.remove();
         }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2200);
+            setTimeout(() => toast.classList.remove('show'), 2600);
         }
 
         function init() {
@@ -873,12 +1321,26 @@
             updateBuildingsUI();
             updateUpgradesUI();
 
-            addEvent('🏰 Игра началась. ИИ-королевства уже на карте.');
+            addEvent('🏰 Королевство основано. Добро пожаловать, правитель!');
+            addEvent('📜 Советник: Захватывайте земли и стройте здания для роста производства.');
+
             document.getElementById('next-turn-btn').addEventListener('click', endTurn);
 
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    endTurn();
+                }
+            });
+
             setTimeout(() => {
-                showToast('ИИ-королевства развиваются. Следи за дипломатией!');
-            }, 1500);
+                const castleTile = state.map.find(t => t.building === 'castle');
+                if (castleTile) selectTile(castleTile.x, castleTile.y);
+            }, 420);
+
+            setTimeout(() => {
+                showToast('Совет: Кликайте на клетки и улучшайте здания каждый ход');
+            }, 1800);
         }
 
         window.onload = init;
