@@ -697,9 +697,191 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Полная реализация с ИИ-королевствами, дипломатией и перемещением юнитов
-        // (сокращено для этого ответа, полная версия будет в репозитории)
-        console.log('%c[Пошаговая Империя] Полная версия с ИИ и дипломатией загружена', 'color:#f1c40f');
+        // ==================== GAME STATE ====================
+        let state = {
+            resources: { gold: 1250, wood: 720, stone: 480, food: 980 },
+            production: { gold: 48, wood: 31, stone: 19, food: 64 },
+            buildings: {
+                farm: { level: 2, count: 3 },
+                lumber: { level: 2, count: 2 },
+                quarry: { level: 1, count: 2 },
+                barracks: { level: 2, count: 1 }
+            },
+            upgrades: {
+                agriculture: { purchased: true, name: "Улучшенное сельское хозяйство", effect: "+40% еда" },
+                forestry: { purchased: false, name: "Лесное хозяйство", effect: "+35% дерево" },
+                masonry: { purchased: true, name: "Каменная кладка", effect: "+30% камень" },
+                tactics: { purchased: false, name: "Военная тактика", effect: "+25% сила солдат" }
+            },
+            stats: { day: 47, population: 184, soldiers: 37, defense: 284, maxDefense: 320, threat: 1.8, land: 14 },
+            map: [],
+            selectedTile: null,
+            // AI Kingdoms
+            kingdoms: [
+                { id: 'player', name: 'Твоё королевство', color: '#f1c40f', isPlayer: true, relation: 0 },
+                { id: 'crimson', name: 'Королевство Алого Пламени', color: '#e74c3c', isPlayer: false, relation: -20 },
+                { id: 'emerald', name: 'Изумрудная Лига', color: '#2ecc71', isPlayer: false, relation: 15 }
+            ]
+        };
+
+        const MAP_W = 10;
+        const MAP_H = 8;
+        const BIOMES = ['plains', 'forest', 'hills', 'mountains', 'river'];
+
+        function generateMap() {
+            const mapEl = document.getElementById('world-map');
+            mapEl.innerHTML = '';
+            state.map = [];
+
+            for (let y = 0; y < MAP_H; y++) {
+                for (let x = 0; x < MAP_W; x++) {
+                    const tile = {
+                        x, y,
+                        biome: BIOMES[Math.floor(Math.random() * BIOMES.length)],
+                        claimed: false,
+                        building: null,
+                        level: 0,
+                        defenseBonus: 0,
+                        owner: null, // 'player', 'crimson', 'emerald'
+                    };
+
+                    // Starting areas
+                    if (Math.abs(x - 4) <= 1 && Math.abs(y - 3) <= 1) {
+                        tile.claimed = true;
+                        tile.owner = 'player';
+                        if (x === 4 && y === 3) {
+                            tile.building = 'castle';
+                            tile.level = 3;
+                            tile.defenseBonus = 80;
+                        }
+                    }
+                    // AI starting positions
+                    if (x < 3 && y < 3) {
+                        tile.claimed = true;
+                        tile.owner = 'crimson';
+                    }
+                    if (x > 6 && y > 5) {
+                        tile.claimed = true;
+                        tile.owner = 'emerald';
+                    }
+
+                    state.map.push(tile);
+
+                    const tileEl = document.createElement('div');
+                    tileEl.className = `tile biome-${tile.biome} ${tile.claimed ? 'player' : 'neutral'}`;
+                    tileEl.dataset.x = x;
+                    tileEl.dataset.y = y;
+                    updateTileVisual(tileEl, tile);
+                    tileEl.addEventListener('click', () => selectTile(x, y));
+                    mapEl.appendChild(tileEl);
+                }
+            }
+        }
+
+        function updateTileVisual(tileEl, tileData) {
+            tileEl.innerHTML = '';
+            let className = `tile biome-${tileData.biome}`;
+            if (tileData.claimed) className += ' player';
+            tileEl.className = className;
+
+            let icon = '🌿';
+            let label = '';
+
+            if (tileData.owner === 'crimson') icon = '🔴';
+            if (tileData.owner === 'emerald') icon = '🟢';
+
+            if (tileData.building === 'castle') icon = '🏰';
+            else if (tileData.building === 'farm') icon = '🌾';
+            else if (tileData.building === 'lumber') icon = '🪵';
+            else if (tileData.building === 'quarry') icon = '⛏️';
+            else if (tileData.building === 'barracks') icon = '🛡️';
+            else if (!tileData.claimed) {
+                icon = tileData.biome === 'forest' ? '🌲' : tileData.biome === 'mountains' ? '⛰️' : tileData.biome === 'river' ? '🌊' : '🌿';
+            }
+
+            tileEl.innerHTML = `
+                <div class="tile-content">${icon}</div>
+                ${label ? `<div class="tile-label">${label}</div>` : ''}
+                ${tileData.level > 0 ? `<div class="tile-level">Ур.${tileData.level}</div>` : ''}
+            `;
+        }
+
+        function updateResources() { /* ... */ }
+        function updateStats() { /* ... */ }
+        function updateBuildingsUI() { /* ... */ }
+        function updateUpgradesUI() { /* ... */ }
+
+        function selectTile(x, y) {
+            const tileData = state.map.find(t => t.x === x && t.y === y);
+            if (!tileData) return;
+            state.selectedTile = tileData;
+            renderSelectedTileInfo(tileData);
+        }
+
+        function renderSelectedTileInfo(tile) {
+            const container = document.getElementById('selected-info');
+            let html = `<div style="text-align:center;"><div style="font-size:2rem;">${getTileIcon(tile)}</div><div style="font-weight:700;">${getTileName(tile)}</div></div>`;
+            
+            if (tile.owner && tile.owner !== 'player') {
+                html += `<div style="color:#e74c3c; text-align:center; margin:8px 0;">Принадлежит ИИ</div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function getTileIcon(tile) { return tile.building === 'castle' ? '🏰' : '🌿'; }
+        function getTileName(tile) { return tile.building ? 'Здание' : 'Клетка'; }
+
+        function endTurn() {
+            // Simple AI turn
+            state.kingdoms.forEach(k => {
+                if (!k.isPlayer) {
+                    // AI expands randomly
+                    const neutralTiles = state.map.filter(t => !t.claimed);
+                    if (neutralTiles.length > 0 && Math.random() > 0.6) {
+                        const t = neutralTiles[Math.floor(Math.random() * neutralTiles.length)];
+                        t.claimed = true;
+                        t.owner = k.id;
+                    }
+                }
+            });
+
+            state.stats.day++;
+            addEvent(`🌅 День ${state.stats.day}`);
+            updateStats();
+        }
+
+        function addEvent(text) {
+            const log = document.getElementById('event-log');
+            const el = document.createElement('div');
+            el.className = 'event';
+            el.innerHTML = `<span>${text}</span>`;
+            log.prepend(el);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function init() {
+            generateMap();
+            updateResources();
+            updateStats();
+            updateBuildingsUI();
+            updateUpgradesUI();
+
+            addEvent('🏰 Игра началась. ИИ-королевства уже на карте.');
+            document.getElementById('next-turn-btn').addEventListener('click', endTurn);
+
+            setTimeout(() => {
+                showToast('ИИ-королевства развиваются. Следи за дипломатией!');
+            }, 1500);
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
