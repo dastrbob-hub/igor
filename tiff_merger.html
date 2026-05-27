@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TIFF → PDF Merger</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- UTIF.js и jsPDF (по твоему указанию) -->
+    <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/utif.js/3.1.0/UTIF._min.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
         body { font-family: 'Inter', system-ui, sans-serif; }
         .dropzone { transition: all 0.2s ease; }
@@ -117,7 +121,7 @@
             renderPagesList();
         }
 
-        // Главная функция обработки TIFF по твоему алгоритму
+        // Обработка TIFF по твоему алгоритму
         function processTIFFFile(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -245,7 +249,7 @@
 
         function init() {
             setupDropzone();
-            console.log('%c[TIFF → PDF] Исправленная версия по твоему алгоритму загружена', 'color:#14b8a6');
+            console.log('%c[TIFF → PDF] Библиотеки подключены корректно', 'color:#14b8a6');
         }
 
         window.onload = init;
