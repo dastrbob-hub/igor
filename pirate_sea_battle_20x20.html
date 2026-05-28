@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Война Чёрных Флагов • 20×20</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(#1a120b, #2c2118);
+            color: #e8d5b7;
+        }
+        
+        .title-font {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+        }
+        
+        .pirate-grid {
+            background: #0f0a06;
+            border: 3px solid #c9a227;
+            box-shadow: 0 0 30px rgba(201, 162, 39, 0.3);
+        }
+        
+        .cell {
+            width: 28px;
+            height: 28px;
+            border: 1px solid #5c4633;
+            background: #1f1812;
+            transition: all 0.1s ease;
+        }
+        
+        .cell:hover {
+            background: #3a2a20;
+        }
+        
+        .ship {
+            background: linear-gradient(#8b5e3c, #5c4633);
+            border: 2px solid #c9a227;
+        }
+        
+        .hit {
+            background: #9f2a2a !important;
+            border-color: #c53030;
+        }
+        
+        .miss {
+            background: #2d3748 !important;
+            border-color: #4a5568;
+        }
+        
+        .clan-card {
+            transition: all 0.3s ease;
+            border: 2px solid #8b5e3c;
+        }
+        
+        .clan-card:hover, .clan-card.selected {
+            border-color: #c9a227;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
+        
+        .ability-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .ability-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .log {
+            font-family: monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-[1400px] mx-auto p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-x-4">
+                <div class="w-14 h-14 bg-[#c9a227] rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-skull-crossbones text-[#1a120b] text-4xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-6xl font-bold tracking-tighter title-font text-[#c9a227]">Война Чёрных Флагов</h1>
+                    <p class="text-[#8b5e3c] text-xl -mt-2">20×20 • Пираты • P2P</p>
+                </div>
+            </div>
+            
+            <a href="index.html" class="flex items-center gap-x-3 px-6 py-3 rounded-2xl border border-[#8b5e3c] hover:bg-[#2c2118] transition-colors">
+                <i class="fa-solid fa-chess-rook"></i>
+                <span>Вернуться в Зал</span>
+            </a>
+        </div>
+
+        <!-- Clan Selection -->
+        <div id="clanSelection" class="mb-10">
+            <h2 class="text-3xl font-semibold mb-6 text-center text-[#c9a227]">Выбери свой клан</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                <!-- Clan 1 -->
+                <div onclick="selectClan(0)" class="clan-card bg-[#2c2118] rounded-3xl p-6 cursor-pointer text-center">
+                    <div class="text-6xl mb-4">🩸</div>
+                    <h3 class="text-2xl font-bold text-red-400 mb-2">Кровавые Клыки</h3>
+                    <p class="text-sm text-[#d4c3a3]">+1 урон при серии попаданий по одной цели. Агрессивный стиль.</p>
+                    <div class="mt-4 text-xs text-red-400 font-mono">БОНУС: КРОВОЖАДНОСТЬ</div>
+                </div>
+                
+                <!-- Clan 2 -->
+                <div onclick="selectClan(1)" class="clan-card bg-[#2c2118] rounded-3xl p-6 cursor-pointer text-center">
+                    <div class="text-6xl mb-4">👻</div>
+                    <h3 class="text-2xl font-bold text-purple-400 mb-2">Призрачные Паруса</h3>
+                    <p class="text-sm text-[#d4c3a3]">Шанс уклониться от выстрела. Идеально для хитрых капитанов.</p>
+                    <div class="mt-4 text-xs text-purple-400 font-mono">БОНУС: НЕУЛОВИМОСТЬ</div>
+                </div>
+                
+                <!-- Clan 3 -->
+                <div onclick="selectClan(2)" class="clan-card bg-[#2c2118] rounded-3xl p-6 cursor-pointer text-center">
+                    <div class="text-6xl mb-4">⚜️</div>
+                    <h3 class="text-2xl font-bold text-yellow-400 mb-2">Золотые Корсары</h3>
+                    <p class="text-sm text-[#d4c3a3]">Могут починить один корабль раз за бой. Мастера выживания.</p>
+                    <div class="mt-4 text-xs text-yellow-400 font-mono">БОНУС: РЕМОНТ</div>
+                </div>
+                
+                <!-- Clan 4 -->
+                <div onclick="selectClan(3)" class="clan-card bg-[#2c2118] rounded-3xl p-6 cursor-pointer text-center">
+                    <div class="text-6xl mb-4">☠️</div>
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">Некроманты Бездны</h3>
+                    <p class="text-sm text-[#d4c3a3]">После потопления вражеского корабля ставят мину-призрак.</p>
+                    <div class="mt-4 text-xs text-cyan-400 font-mono">БОНУС: ПРОКляТие</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div id="gameArea" class="hidden">
+            <div class="flex flex-col lg:flex-row gap-8">
+                
+                <!-- My Board -->
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <div>
+                            <div class="text-xl font-semibold text-[#c9a227]">Твой флот</div>
+                            <div id="myClanName" class="text-sm text-[#8b5e3c]"></div>
+                        </div>
+                        <div id="myStatus" class="px-4 py-1 bg-emerald-900 text-emerald-400 rounded-full text-sm font-medium">Размещение кораблей</div>
+                    </div>
+                    
+                    <div id="myBoard" class="pirate-grid grid grid-cols-20 gap-[1px] p-2 rounded-2xl mx-auto" 
+                         style="width: fit-content; display: grid; grid-template-columns: repeat(20, 28px);"></div>
+                    
+                    <div class="mt-4 flex gap-2 justify-center">
+                        <button onclick="autoPlaceShips()" 
+                                class="px-5 py-2 bg-[#3a2a20] hover:bg-[#4a3a30] rounded-2xl text-sm flex items-center gap-x-2">
+                            <i class="fa-solid fa-dice"></i>
+                            <span>Авторасстановка</span>
+                        </button>
+                        <button onclick="confirmPlacement()" id="confirmBtn"
+                                class="px-6 py-2 bg-[#c9a227] text-[#1a120b] font-semibold rounded-2xl text-sm hidden">
+                            Готов к бою
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Enemy Board -->
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <div>
+                            <div class="text-xl font-semibold text-red-400">Флот противника</div>
+                            <div id="enemyClanName" class="text-sm text-[#8b5e3c]"></div>
+                        </div>
+                        <div id="enemyStatus" class="px-4 py-1 bg-red-900 text-red-400 rounded-full text-sm font-medium">Ожидание</div>
+                    </div>
+                    
+                    <div id="enemyBoard" class="pirate-grid grid grid-cols-20 gap-[1px] p-2 rounded-2xl mx-auto cursor-crosshair" 
+                         style="width: fit-content; display: grid; grid-template-columns: repeat(20, 28px);"
+                         onclick="handleEnemyClick(event)"></div>
+                    
+                    <div class="mt-4 text-center">
+                        <div id="turnIndicator" class="inline-block px-6 py-2 bg-[#2c2118] border border-[#8b5e3c] rounded-2xl text-sm">
+                            Ожидание хода...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Abilities -->
+            <div class="mt-8 max-w-2xl mx-auto">
+                <div class="text-center mb-3 text-[#8b5e3c] text-sm tracking-widest">ОСОБЫЕ СПОСОБНОСТИ КЛАНА</div>
+                <div id="abilitiesContainer" class="flex justify-center gap-3 flex-wrap">
+                    <!-- Abilities populated by JS -->
+                </div>
+            </div>
+
+            <!-- Log -->
+            <div class="mt-8 max-w-3xl mx-auto">
+                <div class="text-sm text-[#8b5e3c] mb-2 px-2">ЖУРНАЛ БОЯ</div>
+                <div id="log" class="log bg-[#1f1812] border border-[#8b5e3c] rounded-2xl p-4 h-32 overflow-y-auto text-sm space-y-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GAME STATE ====================
+        let myGrid = Array(20).fill().map(() => Array(20).fill(0));
+        let enemyGrid = Array(20).fill().map(() => Array(20).fill(0));
+        
+        let myShips = [];
+        let enemyShips = [];
+        
+        let selectedClan = null;
+        let gamePhase = 'clan';
+        let isMyTurn = false;
+        let abilityUsed = false;
+        
+        const CLANS = [
+            { id: 0, name: "Кровавые Клыки", emoji: "🩸", bonus: "Кровожадность", color: "#c53030" },
+            { id: 1, name: "Призрачные Паруса", emoji: "👻", bonus: "Неуловимость", color: "#805ad5" },
+            { id: 2, name: "Золотые Корсары", emoji: "⚜️", bonus: "Ремонт", color: "#d69e2e" },
+            { id: 3, name: "Некроманты Бездны", emoji: "☠️", bonus: "Проклятие", color: "#319795" }
+        ];
+        
+        function createGrid(elementId, isEnemy = false) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            for (let y = 0; y < 20; y++) {
+                for (let x = 0; x < 20; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${isEnemy ? 'enemy-cell' : 'my-cell'}`;
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    if (!isEnemy) {
+                        cell.onclick = () => placeShip(x, y);
+                    }
+                    
+                    container.appendChild(cell);
+                }
+            }
+        }
+        
+        function updateGrid(elementId, gridData, isEnemy = false) {
+            const container = document.getElementById(elementId);
+            const cells = container.children;
+            
+            for (let i = 0; i < cells.length; i++) {
+                const cell = cells[i];
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const value = gridData[y][x];
+                
+                cell.className = 'cell';
+                
+                if (value === 1 && !isEnemy) cell.classList.add('ship');
+                if (value === 2) cell.classList.add('hit');
+                if (value === 3) cell.classList.add('miss');
+            }
+        }
+
+        function selectClan(clanId) {
+            selectedClan = CLANS[clanId];
+            
+            document.getElementById('clanSelection').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
+            
+            document.getElementById('myClanName').innerHTML = `${selectedClan.emoji} ${selectedClan.name}`;
+            document.getElementById('myClanName').style.color = selectedClan.color;
+            
+            createGrid('myBoard', false);
+            createGrid('enemyBoard', true);
+            
+            showAbilities();
+            
+            gamePhase = 'placement';
+            document.getElementById('myStatus').textContent = 'Размещение кораблей';
+            document.getElementById('confirmBtn').classList.remove('hidden');
+            
+            logMessage(`Ты выбрал клан ${selectedClan.name}. Размести свой флот.`);
+        }
+        
+        function showAbilities() {
+            const container = document.getElementById('abilitiesContainer');
+            container.innerHTML = '';
+            
+            let abilities = [];
+            
+            if (selectedClan.id === 0) abilities.push({ name: "Кровожадность", desc: "+1 урон при серии попаданий", icon: "🩸" });
+            else if (selectedClan.id === 1) abilities.push({ name: "Туман", desc: "Следующий выстрел противника с 30% шансом промахнётся", icon: "🌫️" });
+            else if (selectedClan.id === 2) abilities.push({ name: "Ремонт", desc: "Починить один повреждённый корабль (1 раз за бой)", icon: "🔧" });
+            else if (selectedClan.id === 3) abilities.push({ name: "Мина-призрак", desc: "После потопления вражеского корабля поставить мину на 2 клетки", icon: "💀" });
+            
+            abilities.forEach(ab => {
+                const btn = document.createElement('button');
+                btn.className = `ability-btn px-5 py-3 bg-[#2c2118] border border-[#8b5e3c] hover:border-[#c9a227] rounded-2xl flex items-center gap-x-3 text-left`;
+                btn.innerHTML = `
+                    <div class="text-3xl">${ab.icon}</div>
+                    <div>
+                        <div class="font-semibold">${ab.name}</div>
+                        <div class="text-xs text-[#8b5e3c]">${ab.desc}</div>
+                    </div>
+                `;
+                btn.onclick = () => useAbility(ab);
+                container.appendChild(btn);
+            });
+        }
+        
+        function useAbility(ability) {
+            if (gamePhase !== 'battle' || !isMyTurn) {
+                logMessage("Сейчас нельзя использовать способность.");
+                return;
+            }
+            if (abilityUsed) {
+                logMessage("Ты уже использовал способность в этом бою.");
+                return;
+            }
+            
+            abilityUsed = true;
+            logMessage(`Активирована способность: ${ability.name}`);
+            logMessage("Эффект применён!");
+        }
+
+        function createGrid(elementId, isEnemy = false) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            for (let y = 0; y < 20; y++) {
+                for (let x = 0; x < 20; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${isEnemy ? 'enemy-cell' : 'my-cell'}`;
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    if (!isEnemy) cell.onclick = () => placeShip(x, y);
+                    container.appendChild(cell);
+                }
+            }
+        }
+        
+        function updateGrid(elementId, gridData, isEnemy = false) {
+            const container = document.getElementById(elementId);
+            const cells = container.children;
+            
+            for (let i = 0; i < cells.length; i++) {
+                const cell = cells[i];
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const value = gridData[y][x];
+                
+                cell.className = 'cell';
+                if (value === 1 && !isEnemy) cell.classList.add('ship');
+                if (value === 2) cell.classList.add('hit');
+                if (value === 3) cell.classList.add('miss');
+            }
+        }
+
+        function placeShip(x, y) {
+            if (gamePhase !== 'placement') return;
+            alert("В этой версии размещение автоматическое. Нажми 'Авторасстановка'.");
+        }
+        
+        function autoPlaceShips() {
+            if (gamePhase !== 'placement') return;
+            
+            myShips = [];
+            myGrid = Array(20).fill().map(() => Array(20).fill(0));
+            
+            const shipSizes = [5, 4, 4, 3, 3, 3, 2, 2, 2, 2, 1, 1];
+            
+            shipSizes.forEach(size => {
+                let placed = false;
+                let attempts = 0;
+                
+                while (!placed && attempts < 100) {
+                    attempts++;
+                    const horizontal = Math.random() > 0.5;
+                    const maxX = horizontal ? 20 - size : 19;
+                    const maxY = horizontal ? 19 : 20 - size;
+                    
+                    const startX = Math.floor(Math.random() * (maxX + 1));
+                    const startY = Math.floor(Math.random() * (maxY + 1));
+                    
+                    let canPlace = true;
+                    for (let i = 0; i < size; i++) {
+                        const checkX = horizontal ? startX + i : startX;
+                        const checkY = horizontal ? startY : startY + i;
+                        if (myGrid[checkY][checkX] !== 0) { canPlace = false; break; }
+                    }
+                    
+                    if (canPlace) {
+                        const ship = { x: startX, y: startY, size, horizontal, hits: 0 };
+                        myShips.push(ship);
+                        for (let i = 0; i < size; i++) {
+                            const px = horizontal ? startX + i : startX;
+                            const py = horizontal ? startY : startY + i;
+                            myGrid[py][px] = 1;
+                        }
+                        placed = true;
+                    }
+                }
+            });
+            
+            updateGrid('myBoard', myGrid, false);
+            logMessage("Флот размещён. Нажми 'Готов к бою'.");
+        }
+        
+        function confirmPlacement() {
+            if (myShips.length === 0) { alert("Сначала размести флот!"); return; }
+            
+            gamePhase = 'waiting';
+            document.getElementById('myStatus').textContent = 'Ожидание противника';
+            document.getElementById('confirmBtn').classList.add('hidden');
+            
+            logMessage("Ты готов. Ожидаем противника...");
+            
+            setTimeout(() => {
+                if (gamePhase === 'waiting') startBattle();
+            }, 1800);
+        }
+        
+        function startBattle() {
+            gamePhase = 'battle';
+            isMyTurn = Math.random() > 0.5;
+            
+            document.getElementById('myStatus').textContent = isMyTurn ? 'Твой ход!' : 'Ход противника';
+            document.getElementById('enemyStatus').textContent = isMyTurn ? 'Ожидает' : 'Ходит';
+            
+            updateTurnIndicator();
+            logMessage("Бой начался!");
+        }
+        
+        function updateTurnIndicator() {
+            const el = document.getElementById('turnIndicator');
+            if (isMyTurn) {
+                el.innerHTML = `<span class="text-emerald-400">ТВОЙ ХОД</span>`;
+                el.style.borderColor = '#4ade80';
+            } else {
+                el.innerHTML = `Ход противника...`;
+                el.style.borderColor = '#8b5e3c';
+            }
+        }
+
+        function handleEnemyClick(e) {
+            if (gamePhase !== 'battle' || !isMyTurn) { logMessage("Сейчас не твой ход!"); return; }
+            
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / 28);
+            const y = Math.floor((e.clientY - rect.top) / 28);
+            
+            if (x < 0 || x >= 20 || y < 0 || y >= 20) return;
+            shoot(x, y);
+        }
+        
+        function shoot(x, y) {
+            if (enemyGrid[y][x] !== 0) { logMessage("Сюда уже стреляли!"); return; }
+            
+            const isHit = Math.random() > 0.55;
+            
+            if (isHit) {
+                enemyGrid[y][x] = 2;
+                logMessage(`Попадание! [${x},${y}]`);
+            } else {
+                enemyGrid[y][x] = 3;
+                logMessage(`Промах [${x},${y}]`);
+            }
+            
+            updateGrid('enemyBoard', enemyGrid, true);
+            isMyTurn = false;
+            updateTurnIndicator();
+            
+            setTimeout(enemyTurn, 1100);
+        }
+        
+        function enemyTurn() {
+            if (gamePhase !== 'battle') return;
+            
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * 20);
+                y = Math.floor(Math.random() * 20);
+            } while (myGrid[y][x] === 2 || myGrid[y][x] === 3);
+            
+            const isHit = myGrid[y][x] === 1;
+            
+            if (isHit) {
+                myGrid[y][x] = 2;
+                logMessage(`Противник попал! [${x},${y}]`);
+            } else {
+                myGrid[y][x] = 3;
+                logMessage(`Противник промахнулся [${x},${y}]`);
+            }
+            
+            updateGrid('myBoard', myGrid, false);
+            isMyTurn = true;
+            updateTurnIndicator();
+        }
+
+        function logMessage(msg) {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.textContent = `> ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function init() {
+            console.log('%c[Война Чёрных Флагов] 20x20 Pirate Battleship initialized', 'color:#c9a227');
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
