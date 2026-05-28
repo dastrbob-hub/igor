@@ -52,7 +52,6 @@
 </head>
 <body class="bg-[#1a120b] text-[#e8d5b7]">
     <div class="max-w-4xl mx-auto px-6 py-8">
-        <!-- Королевский заголовок -->
         <div class="flex items-center justify-between mb-10">
             <div>
                 <div class="flex items-center gap-x-3 mb-2">
@@ -69,7 +68,6 @@
             </a>
         </div>
 
-        <!-- Drop Zone -->
         <div id="dropzone"
              class="dropzone border-2 border-dashed border-[#8b5e3c] rounded-3xl p-14 text-center cursor-pointer hover:border-[#c9a227] transition-all">
             <div class="mx-auto w-16 h-16 bg-[#3a2a20] rounded-2xl flex items-center justify-center mb-5 border border-[#8b5e3c]">
@@ -86,12 +84,11 @@
             <p class="text-xs text-[#8b5e3c] mt-5">Поддерживаются обычные и многостраничные TIFF • Смешанные ориентации</p>
         </div>
 
-        <!-- Pages List -->
         <div id="pagesSection" class="hidden mt-10">
             <div class="flex items-center justify-between mb-4 px-1">
                 <div>
-                    <h2 class="section-title text-3xl text-[#c9a227]">Страницы в свитке</h2>
-                    <p class="text-[#8b5e3c] text-sm mt-0.5">Меняй порядок стрелками</p>
+                    <h2 class="section-title text-3xl text-[#c9a227]">Страницы в свитке <span id="pageCount" class="text-[#8b5e3c] font-normal">(0)</span></h2>
+                    <p class="text-[#8b5e3c] text-sm mt-0.5">Меняй порядок стрелками ↑ ↓</p>
                 </div>
                 <button onclick="clearAll()" 
                         class="text-sm px-5 py-2 text-red-400 hover:text-red-300 border border-red-900/50 hover:bg-red-950/30 rounded-2xl transition-colors flex items-center gap-x-2">
@@ -101,18 +98,15 @@
             </div>
 
             <div id="pagesList" class="space-y-2 bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-3 max-h-[460px] overflow-y-auto">
-                <!-- Populated by JS -->
             </div>
 
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- PDF Button -->
                 <button onclick="downloadAsPDF()"
                         class="w-full py-5 bg-emerald-700 hover:bg-emerald-600 transition-all rounded-3xl font-semibold text-xl flex items-center justify-center gap-x-3 royal-btn">
                     <i class="fa-solid fa-file-pdf text-2xl"></i>
                     <span>Скачать как PDF</span>
                 </button>
                 
-                <!-- TIFF Button (NEW) -->
                 <button onclick="downloadAsTIFF()"
                         class="w-full py-5 bg-amber-700 hover:bg-amber-600 transition-all rounded-3xl font-semibold text-xl flex items-center justify-center gap-x-3 royal-btn">
                     <i class="fa-solid fa-file-image text-2xl"></i>
@@ -125,7 +119,7 @@
     </div>
 
     <script>
-        let pages = []; // { id, name, data: base64 PNG, w, h, rgba: Uint8Array }
+        let pages = [];
 
         function setupDropzone() {
             const dropzone = document.getElementById('dropzone');
@@ -153,11 +147,10 @@
         }
 
         async function handleFiles(fileList) {
-            const files = Array.from(fileList).filter(f => 
-                f.type.includes('tiff') || 
-                f.name.toLowerCase().endsWith('.tif') || 
-                f.name.toLowerCase().endsWith('.tiff')
-            );
+            const files = Array.from(fileList).filter(f => {
+                const name = f.name.toLowerCase();
+                return name.endsWith('.tif') || name.endsWith('.tiff') || (f.type && f.type.includes('tiff'));
+            });
 
             if (files.length === 0) {
                 alert('Загружай только TIFF файлы (.tif / .tiff)');
@@ -212,7 +205,7 @@
                                     data: imgBase64,
                                     w: ifd.width,
                                     h: ifd.height,
-                                    rgba: new Uint8Array(rgba)   // сохраняем сырые данные для TIFF
+                                    rgba: new Uint8Array(rgba)
                                 });
                             } catch (pageErr) {
                                 console.warn('Пропущена страница:', pageErr);
@@ -233,7 +226,9 @@
         function renderPagesList() {
             const container = document.getElementById('pagesList');
             container.innerHTML = '';
-            document.getElementById('pageCount').textContent = `(${pages.length})`;
+            
+            const countEl = document.getElementById('pageCount');
+            if (countEl) countEl.textContent = `(${pages.length})`;
 
             pages.forEach((page, index) => {
                 const div = document.createElement('div');
@@ -278,14 +273,12 @@
             document.getElementById('pagesSection').classList.add('hidden');
         }
 
-        // ==================== ИСПРАВЛЕННАЯ ФУНКЦИЯ PDF ====================
         function downloadAsPDF() {
             if (pages.length === 0) return;
 
             const { jsPDF } = window.jspdf;
             const first = pages[0];
 
-            // Создаём документ под размер первой страницы
             const doc = new jsPDF({
                 orientation: first.w > first.h ? 'landscape' : 'portrait',
                 unit: 'px',
@@ -294,7 +287,6 @@
 
             doc.addImage(first.data, 'PNG', 0, 0, first.w, first.h);
 
-            // Добавляем остальные страницы с их собственными размерами
             for (let i = 1; i < pages.length; i++) {
                 const p = pages[i];
                 const o = p.w > p.h ? 'landscape' : 'portrait';
@@ -305,7 +297,6 @@
             doc.save(`merged_${pages.length}_pages.pdf`);
         }
 
-        // ==================== НОВАЯ ФУНКЦИЯ: СЛИТь В ОДИН TIFF ====================
         function downloadAsTIFF() {
             if (pages.length === 0) return;
 
@@ -314,10 +305,10 @@
                     width: page.w,
                     height: page.h,
                     data: page.rgba,
-                    photometric: 2,           // RGB
+                    photometric: 2,
                     bitsPerSample: [8, 8, 8, 8],
                     sampleFormat: [1, 1, 1, 1],
-                    compression: 1            // no compression
+                    compression: 1
                 }));
 
                 const tiffBuffer = UTIF.encode(ifds);
@@ -340,7 +331,7 @@
 
         function init() {
             setupDropzone();
-            console.log('%c[Слияние Свитков] Готово: PDF с любыми ориентациями + экспорт в один TIFF', 'color:#c9a227');
+            console.log('%c[Слияние Свитков] Готово (v2 - исправлено)', 'color:#c9a227');
         }
 
         window.onload = init;
