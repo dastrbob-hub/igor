@@ -52,6 +52,7 @@
         .disabled-btn {
             opacity: 0.5;
             cursor: not-allowed;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -119,7 +120,7 @@
                 </button>
             </div>
             
-            <p class="text-center text-xs text-[#8b5e3c] mt-4">PDF работает со всеми форматами • TIFF — только для загруженных TIFF-файлов</p>
+            <p class="text-center text-xs text-[#8b5e3c] mt-4">PDF работает со всеми форматами • TIFF доступен только для загруженных TIFF-файлов</p>
         </div>
     </div>
 
@@ -182,7 +183,6 @@
                 }
             }
             renderPagesList();
-            updateTiffButtonState();
         }
 
         function processGenericImage(file) {
@@ -236,10 +236,7 @@
                                 const w = Math.max(1, Math.floor(ifd.width || 0));
                                 const h = Math.max(1, Math.floor(ifd.height || 0));
 
-                                if (!w || !h) {
-                                    console.warn('Пропущена страница с некорректными размерами');
-                                    return;
-                                }
+                                if (!w || !h) return;
 
                                 const canvas = document.createElement('canvas');
                                 canvas.width = w;
@@ -311,16 +308,13 @@
             const btn = document.getElementById('tiffBtn');
             if (!btn) return;
             
-            const hasTiffPages = pages.some(p => p.rgba !== null);
+            const hasRealTiff = pages.some(p => p.rgba !== null);
             
-            if (hasTiffPages) {
-                btn.disabled = false;
-                btn.classList.remove('disabled-btn', 'opacity-50');
-                btn.title = '';
-            } else {
-                btn.disabled = true;
+            btn.disabled = !hasRealTiff;
+            if (!hasRealTiff) {
                 btn.classList.add('disabled-btn', 'opacity-50');
-                btn.title = 'Экспорт в TIFF доступен только для загруженных TIFF-файлов';
+            } else {
+                btn.classList.remove('disabled-btn', 'opacity-50');
             }
         }
 
@@ -373,7 +367,7 @@
             const tiffPages = pages.filter(p => p.rgba !== null && p.w > 0 && p.h > 0);
 
             if (tiffPages.length === 0) {
-                alert('Нет страниц, подходящих для экспорта в TIFF.\n\nЭкспорт в TIFF сейчас работает только с загруженными TIFF-файлов. Для смешанных форматов используй PDF.');
+                alert('Экспорт в TIFF доступен только для загруженных TIFF-файлов.\n\nДля смешанных форматов используй кнопку PDF.');
                 return;
             }
 
@@ -408,7 +402,7 @@
 
         function init() {
             setupDropzone();
-            console.log('%c[Слияние Свитков] Стабильная версия с улучшенной обработкой TIFF', 'color:#c9a227');
+            console.log('%c[Слияние Свитков] Стабильная версия загружена', 'color:#c9a227');
         }
 
         window.onload = init;
