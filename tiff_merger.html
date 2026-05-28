@@ -3,71 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIFF → PDF Merger</title>
+    <title>Слияние Свитков • Королевский Зал</title>
 
     <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; }
-        .dropzone { transition: all 0.2s ease; }
-        .dropzone.dragover { background-color: #0f172a; border-color: #64748b; }
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500&display=swap');
+        
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background-color: #1a120b;
+            color: #e8d5b7;
+        }
+        .title-font { font-family: 'Cinzel', serif; letter-spacing: 1px; }
+        .medieval-text { font-family: 'Playfair Display', serif; }
+        
+        .dropzone { 
+            transition: all 0.3s ease; 
+            background: linear-gradient(145deg, #2c2118 0%, #3a2a20 100%);
+        }
+        .dropzone.dragover { 
+            background-color: #3a2a20; 
+            border-color: #c9a227; 
+        }
+        
+        .page-item {
+            background-color: #2c2118;
+            border: 1px solid #8b5e3c;
+        }
+        
+        .royal-btn {
+            transition: all 0.3s ease;
+            border: 2px solid #c9a227;
+        }
+        .royal-btn:hover {
+            background-color: #c9a227;
+            color: #1a120b;
+            border-color: #c9a227;
+        }
+        
+        .section-title {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200">
+<body class="bg-[#1a120b] text-[#e8d5b7]">
     <div class="max-w-4xl mx-auto px-6 py-8">
-        <div class="flex items-center justify-between mb-8">
+        <!-- Королевский заголовок -->
+        <div class="flex items-center justify-between mb-10">
             <div>
-                <h1 class="text-4xl font-bold tracking-tighter">TIFF → PDF Merger</h1>
-                <p class="text-slate-400 mt-1">Объедини TIFF-сканы в один PDF с нужным порядком страниц</p>
+                <div class="flex items-center gap-x-3 mb-2">
+                    <div class="w-10 h-10 bg-[#c9a227] rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-scroll text-[#1a120b] text-2xl"></i>
+                    </div>
+                    <h1 class="text-5xl font-bold tracking-tighter title-font text-[#c9a227]">Слияние Свитков</h1>
+                </div>
+                <p class="text-[#d4c3a3] text-lg medieval-text">Объединяй древние манускрипты в один великий PDF или многостраничный TIFF</p>
             </div>
-            <a href="index.html" class="text-sm px-4 py-2 rounded-2xl bg-slate-900 hover:bg-slate-800 transition-colors">← Назад в хаб</a>
+            <a href="index.html" class="text-sm px-5 py-2.5 rounded-2xl border border-[#8b5e3c] hover:bg-[#2c2118] transition-colors flex items-center gap-x-2">
+                <i class="fa-solid fa-chess-rook"></i>
+                <span>Вернуться в Зал</span>
+            </a>
         </div>
 
         <!-- Drop Zone -->
         <div id="dropzone"
-             class="dropzone border-2 border-dashed border-slate-700 rounded-3xl p-12 text-center cursor-pointer hover:border-slate-600 transition-colors">
-            <div class="mx-auto w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+             class="dropzone border-2 border-dashed border-[#8b5e3c] rounded-3xl p-14 text-center cursor-pointer hover:border-[#c9a227] transition-all">
+            <div class="mx-auto w-16 h-16 bg-[#3a2a20] rounded-2xl flex items-center justify-center mb-5 border border-[#8b5e3c]">
+                <i class="fa-solid fa-file-import text-3xl text-[#c9a227]"></i>
             </div>
-            <h3 class="text-xl font-semibold mb-1">Перетащи TIFF файлы сюда</h3>
-            <p class="text-slate-400 mb-4">или нажми для выбора</p>
+            <h3 class="text-2xl font-semibold mb-2 text-[#c9a227]">Перетащи TIFF-файлы сюда</h3>
+            <p class="text-[#d4c3a3] mb-5">или нажми для выбора нескольких файлов</p>
+            
             <input type="file" id="fileInput" multiple accept="image/tiff,.tif,.tiff" class="hidden">
             <button onclick="document.getElementById('fileInput').click()"
-                    class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium transition-colors">
+                    class="px-8 py-3 bg-[#c9a227] hover:bg-[#d4af37] text-[#1a120b] rounded-2xl font-semibold transition-colors">
                 Выбрать файлы
             </button>
-            <p class="text-xs text-slate-500 mt-4">Поддерживаются обычные и многостраничные TIFF</p>
+            <p class="text-xs text-[#8b5e3c] mt-5">Поддерживаются обычные и многостраничные TIFF • Смешанные ориентации</p>
         </div>
 
         <!-- Pages List -->
-        <div id="pagesSection" class="hidden mt-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold">Страницы <span id="pageCount" class="text-slate-400 font-normal">(0)</span></h2>
-                <button onclick="clearAll()" class="text-sm px-4 py-2 text-red-400 hover:text-red-300 transition-colors">
-                    Очистить всё
+        <div id="pagesSection" class="hidden mt-10">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div>
+                    <h2 class="section-title text-3xl text-[#c9a227]">Страницы в свитке</h2>
+                    <p class="text-[#8b5e3c] text-sm mt-0.5">Меняй порядок стрелками</p>
+                </div>
+                <button onclick="clearAll()" 
+                        class="text-sm px-5 py-2 text-red-400 hover:text-red-300 border border-red-900/50 hover:bg-red-950/30 rounded-2xl transition-colors flex items-center gap-x-2">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Очистить всё</span>
                 </button>
             </div>
 
-            <div id="pagesList" class="space-y-2 bg-slate-900 border border-slate-800 rounded-3xl p-2 max-h-[420px] overflow-y-auto">
+            <div id="pagesList" class="space-y-2 bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-3 max-h-[460px] overflow-y-auto">
                 <!-- Populated by JS -->
             </div>
 
-            <div class="mt-6">
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- PDF Button -->
                 <button onclick="downloadAsPDF()"
-                        class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 transition-colors rounded-3xl font-semibold text-lg flex items-center justify-center gap-x-3">
+                        class="w-full py-5 bg-emerald-700 hover:bg-emerald-600 transition-all rounded-3xl font-semibold text-xl flex items-center justify-center gap-x-3 royal-btn">
+                    <i class="fa-solid fa-file-pdf text-2xl"></i>
                     <span>Скачать как PDF</span>
                 </button>
+                
+                <!-- TIFF Button (NEW) -->
+                <button onclick="downloadAsTIFF()"
+                        class="w-full py-5 bg-amber-700 hover:bg-amber-600 transition-all rounded-3xl font-semibold text-xl flex items-center justify-center gap-x-3 royal-btn">
+                    <i class="fa-solid fa-file-image text-2xl"></i>
+                    <span>Слить в один TIFF</span>
+                </button>
             </div>
-            <p class="text-center text-xs text-slate-500 mt-3">Меняй порядок страниц стрелками ↑ ↓</p>
+            
+            <p class="text-center text-xs text-[#8b5e3c] mt-4">PDF сохраняет ориентацию каждой страницы • TIFF — один многостраничный файл</p>
         </div>
     </div>
 
     <script>
-        let pages = []; // { id, name, data: base64, w, h }
+        let pages = []; // { id, name, data: base64 PNG, w, h, rgba: Uint8Array }
 
         function setupDropzone() {
             const dropzone = document.getElementById('dropzone');
@@ -153,7 +211,8 @@
                                     name: ifds.length > 1 ? `${file.name} (стр.${idx + 1})` : file.name,
                                     data: imgBase64,
                                     w: ifd.width,
-                                    h: ifd.height
+                                    h: ifd.height,
+                                    rgba: new Uint8Array(rgba)   // сохраняем сырые данные для TIFF
                                 });
                             } catch (pageErr) {
                                 console.warn('Пропущена страница:', pageErr);
@@ -178,20 +237,20 @@
 
             pages.forEach((page, index) => {
                 const div = document.createElement('div');
-                div.className = 'page-item flex items-center justify-between bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3';
+                div.className = 'page-item flex items-center justify-between rounded-2xl px-5 py-3.5';
 
                 div.innerHTML = `
                     <div class="flex items-center gap-x-4">
-                        <div class="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center text-xs font-mono font-bold">${index + 1}</div>
+                        <div class="w-9 h-9 bg-[#3a2a20] border border-[#8b5e3c] rounded-xl flex items-center justify-center text-sm font-mono font-bold text-[#c9a227]">${index + 1}</div>
                         <div class="min-w-0">
-                            <div class="font-medium text-sm truncate max-w-[280px]">${page.name}</div>
-                            <div class="text-xs text-slate-500">${page.w} × ${page.h}</div>
+                            <div class="font-medium text-sm truncate max-w-[300px]">${page.name}</div>
+                            <div class="text-xs text-[#8b5e3c]">${page.w} × ${page.h} px</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-x-1">
-                        <button onclick="movePage(${index}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl">↑</button>
-                        <button onclick="movePage(${index}, 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl">↓</button>
-                        <button onclick="deletePage(${index})" class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-slate-700 rounded-xl">✕</button>
+                        <button onclick="movePage(${index}, -1)" class="w-9 h-9 flex items-center justify-center text-[#c9a227] hover:bg-[#3a2a20] rounded-xl text-lg">↑</button>
+                        <button onclick="movePage(${index}, 1)" class="w-9 h-9 flex items-center justify-center text-[#c9a227] hover:bg-[#3a2a20] rounded-xl text-lg">↓</button>
+                        <button onclick="deletePage(${index})" class="w-9 h-9 flex items-center justify-center text-red-400 hover:bg-red-950/40 rounded-xl">✕</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -219,38 +278,69 @@
             document.getElementById('pagesSection').classList.add('hidden');
         }
 
-        // Исправленная функция генерации PDF с разными размерами страниц
-        async function downloadAsPDF() {
+        // ==================== ИСПРАВЛЕННАЯ ФУНКЦИЯ PDF ====================
+        function downloadAsPDF() {
             if (pages.length === 0) return;
 
             const { jsPDF } = window.jspdf;
-            let doc = null;
+            const first = pages[0];
 
-            pages.forEach((img, index) => {
-                const orientation = img.w > img.h ? 'l' : 'p';
-
-                if (index === 0) {
-                    // Первая страница — создаём документ под её размер
-                    doc = new jsPDF({
-                        orientation: orientation,
-                        unit: 'px',
-                        format: [img.w, img.h]
-                    });
-                } else {
-                    // Добавляем новую страницу под размер текущей картинки
-                    doc.addPage([img.w, img.h], orientation);
-                }
-
-                // Вставляем изображение точно под размер страницы
-                doc.addImage(img.data, 'PNG', 0, 0, img.w, img.h);
+            // Создаём документ под размер первой страницы
+            const doc = new jsPDF({
+                orientation: first.w > first.h ? 'landscape' : 'portrait',
+                unit: 'px',
+                format: [first.w, first.h]
             });
+
+            doc.addImage(first.data, 'PNG', 0, 0, first.w, first.h);
+
+            // Добавляем остальные страницы с их собственными размерами
+            for (let i = 1; i < pages.length; i++) {
+                const p = pages[i];
+                const o = p.w > p.h ? 'landscape' : 'portrait';
+                doc.addPage([p.w, p.h], o);
+                doc.addImage(p.data, 'PNG', 0, 0, p.w, p.h);
+            }
 
             doc.save(`merged_${pages.length}_pages.pdf`);
         }
 
+        // ==================== НОВАЯ ФУНКЦИЯ: СЛИТь В ОДИН TIFF ====================
+        function downloadAsTIFF() {
+            if (pages.length === 0) return;
+
+            try {
+                const ifds = pages.map(page => ({
+                    width: page.w,
+                    height: page.h,
+                    data: page.rgba,
+                    photometric: 2,           // RGB
+                    bitsPerSample: [8, 8, 8, 8],
+                    sampleFormat: [1, 1, 1, 1],
+                    compression: 1            // no compression
+                }));
+
+                const tiffBuffer = UTIF.encode(ifds);
+                const blob = new Blob([tiffBuffer], { type: 'image/tiff' });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `merged_${pages.length}_pages.tif`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+            } catch (err) {
+                console.error(err);
+                alert('Не удалось создать многостраничный TIFF. Пока используй PDF — он работает стабильно.');
+            }
+        }
+
         function init() {
             setupDropzone();
-            console.log('%c[TIFF → PDF] Поддержка смешанных ориентаций включена', 'color:#14b8a6');
+            console.log('%c[Слияние Свитков] Готово: PDF с любыми ориентациями + экспорт в один TIFF', 'color:#c9a227');
         }
 
         window.onload = init;
