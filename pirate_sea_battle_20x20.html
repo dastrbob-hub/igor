@@ -115,6 +115,7 @@
                         Создать игру
                     </button>
 
+                    <!-- Offer для хоста -->
                     <div id="hostOfferBox" class="hidden">
                         <div class="text-sm text-[#8b5e3c] mb-2">Отправь этот код второму игроку:</div>
                         <div class="flex gap-2">
@@ -123,6 +124,7 @@
                         </div>
                     </div>
 
+                    <!-- Поле для Answer от клиента -->
                     <div id="hostAnswerBox" class="hidden mt-6">
                         <div class="text-sm text-[#8b5e3c] mb-2">Вставь код Answer от второго игрока:</div>
                         <div class="flex gap-2">
@@ -157,7 +159,7 @@
             </div>
         </div>
 
-        <!-- Game Area (после подключения) -->
+        <!-- Game Area -->
         <div id="gameArea" class="hidden mt-8">
             <div class="text-center mb-8">
                 <div class="text-3xl mb-2">Соединение установлено!</div>
@@ -165,15 +167,12 @@
             </div>
 
             <div class="flex justify-center gap-8">
-                <!-- Моя доска -->
                 <div>
                     <div class="text-lg mb-2 text-[#c9a227]">Твой флот</div>
                     <div class="pirate-grid w-[420px] h-[420px] rounded-2xl flex items-center justify-center text-[#8b5e3c]">
                         Доска 20×20 (в разработке)
                     </div>
                 </div>
-
-                <!-- Доска противника -->
                 <div>
                     <div class="text-lg mb-2 text-red-400">Флот противника</div>
                     <div class="pirate-grid w-[420px] h-[420px] rounded-2xl flex items-center justify-center text-[#8b5e3c]">
@@ -183,7 +182,7 @@
             </div>
 
             <div class="mt-8 text-center text-[#8b5e3c]">
-                Полноценная версия игры в разработке. Сейчас подключение работает.
+                Полноценная версия игры в разработке.
             </div>
         </div>
     </div>
@@ -223,6 +222,9 @@
 
             document.getElementById('hostOfferBox').classList.remove('hidden');
             document.getElementById('hostOffer').value = JSON.stringify(offer);
+
+            // Показываем поле для Answer
+            document.getElementById('hostAnswerBox').classList.remove('hidden');
         }
 
         function copyToClipboard(elementId) {
@@ -282,7 +284,7 @@
             };
 
             dataChannel.onmessage = (e) => {
-                console.log('Message from opponent:', e.data);
+                console.log('Message:', e.data);
             };
         }
     </script>
