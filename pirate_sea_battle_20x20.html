@@ -25,15 +25,20 @@
             border: 2px solid #8b5e3c;
         }
         
-        .clan-card:hover, .clan-card.selected {
+        .clan-card:hover {
             border-color: #c9a227;
             transform: translateY(-4px);
         }
         
-        .tech-input {
+        .section {
+            background-color: #2c2118;
+            border: 2px solid #8b5e3c;
+        }
+        
+        .code-box {
             background-color: #1f1812;
             border: 1px solid #8b5e3c;
-            color: #e8d5b7;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -82,57 +87,69 @@
                 
                 <div onclick="selectClan(3)" class="clan-card bg-[#2c2118] rounded-3xl p-6 cursor-pointer text-center">
                     <div class="text-7xl mb-4">☠️</div>
-                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">Некроманты Бездны</h3>
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">Некроманты Бе7дны</h3>
                     <p class="text-sm text-[#d4c3a3]">После потопления ставят мину</p>
                 </div>
             </div>
         </div>
 
-        <!-- Connection Panel -->
-        <div id="connectionPanel" class="hidden max-w-2xl mx-auto mt-8">
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-8">
-                <div class="flex items-center gap-x-3 mb-4">
-                    <span class="text-xl font-semibold">Твой клан:</span> 
-                    <span id="selectedClanName" class="text-2xl font-bold text-[#c9a227]"></span>
+        <!-- Connection Screen -->
+        <div id="connectionPanel" class="hidden max-w-3xl mx-auto mt-8">
+            <div class="section rounded-3xl p-8">
+                <div class="mb-6">
+                    <span class="text-lg">Твой клан:</span>
+                    <span id="myClanName" class="ml-2 text-2xl font-bold"></span>
                 </div>
-                
-                <h3 class="text-2xl font-bold text-center mb-6 text-[#c9a227]">Подключение</h3>
-                
+
+                <h3 class="text-2xl font-bold mb-6 text-center text-[#c9a227]">Подключение</h3>
+
                 <!-- Хост -->
-                <div class="mb-8">
-                    <button onclick="createGame()" class="w-full py-3 bg-[#c9a227] text-[#1a120b] font-bold rounded-2xl mb-3">
-                        Создать игру (Хост)
-                    </button>
-                    
-                    <div id="hostOfferSection" class="hidden">
-                        <div class="text-sm text-[#8b5e3c] mb-1">Твой код (Offer) — отправь второму игроку:</div>
-                        <div class="flex gap-2">
-                            <textarea id="hostOffer" class="flex-1 p-3 rounded-2xl text-xs font-mono h-20 bg-[#1f1812] border border-[#8b5e3c]" readonly></textarea>
-                            <button onclick="copyHostOffer()" class="px-4 bg-[#3a2a20] rounded-2xl text-sm">Копировать</button>
-                        </div>
+                <div class="mb-10">
+                    <div class="flex items-center gap-x-2 mb-3">
+                        <span class="px-3 py-1 bg-emerald-900 text-emerald-400 text-xs rounded-full font-bold">ХОСТ</span>
+                        <span class="font-semibold">Ты создаёшь игру</span>
                     </div>
                     
-                    <div id="hostAnswerSection" class="hidden mt-4">
-                        <div class="text-sm text-[#8b5e3c] mb-1">Вставь код от второго игрока (Answer):</div>
+                    <button onclick="createGame()" 
+                            class="w-full py-4 bg-[#c9a227] text-[#1a120b] font-bold text-lg rounded-2xl mb-4">
+                        Создать игру
+                    </button>
+
+                    <div id="hostOfferBox" class="hidden">
+                        <div class="text-sm text-[#8b5e3c] mb-2">Отправь этот код второму игроку:</div>
                         <div class="flex gap-2">
-                            <input id="hostAnswerInput" type="text" class="flex-1 px-4 py-2 rounded-2xl text-sm font-mono bg-[#1f1812] border border-[#8b5e3c]">
-                            <button onclick="connectWithAnswer()" class="px-6 bg-emerald-700 rounded-2xl text-sm font-semibold">Подключиться</button>
+                            <textarea id="hostOffer" class="code-box flex-1 p-4 rounded-2xl text-xs h-24" readonly></textarea>
+                            <button onclick="copyToClipboard('hostOffer')" class="px-5 bg-[#3a2a20] rounded-2xl">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="hostAnswerBox" class="hidden mt-6">
+                        <div class="text-sm text-[#8b5e3c] mb-2">Вставь код от второго игрока (Answer):</div>
+                        <div class="flex gap-2">
+                            <input id="hostAnswerInput" type="text" class="code-box flex-1 px-4 py-3 rounded-2xl text-sm">
+                            <button onclick="applyAnswer()" class="px-6 bg-emerald-700 rounded-2xl font-semibold">Подключить</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Клиент -->
                 <div>
-                    <div class="flex gap-2 mb-3">
-                        <input id="clientOfferInput" type="text" placeholder="Вставь код хоста (Offer)" class="flex-1 px-4 py-2 rounded-2xl text-sm font-mono bg-[#1f1812] border border-[#8b5e3c]">
-                        <button onclick="acceptOffer()" class="px-6 bg-blue-700 rounded-2xl text-sm font-semibold whitespace-nowrap">Присоединиться</button>
+                    <div class="flex items-center gap-x-2 mb-3">
+                        <span class="px-3 py-1 bg-blue-900 text-blue-400 text-xs rounded-full font-bold">КЛИЕНТ</span>
+                        <span class="font-semibold">Ты присоединяешься к игре</span>
                     </div>
-                    
-                    <div id="clientAnswerSection" class="hidden">
-                        <div class="text-sm text-[#8b5e3c] mb-1">Твой код (Answer) — отправь хосту:</div>
+
+                    <div class="flex gap-2">
+                        <input id="clientOfferInput" type="text" placeholder="Вставь код хоста" 
+                               class="code-box flex-1 px-4 py-3 rounded-2xl text-sm">
+                        <button onclick="joinGame()" class="px-8 bg-blue-700 rounded-2xl font-semibold whitespace-nowrap">Присоединиться</button>
+                    </div>
+
+                    <div id="clientAnswerBox" class="hidden mt-4">
+                        <div class="text-sm text-[#8b5e3c] mb-2">Отправь этот код хосту:</div>
                         <div class="flex gap-2">
-                            <textarea id="clientAnswer" class="flex-1 p-3 rounded-2xl text-xs font-mono h-16 bg-[#1f1812] border border-[#8b5e3c]" readonly></textarea>
-                            <button onclick="copyClientAnswer()" class="px-4 bg-[#3a2a20] rounded-2xl text-sm">Копировать</button>
+                            <textarea id="clientAnswer" class="code-box flex-1 p-4 rounded-2xl text-xs h-20" readonly></textarea>
+                            <button onclick="copyToClipboard('clientAnswer')" class="px-5 bg-[#3a2a20] rounded-2xl">Copy</button>
                         </div>
                     </div>
                 </div>
@@ -140,17 +157,15 @@
         </div>
 
         <!-- Game Area -->
-        <div id="gameArea" class="hidden mt-8">
-            <div class="text-center">
-                <div class="text-2xl mb-4">Игра загружена!</div>
-                <div id="myClanInGame" class="text-xl text-[#c9a227]"></div>
-            </div>
+        <div id="gameArea" class="hidden mt-8 text-center">
+            <div class="text-3xl mb-4">Игра началась!</div>
+            <div id="gameClanInfo" class="text-xl"></div>
         </div>
     </div>
 
     <script>
-        let peerConnection = null;
-        let dataChannel = null;
+        let peerConnection;
+        let dataChannel;
         let isHost = false;
         let selectedClan = null;
 
@@ -161,21 +176,96 @@
             { id: 3, name: "Некроманты Бе7дны", emoji: "☠️", color: "#319795" }
         ];
 
-        function selectClan(clanId) {
-            selectedClan = CLANS[clanId];
-            
+        function selectClan(id) {
+            selectedClan = CLANS[id];
             document.getElementById('clanSelection').classList.add('hidden');
             document.getElementById('connectionPanel').classList.remove('hidden');
-            
-            // Показываем выбранный клан
-            document.getElementById('selectedClanName').innerHTML = 
-                `${selectedClan.emoji} ${selectedClan.name}`;
-            document.getElementById('selectedClanName').style.color = selectedClan.color;
+
+            const nameEl = document.getElementById('myClanName');
+            nameEl.innerHTML = `${selectedClan.emoji} ${selectedClan.name}`;
+            nameEl.style.color = selectedClan.color;
         }
 
-        // WebRTC функции (createGame, acceptOffer и т.д.) оставляю как в предыдущем ответе
-        async function createGame() { /* ... */ }
-        // ... остальные функции WebRTC ...
+        // ==================== WEBRTC ====================
+        async function createGame() {
+            isHost = true;
+            peerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+
+            dataChannel = peerConnection.createDataChannel("pirate-battle");
+            setupDataChannel();
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            document.getElementById('hostOfferBox').classList.remove('hidden');
+            document.getElementById('hostOffer').value = JSON.stringify(offer);
+        }
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            el.select();
+            document.execCommand('copy');
+            alert('Код скопирован в буфер обмена');
+        }
+
+        async function joinGame() {
+            const offerStr = document.getElementById('clientOfferInput').value.trim();
+            if (!offerStr) return alert('Вставь код хоста');
+
+            try {
+                const offer = JSON.parse(offerStr);
+
+                peerConnection = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+
+                peerConnection.ondatachannel = (event) => {
+                    dataChannel = event.channel;
+                    setupDataChannel();
+                };
+
+                await peerConnection.setRemoteDescription(offer);
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                document.getElementById('clientAnswerBox').classList.remove('hidden');
+                document.getElementById('clientAnswer').value = JSON.stringify(answer);
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        async function applyAnswer() {
+            const answerStr = document.getElementById('hostAnswerInput').value.trim();
+            if (!answerStr) return alert('Вставь Answer');
+
+            try {
+                const answer = JSON.parse(answerStr);
+                await peerConnection.setRemoteDescription(answer);
+                alert('Подключение установлено!');
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        function setupDataChannel() {
+            if (!dataChannel) return;
+
+            dataChannel.onopen = () => {
+                document.getElementById('connectionPanel').classList.add('hidden');
+                document.getElementById('gameArea').classList.remove('hidden');
+
+                const info = document.getElementById('gameClanInfo');
+                info.innerHTML = `${selectedClan.emoji} ${selectedClan.name}`;
+                info.style.color = selectedClan.color;
+            };
+
+            dataChannel.onmessage = (e) => {
+                console.log('Message:', e.data);
+            };
+        }
     </script>
 </body>
 </html>
