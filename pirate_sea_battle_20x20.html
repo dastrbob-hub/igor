@@ -115,6 +115,7 @@
                         Создать игру
                     </button>
 
+                    <!-- Offer для хоста -->
                     <div id="hostOfferBox" class="hidden">
                         <div class="text-sm text-[#8b5e3c] mb-2">Отправь этот код второму игроку:</div>
                         <div class="flex gap-2">
@@ -123,11 +124,13 @@
                         </div>
                     </div>
 
+                    <!-- Поле для Answer от клиента ( ЭТО НУЖНО ) -->
                     <div id="hostAnswerBox" class="hidden mt-6">
-                        <div class="text-sm text-[#8b5e3c] mb-2">Вставь код от второго игрока (Answer):</div>
+                        <div class="text-sm text-[#8b5e3c] mb-2">Вставь код Answer от второго игрока:</div>
                         <div class="flex gap-2">
-                            <input id="hostAnswerInput" type="text" class="code-box flex-1 px-4 py-3 rounded-2xl text-sm">
-                            <button onclick="applyAnswer()" class="px-6 bg-emerald-700 rounded-2xl font-semibold">Подключить</button>
+                            <input id="hostAnswerInput" type="text" placeholder="Paste Answer here" 
+                                   class="code-box flex-1 px-4 py-3 rounded-2xl text-sm">
+                            <button onclick="applyAnswer()" class="px-6 bg-emerald-700 rounded-2xl font-semibold">Подключиться</button>
                         </div>
                     </div>
                 </div>
@@ -140,7 +143,7 @@
                     </div>
 
                     <div class="flex gap-2">
-                        <input id="clientOfferInput" type="text" placeholder="Вставь код хоста" 
+                        <input id="clientOfferInput" type="text" placeholder="Вставь код хоста (Offer)" 
                                class="code-box flex-1 px-4 py-3 rounded-2xl text-sm">
                         <button onclick="joinGame()" class="px-8 bg-blue-700 rounded-2xl font-semibold whitespace-nowrap">Присоединиться</button>
                     </div>
@@ -186,12 +189,9 @@
             nameEl.style.color = selectedClan.color;
         }
 
-        // ==================== WEBRTC ====================
         async function createGame() {
             isHost = true;
-            peerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
+            peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
 
             dataChannel = peerConnection.createDataChannel("pirate-battle");
             setupDataChannel();
@@ -201,6 +201,7 @@
 
             document.getElementById('hostOfferBox').classList.remove('hidden');
             document.getElementById('hostOffer').value = JSON.stringify(offer);
+            document.getElementById('hostAnswerBox').classList.remove('hidden'); // Показываем поле для Answer
         }
 
         function copyToClipboard(elementId) {
@@ -217,9 +218,7 @@
             try {
                 const offer = JSON.parse(offerStr);
 
-                peerConnection = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                });
+                peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
 
                 peerConnection.ondatachannel = (event) => {
                     dataChannel = event.channel;
@@ -239,7 +238,7 @@
 
         async function applyAnswer() {
             const answerStr = document.getElementById('hostAnswerInput').value.trim();
-            if (!answerStr) return alert('Вставь Answer');
+            if (!answerStr) return alert('Вставь Answer от клиента');
 
             try {
                 const answer = JSON.parse(answerStr);
