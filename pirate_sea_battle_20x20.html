@@ -115,7 +115,6 @@
                         Создать игру
                     </button>
 
-                    <!-- Offer для хоста -->
                     <div id="hostOfferBox" class="hidden">
                         <div class="text-sm text-[#8b5e3c] mb-2">Отправь этот код второму игроку:</div>
                         <div class="flex gap-2">
@@ -124,7 +123,6 @@
                         </div>
                     </div>
 
-                    <!-- Поле для Answer от клиента ( ЭТО НУЖНО ) -->
                     <div id="hostAnswerBox" class="hidden mt-6">
                         <div class="text-sm text-[#8b5e3c] mb-2">Вставь код Answer от второго игрока:</div>
                         <div class="flex gap-2">
@@ -159,10 +157,34 @@
             </div>
         </div>
 
-        <!-- Game Area -->
-        <div id="gameArea" class="hidden mt-8 text-center">
-            <div class="text-3xl mb-4">Игра началась!</div>
-            <div id="gameClanInfo" class="text-xl"></div>
+        <!-- Game Area (после подключения) -->
+        <div id="gameArea" class="hidden mt-8">
+            <div class="text-center mb-8">
+                <div class="text-3xl mb-2">Соединение установлено!</div>
+                <div id="gameClanInfo" class="text-2xl"></div>
+            </div>
+
+            <div class="flex justify-center gap-8">
+                <!-- Моя доска -->
+                <div>
+                    <div class="text-lg mb-2 text-[#c9a227]">Твой флот</div>
+                    <div class="pirate-grid w-[420px] h-[420px] rounded-2xl flex items-center justify-center text-[#8b5e3c]">
+                        Доска 20×20 (в разработке)
+                    </div>
+                </div>
+
+                <!-- Доска противника -->
+                <div>
+                    <div class="text-lg mb-2 text-red-400">Флот противника</div>
+                    <div class="pirate-grid w-[420px] h-[420px] rounded-2xl flex items-center justify-center text-[#8b5e3c]">
+                        Доска 20×20 (в разработке)
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center text-[#8b5e3c]">
+                Полноценная версия игры в разработке. Сейчас подключение работает.
+            </div>
         </div>
     </div>
 
@@ -201,7 +223,6 @@
 
             document.getElementById('hostOfferBox').classList.remove('hidden');
             document.getElementById('hostOffer').value = JSON.stringify(offer);
-            document.getElementById('hostAnswerBox').classList.remove('hidden'); // Показываем поле для Answer
         }
 
         function copyToClipboard(elementId) {
@@ -238,12 +259,11 @@
 
         async function applyAnswer() {
             const answerStr = document.getElementById('hostAnswerInput').value.trim();
-            if (!answerStr) return alert('Вставь Answer от клиента');
+            if (!answerStr) return alert('Вставь Answer');
 
             try {
                 const answer = JSON.parse(answerStr);
                 await peerConnection.setRemoteDescription(answer);
-                alert('Подключение установлено!');
             } catch (e) {
                 alert('Ошибка: ' + e.message);
             }
@@ -262,7 +282,7 @@
             };
 
             dataChannel.onmessage = (e) => {
-                console.log('Message:', e.data);
+                console.log('Message from opponent:', e.data);
             };
         }
     </script>
