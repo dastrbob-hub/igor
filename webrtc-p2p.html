@@ -3,22 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebRTC P2P • Телефон → ПК</title>
+<title>WebRTC P2P • Телефон → ПК (простая версия)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body { font-family: system-ui, -apple-system, sans-serif; }
-  .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); }
   textarea { font-family: ui-monospace, monospace; font-size: 13px; }
   .status-dot { transition: all 0.2s; }
 </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
-<div class="max-w-6xl mx-auto p-6">
+<div class="max-w-5xl mx-auto p-6">
   <!-- Header -->
   <div class="flex items-center justify-between mb-8">
     <div>
-      <h1 class="text-4xl font-bold tracking-tighter">WebRTC P2P</h1>
-      <p class="text-zinc-400">Передача файлов с телефона на ПК • без сервера</p>
+      <h1 class="text-4xl font-bold tracking-tighter">WebRTC P2P <span class="text-emerald-400">(простая версия)</span></h1>
+      <p class="text-zinc-400">Передача файлов Телефон ↔ ПК • только Offer / Answer</p>
     </div>
     <div id="status" 
          class="px-4 py-1.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center gap-2 text-sm">
@@ -29,100 +28,70 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
     
-    <!-- === SIGNALLING === -->
+    <!-- SIGNALLING (упрощённый) -->
     <div class="lg:col-span-3 bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
-      <h2 class="font-semibold text-xl mb-4 flex items-center gap-2">
-        🔗 Настройка соединения
-      </h2>
+      <h2 class="font-semibold text-xl mb-4">🔗 Соединение (Offer ↔ Answer)</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <!-- Кнопки ролей -->
         <button onclick="createOffer()" 
                 class="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition rounded-2xl font-medium flex items-center justify-center gap-2">
-          📱 Я Инициатор (Телефон)
+          📱 Создать Offer (Телефон)
         </button>
         
         <button onclick="createAnswer()" 
                 class="px-5 py-3 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 transition rounded-2xl font-medium flex items-center justify-center gap-2">
-          💻 Я Ответчик (ПК)
+          💻 Создать Answer (ПК)
         </button>
 
         <button onclick="resetConnection()" 
                 class="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl text-sm">
-          Сбросить соединение
+          Сбросить
         </button>
       </div>
 
       <!-- Local SDP -->
       <div class="mb-4">
         <div class="flex justify-between items-center mb-1.5">
-          <label class="text-sm text-zinc-400">Твой SDP (Offer / Answer)</label>
+          <label class="text-sm text-zinc-400">Твой SDP (Offer / Answer + ICE)</label>
           <button onclick="copyToClipboard('local-sdp')" 
                   class="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-xl">Копировать</button>
         </div>
-        <textarea id="local-sdp" rows="4" 
-                  class="w-full bg-black border border-zinc-700 rounded-2xl p-4 text-sm resize-y"
-                  placeholder="Здесь появится твой Offer или Answer..."></textarea>
+        <textarea id="local-sdp" rows="6" 
+                  class="w-full bg-black border border-zinc-700 rounded-2xl p-4 text-sm font-mono"
+                  placeholder="Здесь появится твой Offer или Answer + ICE кандидаты..."></textarea>
+        <p class="text-[10px] text-zinc-500 mt-1">Копируй всё содержимое и отправь собеседнику</p>
       </div>
 
       <!-- Remote SDP -->
-      <div class="mb-4">
-        <label class="text-sm text-zinc-400 block mb-1.5">Remote SDP (вставь с другого устройства)</label>
+      <div>
+        <label class="text-sm text-zinc-400 block mb-1.5">SDP собеседника (вставь сюда)</label>
         <div class="flex gap-2">
-          <textarea id="remote-sdp" rows="3" 
-                    class="flex-1 bg-black border border-zinc-700 rounded-2xl p-4 text-sm"
-                    placeholder='{"type":"offer","sdp":"..."}'></textarea>
+          <textarea id="remote-sdp" rows="6" 
+                    class="flex-1 bg-black border border-zinc-700 rounded-2xl p-4 text-sm font-mono"
+                    placeholder='Вставь сюда Offer или Answer от другого устройства (вместе с ICE)'></textarea>
           <button onclick="setRemoteDescription()" 
-                  class="px-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm whitespace-nowrap border border-zinc-700">
+                  class="px-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm whitespace-nowrap border border-zinc-700 self-start mt-1">
             Установить
-          </button>
-        </div>
-      </div>
-
-      <!-- ICE Candidates -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Мои ICE -->
-        <div>
-          <div class="flex justify-between items-center mb-1.5">
-            <label class="text-sm text-zinc-400">Мои ICE candidates</label>
-            <button onclick="copyToClipboard('my-ice')" 
-                    class="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-xl">Копировать всё</button>
-          </div>
-          <textarea id="my-ice" rows="5" readonly
-                    class="w-full bg-black border border-zinc-700 rounded-2xl p-4 text-xs font-mono"
-                    placeholder="Твои ICE появятся автоматически..."></textarea>
-        </div>
-
-        <!-- Remote ICE -->
-        <div>
-          <label class="text-sm text-zinc-400 block mb-1.5">Remote ICE candidates (вставь с другого устройства)</label>
-          <textarea id="remote-ice" rows="5"
-                    class="w-full bg-black border border-zinc-700 rounded-2xl p-4 text-xs font-mono"
-                    placeholder="Вставь ICE с другого устройства (по одной строке)"></textarea>
-          <button onclick="addRemoteIceCandidates()" 
-                  class="mt-2 w-full py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-2xl border border-zinc-700">
-            Добавить ICE candidates
           </button>
         </div>
       </div>
     </div>
 
-    <!-- === DATA TRANSFER === -->
+    <!-- DATA TRANSFER -->
     <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col">
       <h2 class="font-semibold text-xl mb-4">📤 Передача файлов</h2>
 
       <div id="transfer-section" class="hidden flex-1 flex flex-col">
-        <!-- Отправка -->
         <div class="mb-6">
-          <label class="text-sm text-zinc-400 mb-2 block">Отправить файл с телефона</label>
+          <label class="text-sm text-zinc-400 mb-2 block">Отправить файл</label>
           <div class="flex gap-3">
             <input type="file" id="file-input" class="hidden">
             <button onclick="document.getElementById('file-input').click()" 
-                    class="flex-1 px-5 py-3 border border-zinc-700 hover:bg-zinc-800 rounded-2xl transition">
+                    class="flex-1 px-5 py-3 border border-zinc-700 hover:bg-zinc-800 rounded-2xl transition text-sm">
               Выбрать файл
             </button>
-            <button onclick="sendFile()" id="btn-send"
-                    class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-2xl font-medium">
+            <button onclick="sendFile()"
+                    class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-2xl font-medium text-sm">
               Отправить
             </button>
           </div>
@@ -131,11 +100,9 @@
                     class="w-full h-1.5 mt-2 accent-emerald-500 hidden"></progress>
         </div>
 
-        <!-- Получение -->
         <div class="flex-1">
           <div class="flex items-center justify-between mb-2">
             <label class="text-sm text-zinc-400">Полученные файлы</label>
-            <span id="receive-info" class="text-xs text-zinc-500"></span>
           </div>
           <div id="received-list" 
                class="flex-1 min-h-[140px] bg-black border border-zinc-800 rounded-2xl p-4 text-sm overflow-auto">
@@ -151,14 +118,14 @@
         </div>
       </div>
 
-      <!-- Тестовый чат -->
+      <!-- Чат -->
       <div class="mt-auto pt-6 border-t border-zinc-800">
         <div class="flex gap-2">
           <input id="chat-input" type="text" placeholder="Тестовое сообщение..." 
                  class="flex-1 bg-black border border-zinc-700 rounded-2xl px-4 py-2 text-sm"
                  onkeypress="if(event.key === 'Enter') sendChatMessage()">
           <button onclick="sendChatMessage()" 
-                  class="px-5 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm">Отправить</button>
+                  class="px-5 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm">→</button>
         </div>
         <div id="chat-log" class="mt-3 text-xs max-h-20 overflow-auto text-zinc-400"></div>
       </div>
@@ -167,26 +134,19 @@
   </div>
 
   <div class="mt-6 text-xs text-zinc-500 text-center">
-    Работает через STUN (Google). Для передачи через интернет иногда нужно несколько попыток.<br>
-    Лучше всего работает в одной Wi-Fi сети или когда NAT не слишком строгий.
+    Простая версия: только Offer + Answer. ICE кандидаты добавляются автоматически в поле «Твой SDP».<br>
+    Работает лучше всего в одной Wi-Fi сети.
   </div>
 </div>
 
 <script>
-// ==================== TAILWIND ====================
-function initTailwind() {
-  document.documentElement.style.setProperty('--accent', '#10b981');
-}
-
-// ==================== WEBRTC ====================
 let pc = null;
 let dataChannel = null;
-let isInitiator = false;
 let receivedFileMeta = null;
 let receivedChunks = [];
 let receivedSize = 0;
 
-const CHUNK_SIZE = 16384; // 16 KB
+const CHUNK_SIZE = 16384;
 
 function createPeerConnection() {
   if (pc) pc.close();
@@ -194,26 +154,21 @@ function createPeerConnection() {
   pc = new RTCPeerConnection({
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" }
+      { urls: "stun:stun1.l.google.com:19302" }
     ]
   });
 
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      const ta = document.getElementById('my-ice');
+      const ta = document.getElementById('local-sdp');
       const line = JSON.stringify(event.candidate);
-      ta.value = ta.value ? ta.value + '\n' + line : line;
+      if (!ta.value.includes(line)) {
+        ta.value = ta.value ? ta.value + '\n' + line : line;
+      }
     }
   };
 
-  pc.oniceconnectionstatechange = () => {
-    console.log('[ICE]', pc.iceConnectionState);
-    updateStatus();
-  };
-
   pc.onconnectionstatechange = () => {
-    console.log('[Connection]', pc.connectionState);
     updateStatus();
     if (pc.connectionState === 'connected') {
       document.getElementById('transfer-section').classList.remove('hidden');
@@ -229,157 +184,121 @@ function createPeerConnection() {
 
 function setupDataChannel() {
   if (!dataChannel) return;
-
   dataChannel.onopen = () => {
-    console.log('%c[DataChannel] Открыт', 'color:#10b981');
     updateStatus();
     document.getElementById('transfer-section').classList.remove('hidden');
     document.getElementById('not-connected').classList.add('hidden');
   };
-
-  dataChannel.onclose = () => {
-    console.log('%c[DataChannel] Закрыт', 'color:#f87171');
-    updateStatus();
-  };
-
+  dataChannel.onclose = () => updateStatus();
   dataChannel.onmessage = handleIncomingMessage;
 }
 
 function updateStatus() {
-  const statusEl = document.getElementById('status');
-  const dot = statusEl.querySelector('.status-dot');
+  const dot = document.querySelector('#status .status-dot');
   const text = document.getElementById('status-text');
-
-  if (!pc) {
-    dot.style.backgroundColor = '#ef4444';
-    text.textContent = 'Не подключено';
-    return;
-  }
-
-  const state = pc.connectionState || pc.iceConnectionState;
-
-  if (state === 'connected') {
-    dot.style.backgroundColor = '#22c55e';
-    text.textContent = 'Подключено (P2P)';
-    statusEl.classList.add('!border-emerald-500/30', '!bg-emerald-950/30');
-  } else if (state === 'connecting') {
-    dot.style.backgroundColor = '#eab308';
-    text.textContent = 'Подключение...';
-  } else {
-    dot.style.backgroundColor = '#f87171';
-    text.textContent = state;
-    statusEl.classList.remove('!border-emerald-500/30', '!bg-emerald-950/30');
-  }
+  if (!pc) { dot.style.backgroundColor = '#ef4444'; text.textContent = 'Не подключено'; return; }
+  const state = pc.connectionState;
+  if (state === 'connected') { dot.style.backgroundColor = '#22c55e'; text.textContent = 'Подключено'; }
+  else if (state === 'connecting') { dot.style.backgroundColor = '#eab308'; text.textContent = 'Подключение...'; }
+  else { dot.style.backgroundColor = '#f87171'; text.textContent = state; }
 }
 
-// ==================== OFFER / ANSWER ====================
 async function createOffer() {
   createPeerConnection();
-  isInitiator = true;
-
   dataChannel = pc.createDataChannel('file-transfer', { ordered: true });
   setupDataChannel();
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  const payload = { type: offer.type, sdp: offer.sdp };
-  document.getElementById('local-sdp').value = JSON.stringify(payload, null, 2);
-  
-  alert('Offer создан! Скопируй его и отправь на ПК.');
+  document.getElementById('local-sdp').value = JSON.stringify({ type: 'offer', sdp: offer.sdp }, null, 2);
+  alert('Offer создан! Скопируй всё из поля «Твой SDP» и отправь на второе устройство.');
 }
 
 async function createAnswer() {
   const remoteText = document.getElementById('remote-sdp').value.trim();
-  if (!remoteText) {
-    alert('Сначала вставь Offer в поле Remote SDP');
-    return;
-  }
+  if (!remoteText) return alert('Сначала вставь Offer в поле SDP собеседника');
 
   createPeerConnection();
 
   try {
-    const remoteDesc = JSON.parse(remoteText);
-    await pc.setRemoteDescription(new RTCSessionDescription(remoteDesc));
+    // Парсим: первая строка/JSON = SDP, остальные = ICE
+    const lines = remoteText.split('\n').filter(Boolean);
+    const first = JSON.parse(lines[0]);
+
+    await pc.setRemoteDescription(new RTCSessionDescription(first));
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    const payload = { type: answer.type, sdp: answer.sdp };
-    document.getElementById('local-sdp').value = JSON.stringify(payload, null, 2);
+    let sdpText = JSON.stringify({ type: 'answer', sdp: answer.sdp }, null, 2);
 
-    alert('Answer создан! Скопируй его и отправь обратно на телефон.');
+    // Добавляем ICE, которые уже пришли
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const cand = JSON.parse(lines[i]);
+        if (cand.candidate) {
+          await pc.addIceCandidate(new RTCIceCandidate(cand));
+        }
+      } catch(e) {}
+    }
+
+    document.getElementById('local-sdp').value = sdpText;
+    alert('Answer создан! Скопируй его и отправь обратно.');
   } catch (e) {
     alert('Ошибка: ' + e.message);
-    console.error(e);
   }
 }
 
 async function setRemoteDescription() {
-  const remoteText = document.getElementById('remote-sdp').value.trim();
-  if (!remoteText) return alert('Вставь SDP');
+  const text = document.getElementById('remote-sdp').value.trim();
+  if (!text) return;
 
   try {
-    const remoteDesc = JSON.parse(remoteText);
-    await pc.setRemoteDescription(new RTCSessionDescription(remoteDesc));
-    alert('Remote SDP установлен!');
-  } catch (e) {
-    alert('Ошибка установки remote: ' + e.message);
-  }
-}
+    const lines = text.split('\n').filter(Boolean);
+    const first = JSON.parse(lines[0]);
 
-function addRemoteIceCandidates() {
-  const ta = document.getElementById('remote-ice');
-  const lines = ta.value.trim().split('\n').filter(Boolean);
+    await pc.setRemoteDescription(new RTCSessionDescription(first));
 
-  let added = 0;
-  for (const line of lines) {
-    try {
-      const candidate = JSON.parse(line);
-      pc.addIceCandidate(new RTCIceCandidate(candidate));
-      added++;
-    } catch (e) {
-      console.warn('Плохой ICE:', line);
+    // Добавляем оставшиеся строки как ICE
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const cand = JSON.parse(lines[i]);
+        if (cand.candidate) await pc.addIceCandidate(new RTCIceCandidate(cand));
+      } catch(e) {}
     }
+
+    alert('Remote SDP + ICE установлены!');
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
   }
-  alert(`Добавлено ${added} ICE candidates`);
-  ta.value = '';
 }
 
-// ==================== FILE TRANSFER ====================
+// FILE TRANSFER (без изменений)
 function handleIncomingMessage(event) {
   if (typeof event.data === 'string') {
     try {
       const msg = JSON.parse(event.data);
-
       if (msg.type === 'file-meta') {
         receivedFileMeta = msg;
         receivedChunks = [];
         receivedSize = 0;
-        document.getElementById('receive-info').textContent = 
-          `Получаем: ${msg.name} (${(msg.size/1024/1024).toFixed(2)} MB)`;
-      } 
-      else if (msg.type === 'file-end') {
+        document.getElementById('receive-info').textContent = `Получаем: ${msg.name} (${(msg.size/1024/1024).toFixed(2)} MB)`;
+      } else if (msg.type === 'file-end') {
         const blob = new Blob(receivedChunks, { type: receivedFileMeta.mime });
         addReceivedFile(receivedFileMeta.name, blob, receivedFileMeta.size);
         receivedFileMeta = null;
         document.getElementById('receive-info').textContent = '';
-      } 
-      else if (msg.type === 'chat') {
+      } else if (msg.type === 'chat') {
         addChatMessage('Собеседник', msg.text, true);
       }
-    } catch (e) {
-      console.log('Получено текстовое сообщение:', event.data);
-    }
-  } 
-  else if (event.data instanceof ArrayBuffer) {
+    } catch(e){}
+  } else if (event.data instanceof ArrayBuffer) {
     receivedChunks.push(event.data);
     receivedSize += event.data.byteLength;
-
     if (receivedFileMeta) {
       const percent = Math.floor((receivedSize / receivedFileMeta.size) * 100);
-      document.getElementById('receive-info').textContent = 
-        `Получаем: ${receivedFileMeta.name} — ${percent}%`;
+      document.getElementById('receive-info').textContent = `Получаем: ${receivedFileMeta.name} — ${percent}%`;
     }
   }
 }
@@ -387,20 +306,10 @@ function handleIncomingMessage(event) {
 async function sendFile() {
   const input = document.getElementById('file-input');
   if (!input.files.length) return alert('Выбери файл');
-
   const file = input.files[0];
-  if (!dataChannel || dataChannel.readyState !== 'open') {
-    return alert('Сначала подключись!');
-  }
+  if (!dataChannel || dataChannel.readyState !== 'open') return alert('Сначала подключись!');
 
-  const meta = {
-    type: 'file-meta',
-    name: file.name,
-    size: file.size,
-    mime: file.type || 'application/octet-stream'
-  };
-
-  dataChannel.send(JSON.stringify(meta));
+  dataChannel.send(JSON.stringify({ type: 'file-meta', name: file.name, size: file.size, mime: file.type || 'application/octet-stream' }));
 
   const progress = document.getElementById('send-progress');
   const info = document.getElementById('send-info');
@@ -408,67 +317,48 @@ async function sendFile() {
   progress.value = 0;
 
   let offset = 0;
-
-  const sendNextChunk = () => {
+  const sendNext = () => {
     const end = Math.min(offset + CHUNK_SIZE, file.size);
-    const slice = file.slice(offset, end);
-
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       dataChannel.send(e.target.result);
       offset = end;
-
       const percent = Math.floor((offset / file.size) * 100);
       progress.value = percent;
-      info.textContent = `${percent}% • ${(offset/1024/1024).toFixed(2)} / ${(file.size/1024/1024).toFixed(2)} MB`;
-
-      if (offset < file.size) {
-        sendNextChunk();
-      } else {
+      info.textContent = `${percent}% • ${(offset/1024/1024).toFixed(2)} MB`;
+      if (offset < file.size) sendNext();
+      else {
         dataChannel.send(JSON.stringify({ type: 'file-end' }));
-        info.textContent = `Готово! Отправлен: ${file.name}`;
-        setTimeout(() => {
-          progress.classList.add('hidden');
-          info.textContent = '';
-          progress.value = 0;
-        }, 1800);
+        info.textContent = `Готово! ${file.name}`;
+        setTimeout(() => { progress.classList.add('hidden'); info.textContent = ''; }, 1500);
       }
     };
-    reader.readAsArrayBuffer(slice);
+    reader.readAsArrayBuffer(file.slice(offset, end));
   };
-
-  sendNextChunk();
+  sendNext();
 }
 
 function addReceivedFile(name, blob, size) {
   const container = document.getElementById('received-list');
   if (container.querySelector('.empty-state')) container.innerHTML = '';
-
   const url = URL.createObjectURL(blob);
   const div = document.createElement('div');
   div.className = 'flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-3 mb-2';
   div.innerHTML = `
     <div class="flex items-center gap-3 min-w-0">
       <div class="text-emerald-400">📄</div>
-      <div class="min-w-0">
-        <div class="font-medium truncate">${name}</div>
-        <div class="text-xs text-zinc-500">${(size/1024/1024).toFixed(2)} MB</div>
-      </div>
+      <div class="min-w-0"><div class="font-medium truncate">${name}</div><div class="text-xs text-zinc-500">${(size/1024/1024).toFixed(2)} MB</div></div>
     </div>
-    <a href="${url}" download="${name}" 
-       class="px-4 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-500 rounded-xl">Скачать</a>
+    <a href="${url}" download="${name}" class="px-4 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-500 rounded-xl">Скачать</a>
   `;
   container.appendChild(div);
 }
 
-// ==================== CHAT ====================
 function sendChatMessage() {
   const input = document.getElementById('chat-input');
   if (!input.value.trim() || !dataChannel || dataChannel.readyState !== 'open') return;
-
-  const text = input.value.trim();
-  dataChannel.send(JSON.stringify({ type: 'chat', text }));
-  addChatMessage('Ты', text);
+  dataChannel.send(JSON.stringify({ type: 'chat', text: input.value.trim() }));
+  addChatMessage('Ты', input.value.trim());
   input.value = '';
 }
 
@@ -481,54 +371,26 @@ function addChatMessage(from, text, isRemote = false) {
   log.scrollTop = log.scrollHeight;
 }
 
-// ==================== UTILS ====================
-function copyToClipboard(elementId) {
-  const ta = document.getElementById(elementId);
+function copyToClipboard(id) {
+  const ta = document.getElementById(id);
   if (!ta.value) return;
-  navigator.clipboard.writeText(ta.value).then(() => {
-    const original = ta.style.borderColor;
-    ta.style.borderColor = '#10b981';
-    setTimeout(() => ta.style.borderColor = original, 800);
-  });
+  navigator.clipboard.writeText(ta.value);
 }
 
 function resetConnection() {
-  if (pc) {
-    pc.close();
-    pc = null;
-  }
-  dataChannel = null;
+  if (pc) pc.close();
+  pc = null; dataChannel = null;
   document.getElementById('local-sdp').value = '';
   document.getElementById('remote-sdp').value = '';
-  document.getElementById('my-ice').value = '';
-  document.getElementById('remote-ice').value = '';
   document.getElementById('transfer-section').classList.add('hidden');
   document.getElementById('not-connected').classList.remove('hidden');
   document.getElementById('chat-log').innerHTML = '';
   updateStatus();
 }
 
-// ==================== INIT ====================
 function init() {
-  initTailwind();
-
-  // Горячие клавиши
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement.tagName === 'BODY') {
-      e.preventDefault();
-      document.getElementById('remote-sdp').focus();
-    }
-  });
-
-  // Начальный статус
   updateStatus();
-
-  // Подсказка
-  setTimeout(() => {
-    console.log('%c[WebRTC] Готово. Открой на двух устройствах.', 'color:#64748b');
-  }, 800);
 }
-
 window.onload = init;
 </script>
 </body>
