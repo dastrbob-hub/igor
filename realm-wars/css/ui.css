@@ -1,0 +1,257 @@
+.panel {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.panel__title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 0.6rem;
+}
+
+.resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resource__icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.resource__icon--gold {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(244, 197, 66, 0.4);
+}
+
+.resource__icon--food {
+  background: var(--food);
+  box-shadow: 0 0 8px rgba(107, 203, 119, 0.4);
+}
+
+.resource__label {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.resource__value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.resource__income {
+  font-size: 0.75rem;
+  color: var(--food);
+  margin-left: 0.25rem;
+}
+
+.turn-info {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(74, 158, 255, 0.15);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.turn-info--enemy {
+  background: rgba(255, 74, 74, 0.15);
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn--secondary {
+  background: var(--bg-panel-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  margin-bottom: 0.4rem;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: #2a3a5c;
+  border-color: var(--player-blue);
+}
+
+.btn--secondary.btn--active {
+  background: rgba(74, 158, 255, 0.25);
+  border-color: var(--player-blue);
+}
+
+.btn--build {
+  background: rgba(107, 203, 119, 0.15);
+  color: var(--text-primary);
+  border: 1px solid rgba(107, 203, 119, 0.4);
+  margin-bottom: 0.4rem;
+}
+
+.btn--build:hover:not(:disabled) {
+  background: rgba(107, 203, 119, 0.3);
+  border-color: var(--food);
+}
+
+.btn--build.btn--active {
+  background: rgba(107, 203, 119, 0.35);
+  border-color: var(--food);
+}
+
+.btn--recruit {
+  background: rgba(244, 197, 66, 0.12);
+  color: var(--text-primary);
+  border: 1px solid rgba(244, 197, 66, 0.35);
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.btn--recruit:hover:not(:disabled) {
+  background: rgba(244, 197, 66, 0.25);
+  border-color: var(--gold);
+}
+
+.tips-list {
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tips-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.panel--tips {
+  flex-shrink: 0;
+}
+
+.unit-info {
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.unit-info--empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.unit-info__name {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.unit-info__stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.unit-info__hp-bar {
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.unit-info__hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4a4a, #6bcb77);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.game-log {
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.game-log li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.game-log li:first-child {
+  color: var(--text-primary);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.overlay--hidden {
+  display: none;
+}
+
+.overlay__card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  max-width: 360px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.overlay__title {
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.overlay__message {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
