@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP4 → MP3 | Извлечение музыки из видео</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .dropzone {
+            transition: all 0.2s ease;
+        }
+        .dropzone.dragover {
+            background-color: #27251f;
+            border-color: #c9a227;
+        }
+        .status-dot { transition: all 0.2s; }
+    </style>
+</head>
+<body class="bg-[#1a120b] text-[#e8d5b7]">
+    <div class="max-w-4xl mx-auto p-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-10">
+            <div class="flex items-center gap-x-4">
+                <div class="w-14 h-14 bg-[#c9a227] rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-music text-[#1a120b] text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-5xl font-bold tracking-tighter text-[#c9a227]">MP4 → MP3</h1>
+                    <p class="text-[#8b5e3c] text-xl">Извлечение музыки из видео прямо в браузере</p>
+                </div>
+            </div>
+            
+            <a href="index.html" class="flex items-center gap-x-3 px-6 py-3 rounded-2xl border border-[#8b5e3c] hover:bg-[#2c2118] transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Назад в хаб</span>
+            </a>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-[#2c2118] border-2 border-[#8b5e3c] rounded-3xl p-8">
+            
+            <!-- Drop Zone -->
+            <div id="dropzone" 
+                 class="dropzone border-2 border-dashed border-[#8b5e3c] rounded-3xl p-12 text-center cursor-pointer hover:border-[#c9a227] transition-colors">
+                <div class="mx-auto w-16 h-16 bg-[#1f1812] rounded-2xl flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-file-video text-[#c9a227] text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-semibold mb-2">Перетащи MP4 файл сюда</h3>
+                <p class="text-[#8b5e3c] mb-4">или нажми для выбора</p>
+                <input type="file" id="fileInput" accept="video/mp4,video/*" class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" 
+                        class="px-8 py-3 bg-[#c9a227] text-[#1a120b] font-semibold rounded-2xl hover:bg-[#d4af37] transition-colors">
+                    Выбрать файл
+                </button>
+                <p class="text-xs text-[#8b5e3c] mt-4">Поддерживаются MP4 файлы с аудиодорожкой</p>
+            </div>
+
+            <!-- File Info -->
+            <div id="fileInfo" class="hidden mt-6 bg-[#1f1812] border border-[#8b5e3c] rounded-2xl p-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-x-4">
+                        <i class="fa-solid fa-file-video text-[#c9a227] text-2xl"></i>
+                        <div>
+                            <div id="fileName" class="font-semibold text-lg"></div>
+                            <div id="fileSize" class="text-sm text-[#8b5e3c]"></div>
+                        </div>
+                    </div>
+                    <button onclick="resetAll()" 
+                            class="px-4 py-2 text-sm border border-[#8b5e3c] rounded-xl hover:bg-[#2c2118]">
+                        Удалить
+                    </button>
+                </div>
+            </div>
+
+            <!-- Convert Button -->
+            <div id="convertSection" class="hidden mt-6">
+                <button onclick="convertToMp3()" 
+                        class="w-full py-4 bg-[#c9a227] hover:bg-[#d4af37] text-[#1a120b] font-bold text-xl rounded-2xl flex items-center justify-center gap-x-3 transition-colors">
+                    <i class="fa-solid fa-magic"></i>
+                    <span>Извлечь музыку в MP3</span>
+                </button>
+                <p class="text-center text-xs text-[#8b5e3c] mt-2">Конвертация происходит полностью в твоём браузере (без загрузки на сервер)</p>
+            </div>
+
+            <!-- Progress -->
+            <div id="progressSection" class="hidden mt-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span id="progressText" class="font-medium">Конвертирую...</span>
+                    <span id="progressPercent" class="font-mono text-sm">0%</span>
+                </div>
+                <div class="w-full bg-[#1f1812] rounded-full h-3 border border-[#8b5e3c]">
+                    <div id="progressBar" class="bg-[#c9a227] h-3 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-[#8b5e3c] mt-2 text-center">Это может занять от 5 до 30 секунд в зависимости от размера файла</p>
+            </div>
+
+            <!-- Result -->
+            <div id="resultSection" class="hidden mt-6 bg-[#1f1812] border border-[#8b5e3c] rounded-2xl p-6">
+                <div class="flex items-center gap-x-3 mb-4">
+                    <i class="fa-solid fa-check-circle text-emerald-400 text-2xl"></i>
+                    <div>
+                        <div class="font-semibold text-lg text-emerald-400">Готово!</div>
+                        <div id="resultFileName" class="text-sm text-[#8b5e3c]"></div>
+                    </div>
+                </div>
+                
+                <a id="downloadBtn" 
+                   class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xl rounded-2xl flex items-center justify-center gap-x-3 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Скачать MP3</span>
+                </a>
+                
+                <button onclick="resetAll()" 
+                        class="mt-3 w-full py-3 border border-[#8b5e3c] rounded-2xl text-sm hover:bg-[#2c2118]">
+                    Конвертировать другой файл
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center text-xs text-[#8b5e3c]">
+            Всё происходит в браузере • Никаких данных не отправляется на сервер • FFmpeg.wasm
+        </div>
+    </div>
+
+    <script>
+        // Tailwind config
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent', '#c9a227');
+        }
+
+        let ffmpeg = null;
+        let currentFile = null;
+
+        async function loadFFmpeg() {
+            if (ffmpeg) return ffmpeg;
+            
+            const { createFFmpeg } = FFmpeg;
+            ffmpeg = createFFmpeg({ 
+                log: true,
+                corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js'
+            });
+            
+            await ffmpeg.load();
+            return ffmpeg;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Б';
+            const k = 1024;
+            const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function showFileInfo(file) {
+            currentFile = file;
+            
+            document.getElementById('dropzone').classList.add('hidden');
+            document.getElementById('fileInfo').classList.remove('hidden');
+            document.getElementById('convertSection').classList.remove('hidden');
+            
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        }
+
+        function resetAll() {
+            currentFile = null;
+            
+            document.getElementById('dropzone').classList.remove('hidden');
+            document.getElementById('fileInfo').classList.add('hidden');
+            document.getElementById('convertSection').classList.add('hidden');
+            document.getElementById('progressSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+            
+            document.getElementById('fileInput').value = '';
+        }
+
+        async function convertToMp3() {
+            if (!currentFile) return;
+            
+            const convertBtn = document.querySelector('#convertSection button');
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Загрузка FFmpeg...`;
+            
+            try {
+                // Show progress
+                document.getElementById('convertSection').classList.add('hidden');
+                document.getElementById('progressSection').classList.remove('hidden');
+                
+                const progressBar = document.getElementById('progressBar');
+                const progressPercent = document.getElementById('progressPercent');
+                const progressText = document.getElementById('progressText');
+                
+                progressText.textContent = 'Загрузка FFmpeg...';
+                progressBar.style.width = '10%';
+                progressPercent.textContent = '10%';
+                
+                // Load ffmpeg
+                const ff = await loadFFmpeg();
+                
+                progressText.textContent = 'Чтение файла...';
+                progressBar.style.width = '25%';
+                progressPercent.textContent = '25%';
+                
+                // Write input file
+                const inputName = 'input.mp4';
+                ff.FS('writeFile', inputName, await FFmpeg.fetchFile(currentFile));
+                
+                progressText.textContent = 'Извлечение аудио...';
+                progressBar.style.width = '50%';
+                progressPercent.textContent = '50%';
+                
+                // Convert to MP3
+                const outputName = currentFile.name.replace(/\.[^/.]+$/, '') + '.mp3';
+                
+                await ff.run(
+                    '-i', inputName,
+                    '-vn',                    // no video
+                    '-acodec', 'libmp3lame',
+                    '-q:a', '2',           // good quality (~160-190kbps)
+                    outputName
+                );
+                
+                progressText.textContent = 'Готово!';
+                progressBar.style.width = '100%';
+                progressPercent.textContent = '100%';
+                
+                // Read output
+                const data = ff.FS('readFile', outputName);
+                const blob = new Blob([data.buffer], { type: 'audio/mpeg' });
+                
+                // Show result
+                setTimeout(() => {
+                    document.getElementById('progressSection').classList.add('hidden');
+                    document.getElementById('resultSection').classList.remove('hidden');
+                    
+                    document.getElementById('resultFileName').textContent = outputName;
+                    
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    downloadBtn.onclick = () => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = outputName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    };
+                }, 600);
+                
+            } catch (err) {
+                console.error(err);
+                alert('Ошибка при конвертации: ' + err.message);
+                resetAll();
+            } finally {
+                if (convertBtn) {
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = `<i class="fa-solid fa-magic"></i> <span>Извлечь музыку в MP3</span>`;
+                }
+            }
+        }
+
+        function setupDropzone() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('dragover');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.type.startsWith('video/') || file.name.toLowerCase().endsWith('.mp4')) {
+                        showFileInfo(file);
+                    } else {
+                        alert('Пожалуйста, выберите MP4 файл');
+                    }
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    showFileInfo(file);
+                }
+            });
+        }
+
+        function init() {
+            initTailwind();
+            setupDropzone();
+            
+            // Optional: preload ffmpeg on page load (can be slow)
+            // loadFFmpeg().catch(console.warn);
+            
+            console.log('%c[MP4→MP3] Готово', 'color:#c9a227');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
