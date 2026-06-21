@@ -1,0 +1,116 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-dark: #1a1a2e;
+  --bg-panel: #16213e;
+  --bg-panel-hover: #1f2b4d;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --text-primary: #eaeaea;
+  --text-secondary: #a0a0b8;
+  --border: #2a2a4a;
+  --gold: #f4c542;
+  --food: #6bcb77;
+  --player-blue: #4a9eff;
+  --enemy-red: #ff4a4a;
+  --canvas-bg: #0f0f1a;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  text-align: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1e1e3a 0%, var(--bg-dark) 100%);
+}
+
+.header__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, var(--player-blue), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header__subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.game-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 250px 1fr 260px;
+  gap: 0;
+  min-height: 0;
+}
+
+.sidebar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sidebar--right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+.canvas-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--canvas-bg);
+  padding: 1rem;
+  overflow: hidden;
+}
+
+#game-canvas {
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+@media (max-width: 900px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .sidebar--left {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sidebar--right {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
