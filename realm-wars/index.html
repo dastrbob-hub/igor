@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realm Wars</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1 class="header__title">Realm Wars</h1>
+      <p class="header__subtitle">Build, gather resources, recruit army, destroy enemy Town Hall</p>
+    </header>
+
+    <div class="game-layout">
+      <!-- Left Sidebar -->
+      <aside class="sidebar sidebar--left">
+        <!-- Resources -->
+        <div class="panel">
+          <div class="panel__title">Resources</div>
+          <div class="resource-list">
+            <div class="resource">
+              <div class="resource__icon resource__icon--gold"></div>
+              <div class="resource__label">Gold</div>
+              <div id="gold-count" class="resource__value">0</div>
+              <div id="income-gold" class="resource__income">+0</div>
+            </div>
+            <div class="resource">
+              <div class="resource__icon resource__icon--food"></div>
+              <div class="resource__label">Food</div>
+              <div id="food-count" class="resource__value">0</div>
+              <div id="income-food" class="resource__income">+0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Build -->
+        <div class="panel">
+          <div class="panel__title">Build</div>
+          <button class="btn btn--build" data-building="barracks">Barracks</button>
+          <button class="btn btn--build" data-building="farm">Farm</button>
+          <button class="btn btn--build" data-building="mine">Mine</button>
+        </div>
+
+        <!-- Recruit -->
+        <div class="panel">
+          <div class="panel__title">Recruit</div>
+          <button class="btn btn--recruit" data-unit="warrior">Warrior</button>
+          <button class="btn btn--recruit" data-unit="archer">Archer</button>
+          <button class="btn btn--recruit" data-unit="scout">Scout</button>
+          <button class="btn btn--recruit" data-unit="worker">Worker</button>
+        </div>
+
+        <!-- Turn -->
+        <div class="panel">
+          <div class="panel__title">Turn</div>
+          <div id="turn-info" class="turn-info">Your turn</div>
+          <button id="end-turn-btn" class="btn btn--primary">End Turn</button>
+        </div>
+      </aside>
+
+      <!-- Canvas -->
+      <main class="canvas-wrapper">
+        <canvas id="game-canvas"></canvas>
+      </main>
+
+      <!-- Right Sidebar -->
+      <aside class="sidebar sidebar--right">
+        <!-- Selected Unit -->
+        <div class="panel">
+          <div class="panel__title">Selected Unit</div>
+          <div id="unit-info" class="unit-info unit-info--empty">
+            <p>Click a unit to inspect</p>
+          </div>
+        </div>
+
+        <!-- Unit Actions -->
+        <div class="panel">
+          <div class="panel__title">Unit Actions</div>
+          <button id="move-btn" class="btn btn--secondary">Move</button>
+          <button id="attack-btn" class="btn btn--secondary">Attack</button>
+          <button id="harvest-btn" class="btn btn--secondary">Harvest</button>
+        </div>
+
+        <!-- Tips -->
+        <div class="panel panel--tips">
+          <div class="panel__title">Tips</div>
+          <ul class="tips-list">
+            <li>Build near gold mountains & food forests for bonus income</li>
+            <li>Workers harvest resources on the spot</li>
+            <li>Barracks required to recruit troops</li>
+            <li>Destroy enemy Town Hall to win</li>
+          </ul>
+        </div>
+
+        <!-- Log -->
+        <div class="panel">
+          <div class="panel__title">Log</div>
+          <ul id="game-log" class="game-log"></ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Victory Overlay -->
+  <div id="overlay" class="overlay overlay--hidden">
+    <div class="overlay__card">
+      <h2 id="overlay-title" class="overlay__title">Victory!</h2>
+      <p id="overlay-message" class="overlay__message"></p>
+      <button id="restart-btn" class="btn btn--primary">Play Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
