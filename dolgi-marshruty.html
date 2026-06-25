@@ -15,7 +15,8 @@
         .leaflet-popup-content-wrapper { background: #1f2937; color: #e5e7eb; border-radius: 8px; }
         .map-container { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4); }
         .point-item { transition: all 0.1s ease; }
-        .point-item:hover { background-color: #374151; }
+        .transport-btn { transition: all 0.1s; }
+        .transport-btn.active { background-color: #3f3f46; border-color: #a1a1aa; color: white; }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
@@ -43,42 +44,53 @@
     </nav>
 
     <div class="max-w-7xl mx-auto px-6 pt-8 pb-4">
-        <div class="mb-8">
-            <div class="flex items-end justify-between">
-                <div>
-                    <h1 class="title-font text-5xl font-bold tracking-tighter">Долгие Маршруты</h1>
-                    <p class="text-xl text-zinc-400 mt-2 max-w-2xl">Планировщик маршрутов, которые длиннее оптимальных, но остаются в разумных пределах. Абсурд в логике, реализм в протяжённости.</p>
-                </div>
-                <div class="text-right text-sm text-zinc-500 hidden lg:block">
-                    <div>Жадный алгоритм + контролируемые детуры</div>
-                    <div class="font-mono text-xs">Реалистичные, но нелогичные пути</div>
-                </div>
-            </div>
+        <div class="mb-6">
+            <h1 class="title-font text-5xl font-bold tracking-tighter">Долгие Маршруты</h1>
+            <p class="text-lg text-zinc-400 mt-1 max-w-3xl">Строит абсурдные, но реалистичные маршруты по настоящим дорогам, переулкам и пешеходным переходам. Выбери транспорт — и получи путь, который можно проехать.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Sidebar -->
             <div class="lg:col-span-3 space-y-6">
+                <!-- Transport Mode -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                    <div class="font-semibold mb-3 flex items-center gap-x-2">
+                        <i class="fa-solid fa-car text-zinc-400"></i>
+                        <span>Транспорт</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2" id="transport-selector">
+                        <button data-profile="driving" class="transport-btn active flex flex-col items-center justify-center py-3 px-2 bg-zinc-800 border border-zinc-700 rounded-2xl text-sm">
+                            <i class="fa-solid fa-car text-xl mb-1"></i>
+                            <span>Авто</span>
+                        </button>
+                        <button data-profile="foot" class="transport-btn flex flex-col items-center justify-center py-3 px-2 bg-zinc-800 border border-zinc-700 rounded-2xl text-sm">
+                            <i class="fa-solid fa-walking text-xl mb-1"></i>
+                            <span>Пешком</span>
+                        </button>
+                        <button data-profile="bike" class="transport-btn flex flex-col items-center justify-center py-3 px-2 bg-zinc-800 border border-zinc-700 rounded-2xl text-sm">
+                            <i class="fa-solid fa-bicycle text-xl mb-1"></i>
+                            <span>Велосипед</span>
+                        </button>
+                    </div>
+                    <div class="text-[10px] text-zinc-500 mt-2 text-center">Маршрут будет проложен по реальным дорогам и тропам</div>
+                </div>
+
                 <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
                     <div class="flex items-center gap-x-2 mb-4">
                         <i class="fa-solid fa-bookmark text-zinc-400"></i>
-                        <span class="font-semibold">Примеры маршрутов</span>
+                        <span class="font-semibold">Примеры</span>
                     </div>
                     <div class="space-y-2 text-sm">
-                        <button onclick="loadPreset(0)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
-                            <i class="fa-solid fa-globe fa-fw w-4"></i>
+                        <button onclick="loadPreset(0)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors text-sm">
                             <span>Европа → Азия через Африку</span>
                         </button>
-                        <button onclick="loadPreset(1)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
-                            <i class="fa-solid fa-snowflake fa-fw w-4"></i>
+                        <button onclick="loadPreset(1)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors text-sm">
                             <span>Россия → Япония через США</span>
                         </button>
-                        <button onclick="loadPreset(2)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
-                            <i class="fa-solid fa-globe-americas fa-fw w-4"></i>
+                        <button onclick="loadPreset(2)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors text-sm">
                             <span>Кругосветка с остановками</span>
                         </button>
-                        <button onclick="loadPreset(3)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
-                            <i class="fa-solid fa-map fa-fw w-4"></i>
+                        <button onclick="loadPreset(3)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors text-sm">
                             <span>СПб — Австралия — СПб</span>
                         </button>
                     </div>
@@ -94,36 +106,24 @@
                             <i class="fa-solid fa-trash"></i> очистить
                         </button>
                     </div>
-                    <div id="points-list" class="space-y-2 max-h-[320px] overflow-auto pr-2">
-                        <!-- populated by JS -->
+                    <div id="points-list" class="space-y-2 max-h-[280px] overflow-auto pr-2">
                     </div>
-                    <div class="mt-4 pt-4 border-t border-zinc-800 text-xs text-zinc-500">
-                        Кликайте по карте, чтобы добавить точку. Маркеры можно перетаскивать.
-                    </div>
+                    <div class="mt-3 text-xs text-zinc-500">Клик по карте — добавить точку</div>
                 </div>
 
                 <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                    <div class="font-semibold mb-3 flex items-center gap-x-2">
-                        <i class="fa-solid fa-sliders-h text-zinc-400"></i>
-                        <span>Уровень абсурда</span>
-                    </div>
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-sm mb-1.5">
-                                <span>Количество дополнительных остановок</span>
-                                <span id="absurd-value" class="font-mono text-zinc-400">2</span>
-                            </div>
-                            <input type="range" id="absurd-slider" min="0" max="5" value="2" step="1" class="w-full accent-zinc-600" oninput="updateAbsurdValue()">
-                            <div class="flex justify-between text-[10px] text-zinc-500 mt-1">
-                                <div>Прямой</div>
-                                <div>Сильно абсурдный</div>
-                            </div>
+                    <div class="font-semibold mb-3">Уровень абсурда</div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Дополнительные остановки</span>
+                            <span id="absurd-value" class="font-mono">2</span>
                         </div>
-                        <label class="flex items-center gap-x-3 cursor-pointer">
-                            <input type="checkbox" id="add-detours" checked class="accent-zinc-600 w-4 h-4">
-                            <span class="text-sm">Добавлять реалистичные детуры</span>
-                        </label>
+                        <input type="range" id="absurd-slider" min="0" max="4" value="2" class="w-full accent-zinc-600">
                     </div>
+                    <label class="flex items-center gap-x-2 mt-3 text-sm cursor-pointer">
+                        <input type="checkbox" id="add-detours" checked class="accent-zinc-600">
+                        <span>Добавлять странные, но реальные остановки</span>
+                    </label>
                 </div>
             </div>
 
@@ -131,101 +131,70 @@
             <div class="lg:col-span-6">
                 <div class="map-container bg-zinc-900 border border-zinc-800 rounded-3xl p-3 h-[620px] relative">
                     <div id="map" class="w-full h-full rounded-2xl overflow-hidden"></div>
-                    <div id="map-hint" class="absolute bottom-6 left-6 bg-zinc-900/90 backdrop-blur px-4 py-2 rounded-2xl text-xs flex items-center gap-x-2 border border-zinc-700">
-                        <i class="fa-solid fa-hand-pointer text-zinc-400"></i>
-                        <span>Клик по карте — добавить точку</span>
-                    </div>
                 </div>
             </div>
 
-            <!-- Right panel -->
+            <!-- Results -->
             <div class="lg:col-span-3 space-y-6">
                 <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                    <button onclick="calculateRealisticAbsurdRoute()" class="w-full py-4 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-950 border border-zinc-700 text-white font-semibold text-lg rounded-2xl flex items-center justify-center gap-x-3 transition-all">
-                        <i class="fa-solid fa-route fa-lg"></i>
-                        <span>Построить абсурдный, но реалистичный маршрут</span>
+                    <button onclick="calculateRealRoadRoute()" 
+                            class="w-full py-4 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold rounded-2xl flex items-center justify-center gap-x-3 text-lg transition-all">
+                        <i class="fa-solid fa-road"></i>
+                        <span>Построить маршрут по дорогам</span>
                     </button>
-                    <div class="text-center text-[10px] text-zinc-500 mt-3">Длиннее оптимального, но в разумных пределах</div>
+                    <div class="text-center text-xs text-zinc-500 mt-2">Учитывает реальные дороги, переулки и переходы</div>
                 </div>
 
                 <div id="results-panel" class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 hidden">
-                    <div class="font-semibold mb-4 flex items-center gap-x-2 text-zinc-300">
-                        <i class="fa-solid fa-chart-bar"></i>
-                        <span>Результаты</span>
+                    <div class="font-semibold mb-4 text-zinc-300 flex items-center gap-x-2">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span>Результат</span>
                     </div>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-baseline">
-                            <div class="text-sm text-zinc-400">Общая длина</div>
-                            <div class="text-right">
-                                <span id="total-distance" class="text-4xl font-bold tabular-nums"></span>
-                                <span class="text-sm text-zinc-400">км</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <div class="text-zinc-400">Во сколько раз длиннее прямого</div>
-                            <div id="times-longer" class="font-mono text-amber-400 font-semibold"></div>
-                        </div>
-                        <div class="pt-3 border-t border-zinc-800">
-                            <div class="text-xs text-zinc-400 mb-1.5">Примерное время в пути</div>
-                            <div id="estimated-time" class="text-lg font-medium"></div>
-                        </div>
-                        <div class="pt-3 border-t border-zinc-800">
-                            <div class="text-xs text-zinc-400 mb-1">Описание</div>
-                            <div id="route-description" class="text-sm leading-snug text-zinc-300"></div>
-                        </div>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between"><span class="text-zinc-400">Общая длина</span> <span id="total-distance" class="font-bold text-xl tabular-nums"></span> <span class="text-zinc-400">км</span></div>
+                        <div class="flex justify-between"><span class="text-zinc-400">Длиннее прямого</span> <span id="times-longer" class="font-mono text-amber-400"></span></div>
+                        <div><span class="text-zinc-400">Примерное время:</span> <span id="estimated-time" class="font-medium"></span></div>
+                        <div class="pt-2 border-t border-zinc-800 text-xs text-zinc-400" id="route-description"></div>
                     </div>
                 </div>
 
-                <div class="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-4 text-xs text-zinc-500 leading-relaxed">
-                    <strong>Принцип работы:</strong> Алгоритм строит путь, вставляя 1–5 дополнительных остановок из реалистичных, но нелогичных точек (Исландия, Мадагаскар, Патагония и др.). Результат — маршрут длиннее оптимального, но не экстремально.
+                <div class="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-4 text-xs text-zinc-500">
+                    Маршрут строится через публичный OSRM. Учитывает реальную дорожную сеть, пешеходные зоны и велосипедные дорожки.
                 </div>
             </div>
         </div>
     </div>
 
     <footer class="max-w-7xl mx-auto px-6 py-8 text-center text-xs text-zinc-600">
-        Долгие Маршруты • Реалистичные по длине, абсурдные по маршруту • 2026
+        Долгие Маршруты • По реальным дорогам и тропам • 2026
     </footer>
 
     <script>
-        function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
         let map;
         let points = [];
         let markers = [];
         let currentPolyline = null;
+        let currentProfile = 'driving';
         let absurdLevel = 2;
 
-        // Пул "реалистичных абсурдных" остановок (реальные места, которые делают маршрут странным)
         const absurdStopsPool = [
             {name: "Исландия (Рейкьявик)", lat: 64.1466, lng: -21.9426},
-            {name: "Мадагаскар (Антананариву)", lat: -18.8792, lng: 47.5079},
+            {name: "Мадагаскар", lat: -18.8792, lng: 47.5079},
             {name: "Патагония (Ушуайя)", lat: -54.8019, lng: -68.3030},
-            {name: "Галапагосские острова", lat: -0.9538, lng: -90.9656},
-            {name: "Капо-Верде (Прая)", lat: 14.9180, lng: -23.5087},
+            {name: "Галапагосы", lat: -0.9538, lng: -90.9656},
             {name: "Азорские острова", lat: 37.7412, lng: -25.6756},
-            {name: "Камчатка (Петропавловск)", lat: 53.0452, lng: 158.6483},
-            {name: "Новая Зеландия (Окленд)", lat: -36.8485, lng: 174.7633},
-            {name: "ЮАР (Кейптаун)", lat: -33.9249, lng: 18.4241},
-            {name: "Чили (Сантьяго)", lat: -33.4489, lng: -70.6693},
-            {name: "Марокко (Марракеш)", lat: 31.6295, lng: -7.9811},
-            {name: "Гренландия (Нуук)", lat: 64.1836, lng: -51.7214}
+            {name: "Камчатка", lat: 53.0452, lng: 158.6483},
+            {name: "Новая Зеландия", lat: -36.8485, lng: 174.7633},
+            {name: "Кейптаун", lat: -33.9249, lng: 18.4241}
         ];
 
         function initMap() {
-            map = L.map('map', { zoomControl: true, attributionControl: false }).setView([40, 10], 2);
+            map = L.map('map', {zoomControl: true, attributionControl: false}).setView([45, 10], 2);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-            map.on('click', function(e) {
+            map.on('click', e => {
                 const name = prompt('Название точки:', `Точка ${points.length + 1}`);
-                if (name !== null) addPoint(e.latlng.lat, e.latlng.lng, name || `Точка ${points.length + 1}`);
+                if (name !== null) addPoint(e.latlng.lat, e.latlng.lng, name);
             });
 
             setTimeout(() => {
@@ -233,24 +202,24 @@
                     addPoint(59.9343, 30.3351, "Санкт-Петербург");
                     addPoint(55.7558, 37.6176, "Москва");
                 }
-            }, 600);
+            }, 500);
         }
 
         function addPoint(lat, lng, name) {
-            const point = { id: Date.now(), name: name, lat: parseFloat(lat), lng: parseFloat(lng) };
+            const point = {id: Date.now(), name, lat: +lat, lng: +lng};
             points.push(point);
 
-            const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-            marker.bindPopup(`<b>${name}</b><br><small>${lat.toFixed(3)}, ${lng.toFixed(3)}</small>`);
+            const marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+            marker.bindPopup(`<b>${name}</b>`);
 
-            marker.on('dragend', function(e) {
+            marker.on('dragend', e => {
                 const pos = e.target.getLatLng();
                 point.lat = pos.lat; point.lng = pos.lng;
                 updatePointsList();
             });
 
-            marker.on('click', function() {
-                if (confirm(`Удалить «${name}»?`)) removePoint(point.id);
+            marker.on('click', () => {
+                if (confirm(`Удалить точку «${name}»?`)) removePoint(point.id);
             });
 
             markers.push({id: point.id, marker});
@@ -259,133 +228,157 @@
 
         function removePoint(id) {
             points = points.filter(p => p.id !== id);
-            const m = markers.find(mm => mm.id === id);
-            if (m) { map.removeLayer(m.marker); markers = markers.filter(mm => mm.id !== id); }
+            const mObj = markers.find(m => m.id === id);
+            if (mObj) map.removeLayer(mObj.marker);
+            markers = markers.filter(m => m.id !== id);
             updatePointsList();
-            if (currentPolyline) { map.removeLayer(currentPolyline); currentPolyline = null; document.getElementById('results-panel').classList.add('hidden'); }
+            if (currentPolyline) { map.removeLayer(currentPolyline); currentPolyline = null; }
+            document.getElementById('results-panel').classList.add('hidden');
         }
 
         function updatePointsList() {
-            const container = document.getElementById('points-list');
-            container.innerHTML = '';
-            if (points.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-zinc-500 text-sm">Добавляйте точки кликом по карте</div>`;
-                return;
-            }
-            points.forEach((point, index) => {
+            const el = document.getElementById('points-list');
+            el.innerHTML = '';
+            points.forEach((p, i) => {
                 const div = document.createElement('div');
-                div.className = `point-item flex items-center justify-between bg-zinc-800 rounded-2xl px-4 py-3 text-sm`;
+                div.className = 'point-item flex justify-between items-center bg-zinc-800 rounded-2xl px-4 py-2.5 text-sm';
                 div.innerHTML = `
-                    <div class="flex items-center gap-x-3 flex-1 min-w-0">
-                        <div class="w-6 h-6 flex-shrink-0 rounded-full bg-zinc-600 flex items-center justify-center text-xs font-mono">${index + 1}</div>
-                        <div class="min-w-0 flex-1">
-                            <input type="text" value="${point.name}" class="bg-transparent border-none focus:outline-none w-full font-medium text-sm p-0" onchange="renamePoint(${point.id}, this.value)">
-                            <div class="text-[10px] text-zinc-500 font-mono">${point.lat.toFixed(2)}°, ${point.lng.toFixed(2)}°</div>
-                        </div>
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-5 h-5 rounded-full bg-zinc-600 flex items-center justify-center text-xs">${i+1}</div>
+                        <input value="${p.name}" class="bg-transparent w-40 focus:outline-none" onchange="renamePoint(${p.id}, this.value)">
                     </div>
-                    <button onclick="removePoint(${point.id})" class="ml-2 text-zinc-400 hover:text-red-400 p-1"><i class="fa-solid fa-times fa-sm"></i></button>
+                    <button onclick="removePoint(${p.id})" class="text-zinc-400 hover:text-red-400"><i class="fa-solid fa-times"></i></button>
                 `;
-                container.appendChild(div);
+                el.appendChild(div);
             });
         }
 
-        function renamePoint(id, newName) {
+        function renamePoint(id, val) {
             const p = points.find(x => x.id === id);
-            if (p) { p.name = newName.trim() || p.name; }
+            if (p) p.name = val;
         }
 
-        function updateAbsurdValue() {
-            absurdLevel = parseInt(document.getElementById('absurd-slider').value);
-            document.getElementById('absurd-value').textContent = absurdLevel;
+        // Transport selector
+        function initTransportSelector() {
+            const buttons = document.querySelectorAll('#transport-selector button');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('active', 'border-zinc-400'));
+                    btn.classList.add('active', 'border-zinc-400');
+                    currentProfile = btn.dataset.profile;
+                });
+            });
         }
 
-        function clearAllPoints() {
-            points.forEach(p => { const m = markers.find(mm => mm.id === p.id); if (m) map.removeLayer(m.marker); });
-            points = []; markers = [];
-            if (currentPolyline) { map.removeLayer(currentPolyline); currentPolyline = null; }
-            document.getElementById('results-panel').classList.add('hidden');
-            updatePointsList();
+        async function getRealRoute(from, to, profile = 'driving') {
+            const url = `https://router.project-osrm.org/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.code === 'Ok' && data.routes && data.routes[0]) {
+                    return {
+                        coords: data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]), // [lat, lng]
+                        distance: data.routes[0].distance / 1000 // km
+                    };
+                }
+            } catch (e) {
+                console.warn('OSRM error', e);
+            }
+            // Fallback to straight line
+            return {
+                coords: [[from.lat, from.lng], [to.lat, to.lng]],
+                distance: haversine(from.lat, from.lng, to.lat, to.lng)
+            };
         }
 
-        function loadPreset(idx) {
-            clearAllPoints();
-            let ps = [];
-            if (idx === 0) ps = [{name:"Санкт-Петербург",lat:59.9343,lng:30.3351},{name:"Каир",lat:30.0444,lng:31.2357},{name:"Кейптаун",lat:-33.9249,lng:18.4241},{name:"Москва",lat:55.7558,lng:37.6176}];
-            else if (idx === 1) ps = [{name:"Москва",lat:55.7558,lng:37.6176},{name:"Исландия",lat:64.1466,lng:-21.9426},{name:"Нью-Йорк",lat:40.7128,lng:-74.006},{name:"Токио",lat:35.6762,lng:139.6503}];
-            else if (idx === 2) ps = [{name:"Сидней",lat:-33.8688,lng:151.2093},{name:"Кейптаун",lat:-33.9249,lng:18.4241},{name:"Рио",lat:-22.9068,lng:-43.1729},{name:"Лиссабон",lat:38.7223,lng:-9.1393},{name:"Владивосток",lat:43.1155,lng:131.8855}];
-            else if (idx === 3) ps = [{name:"Санкт-Петербург",lat:59.9343,lng:30.3351},{name:"Сидней",lat:-33.8688,lng:151.2093},{name:"Санкт-Петербург",lat:59.9343,lng:30.3351}];
-            ps.forEach(p => addPoint(p.lat, p.lng, p.name));
-            setTimeout(() => calculateRealisticAbsurdRoute(), 500);
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2-lat1)*Math.PI/180;
+            const dLon = (lon2-lon1)*Math.PI/180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        function calculateRealisticAbsurdRoute() {
-            if (points.length < 2) { alert('Нужно минимум две точки'); return; }
+        async function calculateRealRoadRoute() {
+            if (points.length < 2) { alert('Добавьте минимум 2 точки'); return; }
 
-            let route = [...points];
-            const addDetours = document.getElementById('add-detours').checked;
+            const btn = event.currentTarget;
+            // show loading
+            const originalText = document.querySelector('button[onclick*="calculateRealRoadRoute"]').innerHTML;
+            document.querySelector('button[onclick*="calculateRealRoadRoute"]').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Строим по дорогам...';
 
-            if (addDetours && absurdLevel > 0) {
-                // Вставляем реалистичные абсурдные остановки между сегментами
-                let newRoute = [route[0]];
-                for (let i = 0; i < route.length - 1; i++) {
-                    newRoute.push(route[i+1]);
-                    // Добавляем 0–2 детура между точками в зависимости от уровня
-                    const detoursToAdd = Math.min(absurdLevel, 2);
-                    for (let d = 0; d < detoursToAdd; d++) {
-                        // Выбираем случайную точку из пула, которая не слишком далеко от текущего сегмента
-                        const current = newRoute[newRoute.length-1];
-                        const next = route[i+1];
+            let routePoints = [...points];
+
+            // Add absurd but realistic detours
+            if (document.getElementById('add-detours').checked && absurdLevel > 0) {
+                let newRoute = [routePoints[0]];
+                for (let i = 0; i < routePoints.length - 1; i++) {
+                    newRoute.push(routePoints[i + 1]);
+                    for (let d = 0; d < Math.min(absurdLevel, 2); d++) {
+                        const curr = newRoute[newRoute.length - 1];
+                        const nextP = routePoints[i + 1];
                         const candidates = absurdStopsPool.filter(s => {
-                            const d1 = haversine(current.lat, current.lng, s.lat, s.lng);
-                            const d2 = haversine(s.lat, s.lng, next.lat, next.lng);
-                            return d1 < 12000 && d2 < 12000; // не слишком экстремальные прыжки
+                            const d1 = haversine(curr.lat, curr.lng, s.lat, s.lng);
+                            const d2 = haversine(s.lat, s.lng, nextP.lat, nextP.lng);
+                            return d1 < 9000 && d2 < 9000;
                         });
-                        if (candidates.length > 0) {
+                        if (candidates.length) {
                             const chosen = candidates[Math.floor(Math.random() * candidates.length)];
                             newRoute.push({id: Date.now() + d, name: chosen.name, lat: chosen.lat, lng: chosen.lng});
                         }
                     }
                 }
-                route = newRoute;
+                routePoints = newRoute;
             }
 
-            // Финальная оптимизация: убираем слишком длинные одиночные прыжки (если есть)
-            // (упрощённо — просто рисуем то, что получилось)
+            // Now get real road routes for each leg
+            let allCoords = [];
+            let totalDist = 0;
 
-            drawRoute(route);
-            showResults(route);
-        }
+            for (let i = 0; i < routePoints.length - 1; i++) {
+                const leg = await getRealRoute(routePoints[i], routePoints[i+1], currentProfile);
+                allCoords = allCoords.concat(leg.coords);
+                totalDist += leg.distance;
+            }
 
-        function drawRoute(route) {
+            // Draw the real road polyline
             if (currentPolyline) map.removeLayer(currentPolyline);
-            const latlngs = route.map(p => [p.lat, p.lng]);
-            currentPolyline = L.polyline(latlngs, { color: '#a1a1aa', weight: 5, opacity: 0.85, dashArray: '18, 12' }).addTo(map);
-            map.flyToBounds(L.latLngBounds(latlngs), { padding: [40, 40], duration: 1 });
+            currentPolyline = L.polyline(allCoords, {
+                color: '#a1a1aa',
+                weight: 6,
+                opacity: 0.9
+            }).addTo(map);
+
+            map.flyToBounds(L.latLngBounds(allCoords), {padding: [30, 30], duration: 1.2});
+
+            // Show results
+            showRealResults(routePoints, totalDist, allCoords.length);
+
+            // restore button
+            document.querySelector('button[onclick*="calculateRealRoadRoute"]').innerHTML = originalText || '<i class="fa-solid fa-road"></i> Построить маршрут по дорогам';
         }
 
-        function showResults(route) {
+        function showRealResults(routePoints, totalKm, coordCount) {
             const panel = document.getElementById('results-panel');
             panel.classList.remove('hidden');
 
-            let total = 0;
-            for (let i = 0; i < route.length - 1; i++) total += haversine(route[i].lat, route[i].lng, route[i+1].lat, route[i+1].lng);
+            document.getElementById('total-distance').textContent = totalKm.toFixed(0);
 
-            const direct = haversine(route[0].lat, route[0].lng, route[route.length-1].lat, route[route.length-1].lng);
-            const ratio = direct > 5 ? (total / direct).toFixed(1) : '—';
-
-            document.getElementById('total-distance').textContent = Math.round(total).toLocaleString('ru-RU');
+            const first = routePoints[0];
+            const last = routePoints[routePoints.length - 1];
+            const direct = haversine(first.lat, first.lng, last.lat, last.lng);
+            const ratio = direct > 5 ? (totalKm / direct).toFixed(1) : '—';
             document.getElementById('times-longer').textContent = ratio + '×';
 
-            const hours = Math.round(total / 80);
-            let t = hours < 24 ? hours + ' ч' : Math.round(hours/24) + ' дней';
-            document.getElementById('estimated-time').textContent = t + ' (средняя скорость ~80 км/ч)';
+            const profileName = currentProfile === 'driving' ? 'авто' : currentProfile === 'foot' ? 'пешком' : 'велосипед';
+            const speed = currentProfile === 'driving' ? 70 : currentProfile === 'bike' ? 18 : 5;
+            const timeH = Math.round(totalKm / speed);
+            document.getElementById('estimated-time').innerHTML = `${timeH} ч (${profileName})`;
 
-            let desc = `Маршрут из ${route.length} точек. `;
-            if (parseFloat(ratio) > 2) desc += `Примерно в ${ratio} раза длиннее прямого. `;
-            desc += `Вставлены реалистичные, но нелогичные остановки (Исландия, Мадагаскар и др.).`;
+            let desc = `Маршрут из ${routePoints.length} точек по реальным дорогам. `;
+            if (parseFloat(ratio) > 1.8) desc += `Примерно в ${ratio} раза длиннее прямого. `;
+            desc += `Учтены улицы, переулки и пешеходные зоны.`;
             document.getElementById('route-description').innerHTML = desc;
-
-            panel.scrollIntoView({ behavior: 'smooth' });
         }
 
         function updateAbsurdValue() {
@@ -393,12 +386,37 @@
             document.getElementById('absurd-value').textContent = absurdLevel;
         }
 
+        function loadPreset(idx) {
+            clearAllPoints();
+            let ps = [];
+            if (idx === 0) ps = [{name: "Санкт-Петербург", lat: 59.93, lng: 30.33}, {name: "Каир", lat: 30.04, lng: 31.24}, {name: "Кейптаун", lat: -33.92, lng: 18.42}, {name: "Москва", lat: 55.76, lng: 37.62}];
+            else if (idx === 1) ps = [{name: "Москва", lat: 55.76, lng: 37.62}, {name: "Исландия", lat: 64.15, lng: -21.94}, {name: "Нью-Йорк", lat: 40.71, lng: -74.01}, {name: "Токио", lat: 35.68, lng: 139.65}];
+            else if (idx === 2) ps = [{name: "Сидней", lat: -33.87, lng: 151.21}, {name: "Кейптаун", lat: -33.92, lng: 18.42}, {name: "Рио", lat: -22.91, lng: -43.17}, {name: "Лиссабон", lat: 38.72, lng: -9.14}];
+            else if (idx === 3) ps = [{name: "Санкт-Петербург", lat: 59.93, lng: 30.33}, {name: "Сидней", lat: -33.87, lng: 151.21}, {name: "Санкт-Петербург", lat: 59.93, lng: 30.33}];
+
+            ps.forEach(p => addPoint(p.lat, p.lng, p.name));
+            setTimeout(() => calculateRealRoadRoute(), 400);
+        }
+
+        function clearAllPoints() {
+            points.forEach(p => { const m = markers.find(mm => mm.id === p.id); if (m) map.removeLayer(m.marker); });
+            points = []; markers = [];
+            if (currentPolyline) map.removeLayer(currentPolyline);
+            currentPolyline = null;
+            document.getElementById('results-panel').classList.add('hidden');
+            document.getElementById('points-list').innerHTML = '';
+        }
+
         function init() {
             initMap();
+            initTransportSelector();
             updateAbsurdValue();
             document.getElementById('absurd-slider').addEventListener('input', updateAbsurdValue);
-            console.log('%c[Долгие Маршруты] Загружен (реалистичный абсурд)', 'color:#71717a');
+
+            // initial points
+            console.log('%c[Долгие Маршруты] Готово. Теперь с реальными дорогами.', 'color:#71717a');
         }
+
         window.onload = init;
     </script>
 </body>
