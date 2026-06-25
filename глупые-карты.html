@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Глупые Карты • Анти-Яндекс</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .title-font { font-family: 'Playfair Display', Georgia, serif; }
+        #map { height: 100%; width: 100%; border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); }
+        .leaflet-popup-content-wrapper { background: #1f2937; color: #e5e7eb; border-radius: 8px; }
+        .route-line { stroke-dasharray: 15, 10; animation: dash 1.5s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: -40; } }
+        .absurd-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .absurd-card:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        .nonsense-btn { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+        .map-container { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4); }
+        .point-item { transition: all 0.1s ease; }
+        .point-item:hover { background-color: #374151; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <!-- Header -->
+    <nav class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-globe fa-lg text-white"></i>
+                </div>
+                <div>
+                    <span class="title-font text-3xl font-bold tracking-tight">Глупые Карты</span>
+                    <span class="text-xs text-red-400 font-mono ml-1">ANTI</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-x-4 text-sm">
+                <a href="index.html" class="flex items-center gap-x-2 px-4 py-2 hover:bg-zinc-800 rounded-xl transition-colors">
+                    <i class="fa-solid fa-chess-king mr-2"></i>
+                    <span>Королевский Зал Игр</span>
+                </a>
+                <a href="https://github.com/dastrbob-hub/igor" target="_blank" class="flex items-center gap-x-2 px-4 py-2 hover:bg-zinc-800 rounded-xl transition-colors">
+                    <i class="fa-brands fa-github"></i>
+                    <span>GitHub</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-6 pt-8 pb-4">
+        <!-- Hero -->
+        <div class="flex items-end justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-x-3">
+                    <h1 class="title-font text-5xl font-bold tracking-tighter">Анти-Яндекс.Карты</h1>
+                    <div class="px-3 py-1 bg-red-600/20 text-red-400 text-xs font-mono rounded-full border border-red-600/30">v1.0 • БЕЗ ЛОГИКИ</div>
+                </div>
+                <p class="text-xl text-zinc-400 mt-2">Строим самые нелогичные, длинные и абсурдные маршруты на планете. <span class="text-red-400">Как Яндекс, но наоборот.</span></p>
+            </div>
+            <div class="text-right text-sm text-zinc-500">
+                <div>Сделано с <span class="text-red-400">Grok</span> для Огурец</div>
+                <div class="font-mono text-xs">в репозитории igor</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Sidebar Controls -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Quick Presets -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                    <div class="flex items-center gap-x-2 mb-4">
+                        <i class="fa-solid fa-magic text-red-400"></i>
+                        <span class="font-semibold">Готовые идиотские туры</span>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <button onclick="loadPreset(0)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
+                            <i class="fa-solid fa-globe fa-fw w-4"></i>
+                            <span>СПб → Москва через весь мир</span>
+                        </button>
+                        <button onclick="loadPreset(1)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
+                            <i class="fa-solid fa-snowflake fa-fw w-4"></i>
+                            <span>Тур по всем полюсам</span>
+                        </button>
+                        <button onclick="loadPreset(2)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
+                            <i class="fa-solid fa-plane fa-fw w-4"></i>
+                            <span>Кругосветка задом наперёд</span>
+                        </button>
+                        <button onclick="loadPreset(3)" class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-3 transition-colors">
+                            <i class="fa-solid fa-fish fa-fw w-4"></i>
+                            <span>Рыбалка: Питер → Австралия → Питер</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Points List -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-x-2">
+                            <i class="fa-solid fa-map-marker-alt text-red-400"></i>
+                            <span class="font-semibold">Точки маршрута</span>
+                        </div>
+                        <button onclick="clearAllPoints()" class="text-xs px-3 py-1 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-red-400 transition-colors">
+                            <i class="fa-solid fa-trash"></i> очистить
+                        </button>
+                    </div>
+                    
+                    <div id="points-list" class="space-y-2 max-h-[320px] overflow-auto pr-2 custom-scroll">
+                        <!-- JS populated -->
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-zinc-800 text-xs text-zinc-500">
+                        Кликай по карте, чтобы добавить точку. Перетаскивай маркеры.
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                    <div class="font-semibold mb-3 flex items-center gap-x-2">
+                        <i class="fa-solid fa-sliders-h text-red-400"></i>
+                        <span>Настройки абсурда</span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1.5">
+                                <span>Уровень идиотизма</span>
+                                <span id="nonsense-value" class="font-mono text-red-400">7</span>
+                            </div>
+                            <input type="range" id="nonsense-slider" min="1" max="10" value="7" step="1" 
+                                   class="w-full accent-red-600" oninput="updateNonsenseValue()">
+                            <div class="flex justify-between text-[10px] text-zinc-500 mt-1">
+                                <div>Почти норм</div>
+                                <div>Полный безум</div>
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-x-3 cursor-pointer">
+                            <input type="checkbox" id="add-chaos" checked class="accent-red-600 w-4 h-4">
+                            <span class="text-sm">Добавить случайный хаос (3–5 точек)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map -->
+            <div class="lg:col-span-6">
+                <div class="map-container bg-zinc-900 border border-zinc-800 rounded-3xl p-3 h-[620px] relative">
+                    <div id="map" class="w-full h-full rounded-2xl overflow-hidden"></div>
+                    
+                    <!-- Overlay hint -->
+                    <div id="map-hint" class="absolute bottom-6 left-6 bg-zinc-900/90 backdrop-blur px-4 py-2 rounded-2xl text-xs flex items-center gap-x-2 border border-zinc-700">
+                        <i class="fa-solid fa-hand-pointer text-red-400"></i>
+                        <span>Кликай по карте, чтобы добавить остановку</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right panel: Calculate & Results -->
+            <div class="lg:col-span-3 space-y-6">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                    <button onclick="calculateAbsurdRoute()" 
+                            class="nonsense-btn w-full py-4 text-white font-bold text-lg rounded-2xl flex items-center justify-center gap-x-3 shadow-lg shadow-red-950 hover:shadow-red-900 active:scale-[0.985] transition-all">
+                        <i class="fa-solid fa-route fa-lg"></i>
+                        <span>ПОСТРОИТЬ САМЫЙ ИДИОТСКИЙ МАРШРУТ</span>
+                    </button>
+                    
+                    <div class="text-center text-[10px] text-zinc-500 mt-3">Мы гарантируем: ты пожалеешь</div>
+                </div>
+
+                <!-- Results -->
+                <div id="results-panel" class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 hidden">
+                    <div class="font-semibold mb-4 flex items-center gap-x-2 text-red-400">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Результат твоего безумия</span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-baseline">
+                            <div class="text-sm text-zinc-400">Общая длина</div>
+                            <div class="text-right">
+                                <span id="total-distance" class="text-4xl font-bold tabular-nums"></span>
+                                <span class="text-sm text-zinc-400">км</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between text-sm">
+                            <div class="text-zinc-400">В раз длиннее прямого</div>
+                            <div id="times-longer" class="font-mono text-red-400 font-semibold"></div>
+                        </div>
+
+                        <div class="pt-3 border-t border-zinc-800">
+                            <div class="text-xs text-zinc-400 mb-1.5">Ориентировочное время в пути</div>
+                            <div id="funny-time" class="text-lg font-medium text-amber-300"></div>
+                        </div>
+
+                        <div class="pt-3 border-t border-zinc-800">
+                            <div class="text-xs text-zinc-400 mb-1">Описание маршрута</div>
+                            <div id="route-description" class="text-sm leading-snug text-zinc-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-4 text-xs text-zinc-500">
+                    <i class="fa-solid fa-info-circle mr-1.5"></i>
+                    Алгоритм: жадный поиск самой дальней точки (farthest neighbor). Чем больше точек — тем безумнее.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="max-w-7xl mx-auto px-6 py-8 text-center text-xs text-zinc-600">
+        Глупые Карты • Никто не просил это делать • 2026 • <a href="index.html" class="hover:text-zinc-400">Вернуться в Зал Игр</a>
+    </footer>
+
+    <script>
+        // Tailwind script
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent', '#ef4444');
+        }
+
+        // Haversine formula for distance in km
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        let map;
+        let points = [];
+        let markers = [];
+        let currentPolyline = null;
+        let nonsenseLevel = 7;
+
+        const predefinedCities = [
+            {name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351},
+            {name: "Москва", lat: 55.7558, lng: 37.6176},
+            {name: "Хельсинки", lat: 60.1699, lng: 24.9384},
+            {name: "Северный полюс", lat: 90, lng: 0},
+            {name: "Южный полюс", lat: -90, lng: 0},
+            {name: "Токио", lat: 35.6762, lng: 139.6503},
+            {name: "Нью-Йорк", lat: 40.7128, lng: -74.0060},
+            {name: "Сидней", lat: -33.8688, lng: 151.2093},
+            {name: "Кейптаун", lat: -33.9249, lng: 18.4241},
+            {name: "Буэнос-Айрес", lat: -34.6037, lng: -58.3816},
+            {name: "Остров Пасхи", lat: -27.1127, lng: -109.3497},
+            {name: "Гренландия (Нуук)", lat: 64.1836, lng: -51.7214},
+            {name: "Владивосток", lat: 43.1155, lng: 131.8855},
+            {name: "Рио-де-Жанейро", lat: -22.9068, lng: -43.1729},
+            {name: "Дубай", lat: 25.2048, lng: 55.2708}
+        ];
+
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([40, 20], 2);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                className: 'map-tiles'
+            }).addTo(map);
+
+            // Click to add point
+            map.on('click', function(e) {
+                const name = prompt('Название точки (или оставь пустым):', `Остановка ${points.length + 1}`);
+                if (name !== null) {
+                    addPoint(e.latlng.lat, e.latlng.lng, name || `Остановка ${points.length + 1}`);
+                }
+            });
+
+            // Add some starter points for fun
+            setTimeout(() => {
+                if (points.length === 0) {
+                    addPoint(59.9343, 30.3351, "Санкт-Петербург");
+                    addPoint(55.7558, 37.6176, "Москва");
+                }
+            }, 800);
+        }
+
+        function addPoint(lat, lng, name) {
+            const point = {
+                id: Date.now(),
+                name: name,
+                lat: parseFloat(lat),
+                lng: parseFloat(lng)
+            };
+            points.push(point);
+
+            const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            marker.bindPopup(`<b>${name}</b><br><small>${lat.toFixed(2)}, ${lng.toFixed(2)}</small>`);
+            
+            marker.on('dragend', function(e) {
+                const newLatLng = e.target.getLatLng();
+                point.lat = newLatLng.lat;
+                point.lng = newLatLng.lng;
+                updatePointsList();
+                if (currentPolyline) {
+                    // auto recalc if route exists? optional
+                }
+            });
+
+            marker.on('click', function() {
+                if (confirm(`Удалить точку "${name}"?`)) {
+                    removePoint(point.id);
+                }
+            });
+
+            markers.push({id: point.id, marker: marker});
+            updatePointsList();
+        }
+
+        function removePoint(id) {
+            points = points.filter(p => p.id !== id);
+            const markerObj = markers.find(m => m.id === id);
+            if (markerObj) {
+                map.removeLayer(markerObj.marker);
+                markers = markers.filter(m => m.id !== id);
+            }
+            updatePointsList();
+            // clear route if active
+            if (currentPolyline) {
+                map.removeLayer(currentPolyline);
+                currentPolyline = null;
+                document.getElementById('results-panel').classList.add('hidden');
+            }
+        }
+
+        function updatePointsList() {
+            const container = document.getElementById('points-list');
+            container.innerHTML = '';
+
+            if (points.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-zinc-500 text-sm">Пока пусто. Кликай по карте.</div>`;
+                return;
+            }
+
+            points.forEach((point, index) => {
+                const div = document.createElement('div');
+                div.className = `point-item flex items-center justify-between bg-zinc-800 rounded-2xl px-4 py-3 text-sm`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-x-3 flex-1 min-w-0">
+                        <div class="w-6 h-6 flex-shrink-0 rounded-full bg-red-600/90 flex items-center justify-center text-xs font-mono">${index + 1}</div>
+                        <div class="min-w-0 flex-1">
+                            <input type="text" value="${point.name}" 
+                                   class="bg-transparent border-none focus:outline-none focus:ring-0 w-full font-medium text-sm p-0" 
+                                   onchange="renamePoint(${point.id}, this.value)">
+                            <div class="text-[10px] text-zinc-500 font-mono">${point.lat.toFixed(2)}° , ${point.lng.toFixed(2)}°</div>
+                        </div>
+                    </div>
+                    <button onclick="removePoint(${point.id})" class="ml-2 text-red-400 hover:text-red-500 p-1">
+                        <i class="fa-solid fa-times fa-sm"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renamePoint(id, newName) {
+            const point = points.find(p => p.id === id);
+            if (point) {
+                point.name = newName || point.name;
+                // update marker popup
+                const markerObj = markers.find(m => m.id === id);
+                if (markerObj) {
+                    markerObj.marker.setPopupContent(`<b>${point.name}</b><br><small>${point.lat.toFixed(2)}, ${point.lng.toFixed(2)}</small>`);
+                }
+            }
+        }
+
+        function updateNonsenseValue() {
+            nonsenseLevel = parseInt(document.getElementById('nonsense-slider').value);
+            document.getElementById('nonsense-value').textContent = nonsenseLevel;
+        }
+
+        function clearAllPoints() {
+            points.forEach(p => {
+                const m = markers.find(mm => mm.id === p.id);
+                if (m) map.removeLayer(m.marker);
+            });
+            points = [];
+            markers = [];
+            if (currentPolyline) {
+                map.removeLayer(currentPolyline);
+                currentPolyline = null;
+            }
+            document.getElementById('results-panel').classList.add('hidden');
+            updatePointsList();
+        }
+
+        function loadPreset(presetIndex) {
+            clearAllPoints();
+            let presetPoints = [];
+
+            if (presetIndex === 0) { // SPb to Moscow via world
+                presetPoints = [
+                    {name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351},
+                    {name: "Токио", lat: 35.6762, lng: 139.6503},
+                    {name: "Сидней", lat: -33.8688, lng: 151.2093},
+                    {name: "Кейптаун", lat: -33.9249, lng: 18.4241},
+                    {name: "Нью-Йорк", lat: 40.7128, lng: -74.0060},
+                    {name: "Москва", lat: 55.7558, lng: 37.6176}
+                ];
+            } else if (presetIndex === 1) { // Poles tour
+                presetPoints = [
+                    {name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351},
+                    {name: "Северный полюс", lat: 90, lng: 0},
+                    {name: "Токио", lat: 35.6762, lng: 139.6503},
+                    {name: "Южный полюс", lat: -90, lng: 0},
+                    {name: "Нью-Йорк", lat: 40.7128, lng: -74.0060},
+                    {name: "Москва", lat: 55.7558, lng: 37.6176}
+                ];
+            } else if (presetIndex === 2) { // Backwards world tour
+                presetPoints = [
+                    {name: "Сидней", lat: -33.8688, lng: 151.2093},
+                    {name: "Кейптаун", lat: -33.9249, lng: 18.4241},
+                    {name: "Буэнос-Айрес", lat: -34.6037, lng: -58.3816},
+                    {name: "Нью-Йорк", lat: 40.7128, lng: -74.0060},
+                    {name: "Токио", lat: 35.6762, lng: 139.6503},
+                    {name: "Владивосток", lat: 43.1155, lng: 131.8855},
+                    {name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351}
+                ];
+            } else if (presetIndex === 3) { // Fishing SPb-Aus-SPb
+                presetPoints = [
+                    {name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351},
+                    {name: "Сидней (рыбалка)", lat: -33.8688, lng: 151.2093},
+                    {name: "Остров Пасхи", lat: -27.1127, lng: -109.3497},
+                    {name: "Санкт-Петербург", lat: 59.9343, lng: 30.3351}
+                ];
+            }
+
+            presetPoints.forEach(p => {
+                addPoint(p.lat, p.lng, p.name);
+            });
+
+            // auto calculate after preset
+            setTimeout(() => {
+                calculateAbsurdRoute();
+            }, 600);
+        }
+
+        function calculateAbsurdRoute() {
+            if (points.length < 2) {
+                alert('Добавь хотя бы две точки на карте!');
+                return;
+            }
+
+            let routePoints = [...points];
+
+            // Add chaos points if enabled
+            const addChaos = document.getElementById('add-chaos').checked;
+            if (addChaos && nonsenseLevel >= 4) {
+                const chaosPool = predefinedCities.filter(c => !routePoints.some(rp => rp.name.includes(c.name.split(' ')[0])));
+                const numChaos = Math.min(5, Math.floor(nonsenseLevel / 2) + 1);
+                for (let i = 0; i < numChaos && chaosPool.length > 0; i++) {
+                    const randomIdx = Math.floor(Math.random() * chaosPool.length);
+                    const chaosPoint = chaosPool.splice(randomIdx, 1)[0];
+                    routePoints.push({
+                        id: Date.now() + i,
+                        name: chaosPoint.name + " (хаос)",
+                        lat: chaosPoint.lat,
+                        lng: chaosPoint.lng
+                    });
+                }
+            }
+
+            if (routePoints.length < 2) routePoints = [...points];
+
+            // Greedy farthest neighbor for longest path approximation
+            let absurdRoute = [routePoints[0]];
+            let remaining = routePoints.slice(1);
+
+            while (remaining.length > 0) {
+                let current = absurdRoute[absurdRoute.length - 1];
+                let farthestIndex = 0;
+                let maxDistance = -1;
+
+                for (let i = 0; i < remaining.length; i++) {
+                    const dist = haversine(current.lat, current.lng, remaining[i].lat, remaining[i].lng);
+                    if (dist > maxDistance) {
+                        maxDistance = dist;
+                        farthestIndex = i;
+                    }
+                }
+
+                absurdRoute.push(remaining[farthestIndex]);
+                remaining.splice(farthestIndex, 1);
+            }
+
+            // Draw the route
+            drawAbsurdRoute(absurdRoute);
+
+            // Calculate stats
+            showAbsurdStats(absurdRoute);
+        }
+
+        function drawAbsurdRoute(route) {
+            if (currentPolyline) {
+                map.removeLayer(currentPolyline);
+            }
+
+            const latlngs = route.map(p => [p.lat, p.lng]);
+
+            currentPolyline = L.polyline(latlngs, {
+                color: '#ef4444',
+                weight: 6,
+                opacity: 0.85,
+                dashArray: '18, 12',
+                lineJoin: 'round'
+            }).addTo(map);
+
+            // Fit bounds to show whole route
+            const bounds = L.latLngBounds(latlngs);
+            map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 });
+
+            // Add numbered markers on route if not too many
+            if (route.length <= 12) {
+                route.forEach((p, idx) => {
+                    const smallIcon = L.divIcon({
+                        className: 'route-number',
+                        html: `<div style="background:#ef4444;color:white;width:22px;height:22px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #450a0a">${idx+1}</div>`,
+                        iconSize: [22, 22],
+                        iconAnchor: [11, 11]
+                    });
+                    L.marker([p.lat, p.lng], {icon: smallIcon}).addTo(map);
+                });
+            }
+        }
+
+        function showAbsurdStats(route) {
+            const panel = document.getElementById('results-panel');
+            panel.classList.remove('hidden');
+
+            let totalDist = 0;
+            for (let i = 0; i < route.length - 1; i++) {
+                totalDist += haversine(route[i].lat, route[i].lng, route[i+1].lat, route[i+1].lng);
+            }
+
+            // Direct distance (first to last)
+            const directDist = haversine(route[0].lat, route[0].lng, route[route.length-1].lat, route[route.length-1].lng);
+            const ratio = directDist > 0 ? (totalDist / directDist).toFixed(1) : '∞';
+
+            document.getElementById('total-distance').textContent = Math.round(totalDist).toLocaleString('ru-RU');
+            document.getElementById('times-longer').textContent = ratio + '×';
+
+            // Funny time estimation
+            const hours = Math.round(totalDist / 80); // ~80 km/h average nonsense speed
+            let timeText = '';
+            if (hours < 24) {
+                timeText = `${hours} часов на самокате`;
+            } else if (hours < 720) {
+                timeText = `${Math.round(hours / 24)} дней на велосипеде`;
+            } else {
+                timeText = `${Math.round(hours / 720)} месяцев в раздумьях`;
+            }
+            document.getElementById('funny-time').textContent = timeText;
+
+            // Funny description
+            let desc = `Маршрут из ${route.length} точек. `;
+            if (route.some(p => p.name.toLowerCase().includes('полюс'))) desc += 'Прошли через полюса — молодцы. ';
+            if (route.length > 8) desc += 'Полный безум: ты посетил почти всё. ';
+            if (parseFloat(ratio) > 4) desc += 'Это было очень, очень глупо. ';
+            desc += 'Рекомендуем взять с собой психотерапевта и запас еды на год.';
+            document.getElementById('route-description').innerHTML = desc;
+
+            // Scroll to results
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function updateNonsenseValue() {
+            nonsenseLevel = parseInt(document.getElementById('nonsense-slider').value);
+            document.getElementById('nonsense-value').textContent = nonsenseLevel;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                e.preventDefault();
+                const firstInput = document.querySelector('#points-list input');
+                if (firstInput) firstInput.focus();
+            }
+            if (e.key.toLowerCase() === 'r' && e.metaKey) {
+                e.preventDefault();
+                calculateAbsurdRoute();
+            }
+        });
+
+        // Init everything
+        function init() {
+            initTailwind();
+            initMap();
+            updateNonsenseValue();
+            
+            // Make slider update live
+            const slider = document.getElementById('nonsense-slider');
+            slider.addEventListener('input', updateNonsenseValue);
+
+            // Demo hint after load
+            setTimeout(() => {
+                const hint = document.getElementById('map-hint');
+                if (hint && points.length > 0) {
+                    hint.style.opacity = '0.6';
+                }
+            }, 4500);
+
+            console.log('%c[Глупые Карты] Загружено. Готов к безумию.', 'color:#f87171');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
