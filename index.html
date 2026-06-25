@@ -7,89 +7,46 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500&display=swap');
-        
-        body { 
-            font-family: 'Inter', system-ui, sans-serif; 
-            background-color: #1a120b;
-            color: #e8d5b7;
-        }
-        
-        .title-font { 
-            font-family: 'Cinzel', serif; 
-            letter-spacing: 1px;
-        }
-        
-        .medieval-text {
-            font-family: 'Playfair Display', serif;
-        }
-        
-        .game-card { 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background-color: #2c2118;
-            border: 2px solid #8b5e3c;
-        }
-        
-        .game-card:hover { 
-            transform: translateY(-6px) scale(1.01);
-            border-color: #c9a227;
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
-        }
-        
-        .section-title {
-            font-family: 'Cinzel', serif;
-            letter-spacing: 2px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap');
+        :root { --gold: #c9a227; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #1a120b; color: #e8d5b7; }
+        .title-font { font-family: 'Playfair Display', Georgia, serif; }
+        .section-title { font-family: 'Cinzel', serif; }
+        .game-card { background: #2c2118; border: 1px solid #5c4630; transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1); }
+        .game-card:hover { transform: translateY(-4px); border-color: #c9a227; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.2); }
+        .game-card .h-52 { background-size: cover; background-position: center; }
     </style>
 </head>
 <body>
-    <!-- Королевская навигация -->
-    <nav class="border-b border-[#8b5e3c] bg-[#1a120b]/95 backdrop-blur-md sticky top-0 z-50">
+    <nav class="border-b border-[#5c4630] bg-[#1a120b]/95 backdrop-blur sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
             <div class="flex items-center gap-x-4">
-                <div class="w-12 h-12 bg-[#c9a227] rounded-xl flex items-center justify-center shadow-inner">
-                    <i class="fa-solid fa-chess-rook text-[#1a120b] text-3xl"></i>
+                <div class="w-9 h-9 bg-[#c9a227] rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-chess-king text-[#1a120b] text-2xl"></i>
                 </div>
                 <div>
-                    <span class="font-bold text-3xl tracking-wider title-font text-[#c9a227]">Королевский Зал</span>
-                    <span class="block text-xs text-[#8b5e3c] -mt-1 tracking-[3px]">ИГР</span>
+                    <span class="title-font text-3xl tracking-wider font-bold text-[#c9a227]">Королевский Зал</span>
                 </div>
             </div>
-            
-            <a href="https://github.com/dastrbob-hub/igor" target="_blank" 
-               class="flex items-center gap-x-3 px-6 py-2.5 rounded-2xl border border-[#8b5e3c] hover:bg-[#2c2118] transition-all text-sm font-medium">
-                <i class="fa-brands fa-github text-[#c9a227]"></i>
-                <span class="text-[#e8d5b7]">Хроники на GitHub</span>
-            </a>
+            <div class="flex items-center gap-x-6 text-sm">
+                <a href="https://github.com/dastrbob-hub/igor" class="flex items-center gap-x-2 hover:text-[#c9a227] transition-colors">
+                    <i class="fa-brands fa-github"></i>
+                    <span>GitHub</span>
+                </a>
+            </div>
         </div>
     </nav>
 
-    <!-- Героическая секция -->
-    <div class="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
-        <div class="inline-flex items-center gap-x-2 px-5 py-1.5 rounded-full border border-[#8b5e3c] mb-6">
-            <i class="fa-solid fa-dragon text-[#c9a227]"></i>
-            <span class="text-sm tracking-widest text-[#c9a227]">ЛЕТОПИСЬ БЛАГОРОДНЫХ ЗАБАВ</span>
-        </div>
-        
-        <h1 class="text-7xl md:text-8xl font-bold tracking-tighter title-font mb-6 text-[#c9a227]">
-            Королевский Зал Игр
-        </h1>
-        
-        <p class="max-w-lg mx-auto text-2xl text-[#d4c3a3] leading-tight medieval-text">
-            Собрание стратегических битв и благородных забав.<br>
-            Играй с друзьями через древние чары WebRTC.
-        </p>
-        
-        <div class="flex justify-center gap-x-4 mt-10">
-            <div class="px-6 py-3 bg-[#2c2118] border border-[#8b5e3c] rounded-2xl text-sm flex items-center gap-x-2">
-                <i class="fa-solid fa-shield-halved text-[#c9a227]"></i>
-                <span>Без чёрной магии серверов</span>
+    <div class="max-w-7xl mx-auto px-6 pt-16 pb-8">
+        <div class="text-center mb-16">
+            <div class="inline-flex items-center gap-x-2 px-4 py-1.5 bg-[#2c2118] border border-[#5c4630] rounded-full text-sm mb-6">
+                <i class="fa-solid fa-globe text-[#c9a227]"></i>
+                <span class="tracking-[3px] text-xs font-medium">БРАУЗЕРНЫЕ ИГРЫ И ИНСТРУМЕНТЫ</span>
             </div>
+            <h1 class="title-font text-7xl tracking-tighter font-bold text-[#c9a227] mb-4">Королевский Зал Игр</h1>
+            <p class="max-w-md mx-auto text-[#d4c3a3] text-xl">Стратегические сражения, морские дуэли и необычные инструменты в одном месте</p>
         </div>
-    </div>
 
-    <!-- Галерея Игр -->
-    <div class="max-w-7xl mx-auto px-6 pb-24">
         <div class="flex items-end justify-between mb-8 px-1">
             <div>
                 <h2 class="section-title text-4xl text-[#c9a227] tracking-wider">Игры Королевства</h2>
@@ -97,7 +54,8 @@
             </div>
             <div class="hidden md:block text-xs text-[#8b5e3c] tracking-widest">ВСЕ ЗАБАВЫ РАБОТАЮТ В БРАУЗЕРЕ</div>
         </div>
-        
+
+        <!-- Grid of games -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             
             <!-- Пошаговая Империя -->
@@ -131,7 +89,7 @@
                 </div>
             </a>
 
-            <!-- Война Чёрных Флагов (20x20) -->
+            <!-- Война Чёрных Флагов -->
             <a href="pirate_sea_battle_20x20.html" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
                 <div class="h-52 bg-gradient-to-br from-[#2a1f1f] via-[#3a2520] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
                     <div class="text-8xl drop-shadow-lg">🏴‍☠️</div>
@@ -150,7 +108,7 @@
             <!-- Realm Wars -->
             <a href="realm-wars/" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
                 <div class="h-52 bg-gradient-to-br from-[#2a1f2a] via-[#2c2118] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
-                    <div class="text-8xl drop-shadow-lg">⚔️</div>
+                    <div class="text-8xl drop-shadow-lg">🗡️</div>
                     <div class="absolute top-5 right-5 bg-[#c9a227] text-[#1a120b] text-[10px] font-bold px-4 py-1 rounded-full tracking-widest">НОВАЯ ИГРА</div>
                 </div>
                 <div class="p-7 flex-1 flex flex-col">
@@ -163,10 +121,25 @@
                 </div>
             </a>
 
+            <!-- НОВЫЙ КАРД: Долгие Маршруты -->
+            <a href="dolgi-marshruty.html" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
+                <div class="h-52 bg-gradient-to-br from-[#2a2a2a] via-[#1f2520] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
+                    <div class="text-7xl drop-shadow-lg"><i class="fa-solid fa-route text-[#c9a227]"></i></div>
+                </div>
+                <div class="p-7 flex-1 flex flex-col">
+                    <h3 class="text-3xl font-semibold tracking-tight mb-3 text-[#c9a227] group-hover:text-[#d4af37] transition-colors">Долгие Маршруты</h3>
+                    <p class="text-[#d4c3a3] text-[15px] leading-snug flex-1">Планировщик максимально длинных и нелогичных маршрутов на карте мира. Жадный алгоритм farthest-neighbor для максимальной протяжённости.</p>
+                    <div class="mt-6 flex items-center text-xs text-[#8b5e3c]">
+                        <i class="fa-solid fa-globe mr-2"></i>
+                        <span>ИНСТРУМЕНТ • МАКСИМАЛЬНАЯ ДЛИНА</span>
+                    </div>
+                </div>
+            </a>
+
             <!-- Королевская Доска -->
             <a href="board.html" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
                 <div class="h-52 bg-gradient-to-br from-[#2a1f3a] via-[#2c2118] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
-                    <div class="text-8xl drop-shadow-lg">🖋️</div>
+                    <div class="text-8xl drop-shadow-lg">✒️</div>
                 </div>
                 <div class="p-7 flex-1 flex flex-col">
                     <h3 class="text-3xl font-semibold tracking-tight mb-3 text-[#c9a227] group-hover:text-[#d4af37] transition-colors">Королевская Доска</h3>
@@ -178,47 +151,17 @@
                 </div>
             </a>
 
-            <!-- Слияние Свитков -->
+            <!-- Другие карточки (tiff_merger, webrtc-p2p и т.д.) можно оставить или добавить по аналогии -->
             <a href="tiff_merger.html" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
-                <div class="h-52 bg-gradient-to-br from-[#2a2a1f] via-[#2c2118] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
-                    <div class="text-8xl drop-shadow-lg">📜</div>
+                <div class="h-52 bg-gradient-to-br from-[#2a2520] via-[#2c2118] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
+                    <div class="text-7xl drop-shadow-lg">📜</div>
                 </div>
                 <div class="p-7 flex-1 flex flex-col">
                     <h3 class="text-3xl font-semibold tracking-tight mb-3 text-[#c9a227] group-hover:text-[#d4af37] transition-colors">Слияние Свитков</h3>
-                    <p class="text-[#d4c3a3] text-[15px] leading-snug flex-1">Объединение древних манускриптов (TIFF) в один великий PDF-свиток. Сохранение порядка и ориентации</p>
+                    <p class="text-[#d4c3a3] text-[15px] leading-snug flex-1">Инструмент для объединения TIFF и изображений. Полезная утилита для работы с картами и документами</p>
                     <div class="mt-6 flex items-center text-xs text-[#8b5e3c]">
-                        <i class="fa-solid fa-scroll mr-2"></i>
-                        <span>ПОЛЕЗНЫЙ ИНСТРУМЕНТ</span>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Древняя Связь (WebRTC P2P) -->
-            <a href="webrtc-p2p.html" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
-                <div class="h-52 bg-gradient-to-br from-[#1e3a2a] via-[#2c2118] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
-                    <div class="text-8xl drop-shadow-lg">📡</div>
-                </div>
-                <div class="p-7 flex-1 flex flex-col">
-                    <h3 class="text-3xl font-semibold tracking-tight mb-3 text-[#c9a227] group-hover:text-[#d4af37] transition-colors">Древняя Связь (WebRTC)</h3>
-                    <p class="text-[#d4c3a3] text-[15px] leading-snug flex-1">P2P передача файлов Телефон ↔ ПК без серверов • Ручной обмен SDP/ICE • DataChannel чанки</p>
-                    <div class="mt-6 flex items-center text-xs text-[#8b5e3c]">
-                        <i class="fa-solid fa-link mr-2"></i>
-                        <span>ИНСТРУМЕНТ • P2P • БЕЗ СЕРВЕРА</span>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Калькулятор Мастера -->
-            <a href="https://dastrbob-hub.github.io/rschet18/" target="_blank" class="game-card block rounded-3xl overflow-hidden h-full flex flex-col group">
-                <div class="h-52 bg-gradient-to-br from-[#3a2a20] via-[#2c2118] to-[#1a120b] flex items-center justify-center relative border-b border-[#8b5e3c]">
-                    <div class="text-8xl drop-shadow-lg">⚒️</div>
-                </div>
-                <div class="p-7 flex-1 flex flex-col">
-                    <h3 class="text-3xl font-semibold tracking-tight mb-3 text-[#c9a227] group-hover:text-[#d4af37] transition-colors">Инструменты Мастера</h3>
-                    <p class="text-[#d4c3a3] text-[15px] leading-snug flex-1">Калькулятор технолога • Расход материалов • Механическая обработка • Сварка и краска</p>
-                    <div class="mt-6 flex items-center text-xs text-[#8b5e3c]">
-                        <i class="fa-solid fa-hammer mr-2"></i>
-                        <span>ПРАКТИЧЕСКИЙ ИНСТРУМЕНТ</span>
+                        <i class="fa-solid fa-tools mr-2"></i>
+                        <span>УТИЛИТА</span>
                     </div>
                 </div>
             </a>
@@ -226,28 +169,12 @@
         </div>
     </div>
 
-    <!-- Декоративный разделитель -->
-    <div class="max-w-7xl mx-auto px-6">
-        <div class="h-px bg-gradient-to-r from-transparent via-[#8b5e3c] to-transparent"></div>
-    </div>
-
-    <!-- Футер -->
-    <div class="max-w-7xl mx-auto px-6 py-16 text-center">
-        <div class="text-[#8b5e3c] text-sm tracking-widest mb-3">ВСЕ ЗАБАВЫ ТВОРяТся В Королевском БРАУЗЕРЕ</div>
-        <p class="text-[#d4c3a3] text-lg medieval-text">WebRTC — древняя магия мгновенной связи без чёрных серверов</p>
-        
-        <div class="mt-8">
-            <a href="https://github.com/dastrbob-hub/igor" target="_blank" 
-               class="inline-flex items-center gap-x-3 text-sm px-8 py-3 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118] transition-colors">
-                <i class="fa-brands fa-github"></i>
-                <span>Открыть Хроники на GitHub</span>
-            </a>
+    <footer class="max-w-7xl mx-auto px-6 py-12 text-center text-sm text-[#8b5e3c]">
+        <div class="flex justify-center gap-x-6 mb-4">
+            <a href="https://github.com/dastrbob-hub/igor" class="hover:text-[#c9a227]">Репозиторий на GitHub</a>
         </div>
-        
-        <div class="mt-10 text-[10px] text-[#5c4633]">
-            dastrbob-hub • Королевство 2026
-        </div>
-    </div>
+        <div>dastrbob-hub • Королевство 2026</div>
+    </footer>
 
 </body>
 </html>
