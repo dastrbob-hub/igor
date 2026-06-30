@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TIFF Сортировщик | A4 / A3</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js"></script>
+    <script src="https://unpkg.com/pako@2/dist/pako.min.js"></script>
+    <script src="https://unpkg.com/utif@3.1.0/UTIF.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
@@ -94,7 +95,7 @@
 
         <div class="mt-8 text-xs text-[#8b5e3c] text-center">
             Определение формата происходит по реальным физическим размерам (с учётом DPI из метаданных TIFF).<br>
-            Если DPI нет — используется 300 dpi (стандарт для документов).
+            Если DPI нет — используется 300 dpi (стандарт для документов). Поддержка сжатия через pako.
         </div>
     </div>
 
@@ -142,6 +143,34 @@
             document.getElementById('results').classList.add('hidden');
         }
 
+        function getResolution(ifd) {
+            let xRes = 300;
+            let yRes = 300;
+
+            // Handle rational (array [num, den]) or number
+            if (ifd['282']) {
+                const val = ifd['282'];
+                if (Array.isArray(val) && val.length >= 2 && val[1] !== 0) {
+                    xRes = val[0] / val[1];
+                } else if (typeof val === 'number') {
+                    xRes = val;
+                } else if (val && val[0]) {
+                    xRes = val[0];
+                }
+            }
+            if (ifd['283']) {
+                const val = ifd['283'];
+                if (Array.isArray(val) && val.length >= 2 && val[1] !== 0) {
+                    yRes = val[0] / val[1];
+                } else if (typeof val === 'number') {
+                    yRes = val;
+                } else if (val && val[0]) {
+                    yRes = val[0];
+                }
+            }
+            return { xRes, yRes };
+        }
+
         async function analyzeFiles() {
             const resultsDiv = document.getElementById('results');
             resultsDiv.classList.remove('hidden');
@@ -155,43 +184,53 @@
             let a3Count = 0;
 
             for (let item of filesData) {
-                const buffer = await item.file.arrayBuffer();
-                const ifds = UTIF.decode(buffer);
+                try {
+                    const buffer = await item.file.arrayBuffer();
+                    const ifds = UTIF.decode(buffer);
 
-                for (let i = 0; i < ifds.length; i++) {
-                    const ifd = ifds[i];
-                    UTIF.decodeImage(buffer, ifd);
+                    for (let i = 0; i < ifds.length; i++) {
+                        const ifd = ifds[i];
+                        try {
+                            UTIF.decodeImage(buffer, ifd);
+                        } catch (decodeErr) {
+                            console.warn('Decode image error for page', i, decodeErr);
+                            // Continue anyway, width/height may still be available
+                        }
 
-                    const width = ifd.width;
-                    const height = ifd.height;
+                        const width = ifd.width || ifd.ImageWidth || 0;
+                        const height = ifd.height || ifd.ImageLength || 0;
 
-                    // Получаем разрешение (DPI)
-                    let xRes = 300;
-                    let yRes = 300;
-                    if (ifd['282'] && ifd['282'][0]) xRes = ifd['282'][0];
-                    if (ifd['283'] && ifd['283'][0]) yRes = ifd['283'][0];
+                        if (!width || !height) {
+                            console.warn('No dimensions for page', i);
+                            continue;
+                        }
 
-                    const classification = classifySize(width, height, xRes, yRes);
+                        const { xRes, yRes } = getResolution(ifd);
 
-                    const pageInfo = {
-                        fileName: item.file.name,
-                        pageIndex: i,
-                        width,
-                        height,
-                        xRes,
-                        yRes,
-                        ...classification
-                    };
+                        const classification = classifySize(width, height, xRes, yRes);
 
-                    if (classification.format === 'A4') {
-                        a4Count++;
-                        addToList(a4List, pageInfo);
-                    } else if (classification.format === 'A3') {
-                        a3Count++;
-                        addToList(a3List, pageInfo);
-                    } else {
-                        // Можно добавить секцию Other если нужно
+                        const pageInfo = {
+                            fileName: item.file.name,
+                            pageIndex: i,
+                            width,
+                            height,
+                            xRes,
+                            yRes,
+                            ...classification
+                        };
+
+                        if (classification.format === 'A4') {
+                            a4Count++;
+                            addToList(a4List, pageInfo);
+                        } else if (classification.format === 'A3') {
+                            a3Count++;
+                            addToList(a3List, pageInfo);
+                        }
+                        // Ignore 'Other' for now
                     }
+                } catch (err) {
+                    console.error('Error processing file', item.file.name, err);
+                    alert('Ошибка при обработке файла ' + item.file.name + ': ' + err.message);
                 }
             }
 
@@ -260,18 +299,8 @@
 
         async function downloadGroup(group) {
             const { jsPDF } = window.jspdf;
-            const listContainer = group === 'a4' ? document.getElementById('a4-list') : document.getElementById('a3-list');
-            
-            const pages = [];
-            // Собираем все страницы из списка
-            // Для простоты сейчас просто создаём PDF с заглушками (реальная сборка требует доработки)
-            
-            // TODO: Здесь нужно собрать реальные изображения страниц
-            // Пока делаем простой PDF с информацией
-            
-            alert('Функция скачивания PDF в разработке. Сейчас показывает демо.');
-            
-            // В полной версии здесь будет сборка реальных страниц через canvas + jsPDF
+            alert('Скачивание PDF пока в разработке. Файлы успешно отсортированы по спискам выше. Для полной версии с экспортом дайте знать!');
+            // TODO: Implement actual PDF export using decoded image data and per-page sizing
         }
 
         function resetAll() {
@@ -285,7 +314,7 @@
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов (обновлённая версия с улучшенным парсингом)', 'color:#c9a227');
         }
 
         window.onload = init;
