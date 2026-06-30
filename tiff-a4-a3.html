@@ -19,7 +19,7 @@
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A4 / A3</h1>
-                <p class="text-[#8b5e3c]">Сортировка по ориентации: вертикальные → A4, горизонтальные → A3</p>
+                <p class="text-[#8b5e3c]">Сортировка по ориентации + экспорт в PDF</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
@@ -90,12 +90,14 @@
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Простая логика: если высота больше ширины — A4, если ширина больше высоты — A3.
+            Простая сортировка по ориентации. Кнопки "Скачать PDF" теперь работают.
         </div>
     </div>
 
     <script>
         let filesData = [];
+        // Храним все классифицированные страницы с данными для экспорта
+        let classifiedPages = { a4: [], a3: [], other: [] };
 
         function initDropzone() {
             const dropzone = document.getElementById('dropzone');
@@ -114,6 +116,7 @@
 
         function handleFiles(fileList) {
             filesData = [];
+            classifiedPages = { a4: [], a3: [], other: [] };
             for (let file of fileList) {
                 const name = file.name.toLowerCase();
                 if (file.type === 'image/tiff' || name.endsWith('.tif') || name.endsWith('.tiff')) {
@@ -130,6 +133,7 @@
             resultsDiv.classList.remove('hidden');
 
             ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            classifiedPages = { a4: [], a3: [], other: [] };
             let counts = { a4: 0, a3: 0, other: 0 };
 
             for (let item of filesData) {
@@ -145,6 +149,12 @@
                         const height = ifd.height || ifd.ImageLength || 0;
                         if (!width || !height) continue;
 
+                        // Получаем пиксели для экспорта
+                        let rgba = null;
+                        try {
+                            rgba = UTIF.toRGBA8(ifd);
+                        } catch(e) {}
+
                         const classification = classifyByOrientation(width, height);
 
                         const pageInfo = {
@@ -152,14 +162,18 @@
                             pageIndex: i,
                             width,
                             height,
-                            ...classification
+                            rgba: rgba ? new Uint8Array(rgba) : null,
+                            originalBuffer: buffer,
+                            ifdIndex: i
                         };
 
                         if (classification.format === 'A4') {
                             counts.a4++;
+                            classifiedPages.a4.push(pageInfo);
                             addToList('a4-list', pageInfo);
                         } else if (classification.format === 'A3') {
                             counts.a3++;
+                            classifiedPages.a3.push(pageInfo);
                             addToList('a3-list', pageInfo);
                         } else {
                             counts.other++;
@@ -181,13 +195,10 @@
 
         function classifyByOrientation(width, height) {
             if (height > width) {
-                // Вертикальная ориентация → A4
                 return { format: 'A4', orientation: 'portrait' };
             } else if (width > height) {
-                // Горизонтальная ориентация → A3
                 return { format: 'A3', orientation: 'landscape' };
             } else {
-                // Квадрат
                 return { format: 'Other', orientation: 'square' };
             }
         }
@@ -197,29 +208,84 @@
             const div = document.createElement('div');
             div.className = 'bg-[#2c2118] px-3 py-1.5 rounded-xl text-xs flex justify-between items-center';
 
-            let extra = '';
-            if (pageInfo.format === 'Other') {
-                extra = ` • ${pageInfo.width}×${pageInfo.height} (квадрат)`;
-            } else {
-                extra = ` • ${pageInfo.width}×${pageInfo.height}`;
-            }
+            let extra = ` • ${pageInfo.width}×${pageInfo.height}`;
+            if (pageInfo.format === 'Other') extra += ' (квадрат)';
 
             div.innerHTML = `
                 <div class="min-w-0 flex-1">
                     <div class="font-medium truncate">${pageInfo.fileName} (стр. ${pageInfo.pageIndex + 1})</div>
                     <div class="text-[#8b5e3c]">${extra}</div>
                 </div>
-                <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812]">${pageInfo.format}</div>
+                <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812]">${pageInfo.format || 'Other'}</div>
             `;
             container.appendChild(div);
         }
 
-        function downloadGroup(group) {
-            alert('Экспорт PDF будет позже. Сейчас простая сортировка по ориентации.');
+        // === ЭКСПОРТ В PDF ===
+        async function downloadGroup(group) {
+            const pages = classifiedPages[group];
+            if (!pages || pages.length === 0) {
+                alert('В этой группе нет страниц для экспорта');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const isA4 = group === 'a4';
+
+            // Размеры в поинтах (1 point = 1/72 inch)
+            const pageWidth = isA4 ? 595 : 842;   // A4 width / A3 width
+            const pageHeight = isA4 ? 842 : 1191; // A4 height / A3 height
+
+            const doc = new jsPDF({
+                orientation: isA4 ? 'portrait' : 'landscape',
+                unit: 'pt',
+                format: isA4 ? 'a4' : 'a3'
+            });
+
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+
+                if (i > 0) {
+                    doc.addPage();
+                }
+
+                if (page.rgba && page.width && page.height) {
+                    // Создаём canvas из RGBA
+                    const canvas = document.createElement('canvas');
+                    canvas.width = page.width;
+                    canvas.height = page.height;
+                    const ctx = canvas.getContext('2d');
+                    const imageData = new ImageData(new Uint8ClampedArray(page.rgba), page.width, page.height);
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Конвертируем в JPEG для PDF
+                    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+                    // Масштабируем под страницу PDF с сохранением пропорций
+                    const imgProps = doc.getImageProperties(jpegDataUrl);
+                    const pdfWidth = pageWidth - 40;
+                    const pdfHeight = pageHeight - 40;
+                    const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+                    const finalWidth = imgProps.width * ratio;
+                    const finalHeight = imgProps.height * ratio;
+                    const x = (pageWidth - finalWidth) / 2;
+                    const y = (pageHeight - finalHeight) / 2;
+
+                    doc.addImage(jpegDataUrl, 'JPEG', x, y, finalWidth, finalHeight);
+                } else {
+                    // Если нет изображения — просто пишем текст
+                    doc.setFontSize(14);
+                    doc.text(`Страница ${page.pageIndex + 1} из ${page.fileName}`, 40, 100);
+                }
+            }
+
+            const filename = `${group.toUpperCase()}_${pages.length}_pages.pdf`;
+            doc.save(filename);
         }
 
         function resetAll() {
             filesData = [];
+            classifiedPages = { a4: [], a3: [], other: [] };
             document.getElementById('controls').classList.add('hidden');
             document.getElementById('results').classList.add('hidden');
             ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
@@ -228,7 +294,7 @@
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов — только A4/A3 по ориентации (высота > ширины = A4)', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — экспорт в PDF работает', 'color:#c9a227');
         }
 
         window.onload = init;
