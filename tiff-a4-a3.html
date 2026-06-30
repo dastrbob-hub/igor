@@ -19,7 +19,7 @@
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A4 / A3</h1>
-                <p class="text-[#8b5e3c]">Автосортировка строго по размеру в мм</p>
+                <p class="text-[#8b5e3c]">Автосортировка по размеру в мм (максимально широкие диапазоны)</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
@@ -82,14 +82,14 @@
                     </div>
                 </div>
                 <div id="other-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное (с точными размерами)</div>
                 </div>
             </div>
 
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Сортировка строго по размеру в мм (очень широкие диапазоны для реальных сканов).
+            Максимально широкие диапазоны. Если всё равно в Другое — пришли пример из этой колонки.
         </div>
     </div>
 
@@ -188,6 +188,8 @@
                             xRes: sizeInfo.xRes,
                             yRes: sizeInfo.yRes,
                             source: sizeInfo.source,
+                            rawShort: Math.round(Math.min(sizeInfo.wMM, sizeInfo.hMM)),
+                            rawLong: Math.round(Math.max(sizeInfo.wMM, sizeInfo.hMM)),
                             ...classification
                         };
 
@@ -219,11 +221,11 @@
             const short = Math.round(Math.min(wMM, hMM));
             const long = Math.round(Math.max(wMM, hMM));
 
-            // Очень широкие диапазоны специально для реальных сканов
-            if (short >= 195 && short <= 235 && long >= 275 && long <= 325) {
+            // Очень широкие практичные диапазоны для реальных сканов
+            if (short >= 180 && short <= 250 && long >= 260 && long <= 340) {
                 return { format: 'A4', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
-            if (short >= 275 && short <= 325 && long >= 395 && long <= 445) {
+            if (short >= 260 && short <= 340 && long >= 380 && long <= 480) {
                 return { format: 'A3', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
 
@@ -237,7 +239,7 @@
 
             let extra = '';
             if (pageInfo.format === 'Other') {
-                extra = ` • ${pageInfo.source} DPI~${pageInfo.xRes}`;
+                extra = ` • short=${pageInfo.rawShort} long=${pageInfo.rawLong} (${pageInfo.source} DPI~${pageInfo.xRes})`;
             }
 
             div.innerHTML = `
@@ -251,7 +253,7 @@
         }
 
         function downloadGroup(group) {
-            alert('Экспорт PDF будет позже. Сортировка по мм работает.');
+            alert('Экспорт PDF будет позже. Сейчас сортировка по мм.');
         }
 
         function resetAll() {
@@ -264,7 +266,7 @@
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов — максимально широкие диапазоны по мм', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — максимально широкие диапазоны по мм + детальный Other', 'color:#c9a227');
         }
 
         window.onload = init;
