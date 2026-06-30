@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIFF Сортировщик | A4 / A3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .dropzone {
+            transition: all 0.2s;
+        }
+        .dropzone.dragover {
+            background-color: #27251f;
+            border-color: #c9a227;
+        }
+    </style>
+</head>
+<body class="bg-[#1a120b] text-[#e8d5b7]">
+    <div class="max-w-6xl mx-auto p-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик</h1>
+                <p class="text-[#8b5e3c]">Автоматическая сортировка по формату A4 / A3</p>
+            </div>
+            <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
+        </div>
+
+        <!-- Upload -->
+        <div id="dropzone" 
+             class="dropzone border-2 border-dashed border-[#8b5e3c] rounded-3xl p-10 text-center cursor-pointer hover:border-[#c9a227]">
+            <div class="text-6xl mb-4">📄</div>
+            <h3 class="text-2xl font-semibold mb-2">Перетащите TIFF файлы сюда</h3>
+            <p class="text-[#8b5e3c] mb-4">или нажмите для выбора</p>
+            <input type="file" id="fileInput" multiple accept=".tif,.tiff,image/tiff" class="hidden">
+            <button onclick="document.getElementById('fileInput').click()" 
+                    class="px-8 py-3 bg-[#c9a227] text-[#1a120b] font-semibold rounded-2xl">
+                Выбрать файлы
+            </button>
+        </div>
+
+        <!-- Controls -->
+        <div id="controls" class="hidden mt-6 flex gap-4">
+            <button onclick="analyzeFiles()" 
+                    class="flex-1 py-4 bg-[#c9a227] hover:bg-[#d4af37] text-[#1a120b] font-bold text-xl rounded-2xl">
+                🔍 Проанализировать и отсортировать
+            </button>
+            <button onclick="resetAll()" 
+                    class="px-8 py-4 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">
+                Сбросить
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="hidden mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- A4 Group -->
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <span class="text-2xl font-bold text-emerald-400">A4</span>
+                        <span id="a4-count" class="ml-3 text-sm bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full">0 файлов</span>
+                    </div>
+                    <button onclick="downloadGroup('a4')" 
+                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-sm font-medium">
+                        Скачать PDF (A4)
+                    </button>
+                </div>
+                <div id="a4-list" class="min-h-[200px] bg-[#1f1812] rounded-2xl p-4 text-sm space-y-2 overflow-auto max-h-[400px]">
+                    <div class="text-[#8b5e3c] text-center py-8">Здесь появятся файлы A4</div>
+                </div>
+            </div>
+
+            <!-- A3 Group -->
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <span class="text-2xl font-bold text-amber-400">A3</span>
+                        <span id="a3-count" class="ml-3 text-sm bg-amber-900 text-amber-300 px-3 py-1 rounded-full">0 файлов</span>
+                    </div>
+                    <button onclick="downloadGroup('a3')" 
+                            class="px-5 py-2 bg-amber-600 hover:bg-amber-500 rounded-2xl text-sm font-medium">
+                        Скачать PDF (A3)
+                    </button>
+                </div>
+                <div id="a3-list" class="min-h-[200px] bg-[#1f1812] rounded-2xl p-4 text-sm space-y-2 overflow-auto max-h-[400px]">
+                    <div class="text-[#8b5e3c] text-center py-8">Здесь появятся файлы A3</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-8 text-xs text-[#8b5e3c] text-center">
+            Определение формата происходит по реальным физическим размерам (с учётом DPI из метаданных TIFF).<br>
+            Если DPI нет — используется 300 dpi (стандарт для документов).
+        </div>
+    </div>
+
+    <script>
+        let filesData = [];
+
+        function initDropzone() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            dropzone.addEventListener('dragover', e => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+            dropzone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            fileInput.addEventListener('change', e => {
+                if (e.target.files.length > 0) handleFiles(e.target.files);
+            });
+        }
+
+        function handleFiles(fileList) {
+            filesData = [];
+            for (let file of fileList) {
+                if (file.type === 'image/tiff' || file.name.toLowerCase().endsWith('.tif') || file.name.toLowerCase().endsWith('.tiff')) {
+                    filesData.push({ file, pages: [] });
+                }
+            }
+            if (filesData.length === 0) {
+                alert('Пожалуйста, выберите TIFF файлы');
+                return;
+            }
+            document.getElementById('controls').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+        }
+
+        async function analyzeFiles() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.classList.remove('hidden');
+
+            const a4List = document.getElementById('a4-list');
+            const a3List = document.getElementById('a3-list');
+            a4List.innerHTML = '';
+            a3List.innerHTML = '';
+
+            let a4Count = 0;
+            let a3Count = 0;
+
+            for (let item of filesData) {
+                const buffer = await item.file.arrayBuffer();
+                const ifds = UTIF.decode(buffer);
+
+                for (let i = 0; i < ifds.length; i++) {
+                    const ifd = ifds[i];
+                    UTIF.decodeImage(buffer, ifd);
+
+                    const width = ifd.width;
+                    const height = ifd.height;
+
+                    // Получаем разрешение (DPI)
+                    let xRes = 300;
+                    let yRes = 300;
+                    if (ifd['282'] && ifd['282'][0]) xRes = ifd['282'][0];
+                    if (ifd['283'] && ifd['283'][0]) yRes = ifd['283'][0];
+
+                    const classification = classifySize(width, height, xRes, yRes);
+
+                    const pageInfo = {
+                        fileName: item.file.name,
+                        pageIndex: i,
+                        width,
+                        height,
+                        xRes,
+                        yRes,
+                        ...classification
+                    };
+
+                    if (classification.format === 'A4') {
+                        a4Count++;
+                        addToList(a4List, pageInfo);
+                    } else if (classification.format === 'A3') {
+                        a3Count++;
+                        addToList(a3List, pageInfo);
+                    } else {
+                        // Можно добавить секцию Other если нужно
+                    }
+                }
+            }
+
+            document.getElementById('a4-count').textContent = `${a4Count} страниц`;
+            document.getElementById('a3-count').textContent = `${a3Count} страниц`;
+        }
+
+        function classifySize(widthPx, heightPx, xRes, yRes) {
+            const dpiX = xRes || 300;
+            const dpiY = yRes || 300;
+
+            const wMM = (widthPx / dpiX) * 25.4;
+            const hMM = (heightPx / dpiY) * 25.4;
+
+            const shortSide = Math.min(wMM, hMM);
+            const longSide = Math.max(wMM, hMM);
+
+            const tolerance = 10; // мм
+
+            // A4: 210 x 297
+            if (Math.abs(shortSide - 210) <= tolerance && Math.abs(longSide - 297) <= tolerance) {
+                return {
+                    format: 'A4',
+                    orientation: wMM < hMM ? 'portrait' : 'landscape',
+                    widthMM: Math.round(wMM),
+                    heightMM: Math.round(hMM)
+                };
+            }
+
+            // A3: 297 x 420
+            if (Math.abs(shortSide - 297) <= tolerance && Math.abs(longSide - 420) <= tolerance) {
+                return {
+                    format: 'A3',
+                    orientation: wMM < hMM ? 'portrait' : 'landscape',
+                    widthMM: Math.round(wMM),
+                    heightMM: Math.round(hMM)
+                };
+            }
+
+            return {
+                format: 'Other',
+                orientation: wMM < hMM ? 'portrait' : 'landscape',
+                widthMM: Math.round(wMM),
+                heightMM: Math.round(hMM)
+            };
+        }
+
+        function addToList(container, pageInfo) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center bg-[#2c2118] px-4 py-2 rounded-xl text-sm';
+            
+            let sizeText = `${pageInfo.widthMM}×${pageInfo.heightMM} мм`;
+            if (pageInfo.format !== 'Other') {
+                sizeText += ` (${pageInfo.orientation === 'portrait' ? 'портрет' : 'альбом'})`;
+            }
+
+            div.innerHTML = `
+                <div class="min-w-0">
+                    <div class="font-medium truncate">${pageInfo.fileName}</div>
+                    <div class="text-xs text-[#8b5e3c]">Страница ${pageInfo.pageIndex + 1} • ${sizeText}</div>
+                </div>
+                <div class="text-xs px-2 py-1 rounded bg-[#1f1812]">${pageInfo.format}</div>
+            `;
+            container.appendChild(div);
+        }
+
+        async function downloadGroup(group) {
+            const { jsPDF } = window.jspdf;
+            const listContainer = group === 'a4' ? document.getElementById('a4-list') : document.getElementById('a3-list');
+            
+            const pages = [];
+            // Собираем все страницы из списка
+            // Для простоты сейчас просто создаём PDF с заглушками (реальная сборка требует доработки)
+            
+            // TODO: Здесь нужно собрать реальные изображения страниц
+            // Пока делаем простой PDF с информацией
+            
+            alert('Функция скачивания PDF в разработке. Сейчас показывает демо.');
+            
+            // В полной версии здесь будет сборка реальных страниц через canvas + jsPDF
+        }
+
+        function resetAll() {
+            filesData = [];
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('a4-list').innerHTML = '<div class="text-[#8b5e3c] text-center py-8">Здесь появятся файлы A4</div>';
+            document.getElementById('a3-list').innerHTML = '<div class="text-[#8b5e3c] text-center py-8">Здесь появятся файлы A3</div>';
+            document.getElementById('fileInput').value = '';
+        }
+
+        function init() {
+            initDropzone();
+            console.log('%c[TIFF Sorter] Готов', 'color:#c9a227');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
