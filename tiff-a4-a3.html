@@ -86,13 +86,13 @@
                 <div id="other-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
                     <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное (с размерами)</div>
                 </div>
-                <div class="mt-3 text-[10px] text-[#8b5e3c]">fallback = метаданные были плохие, использовали популярный DPI. Размеры в мм уже правильные.</div>
+                <div class="mt-3 text-[10px] text-[#8b5e3c]">Если всё ещё в Другое — пришли пример из этой колонки (размер + DPI + meta/fallback).</div>
             </div>
 
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Использует fallback DPI + ResolutionUnit. Классификация по округлённым мм.
+            Классификация по соотношению сторон + размеру (самый надёжный способ для сканов).
         </div>
     </div>
 
@@ -157,30 +157,33 @@
                 hMM_meta = (heightPx / yRes) * 25.4;
             }
 
+            // Проверка по метаданным
             const short_meta = Math.min(wMM_meta, hMM_meta);
             const long_meta = Math.max(wMM_meta, hMM_meta);
-            const distA4 = Math.abs(short_meta - 210) + Math.abs(long_meta - 297);
-            const distA3 = Math.abs(short_meta - 297) + Math.abs(long_meta - 420);
+            const ratio_meta = long_meta / short_meta;
+            const isAseriesMeta = Math.abs(ratio_meta - 1.414) < 0.08;
 
-            if (distA4 < 35 || distA3 < 45) {
+            if (isAseriesMeta && (short_meta > 180 && short_meta < 320)) {
                 return { wMM: wMM_meta, hMM: hMM_meta, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
             }
 
+            // Fallback на популярные DPI
             const commonDPIs = [150, 200, 300, 400, 72];
             let best = { wMM: wMM_meta, hMM: hMM_meta, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
-            let bestDist = Math.min(distA4, distA3);
+            let bestScore = isAseriesMeta ? 0 : 999;
 
             for (const dpi of commonDPIs) {
                 const w = (widthPx / dpi) * 25.4;
                 const h = (heightPx / dpi) * 25.4;
                 const s = Math.min(w, h);
                 const l = Math.max(w, h);
-                const dA4 = Math.abs(s - 210) + Math.abs(l - 297);
-                const dA3 = Math.abs(s - 297) + Math.abs(l - 420);
-                const d = Math.min(dA4, dA3);
+                const r = l / s;
+                const isA = Math.abs(r - 1.414) < 0.08;
+                const sizeScore = (s > 180 && s < 320) ? 0 : 10;
 
-                if (d < bestDist) {
-                    bestDist = d;
+                let score = (isA ? 0 : 5) + sizeScore;
+                if (score < bestScore) {
+                    bestScore = score;
                     best = { wMM: w, hMM: h, xRes: dpi, yRes: dpi, unit: 2, source: 'fallback' };
                 }
             }
@@ -250,17 +253,25 @@
         }
 
         function classifySize(wMM, hMM) {
-            // Используем округлённые значения, как показывается в списке
             const shortSide = Math.round(Math.min(wMM, hMM));
             const longSide = Math.round(Math.max(wMM, hMM));
-            const tolerance = 20;
+            const ratio = longSide / shortSide;
 
-            if (Math.abs(shortSide - 210) <= tolerance && Math.abs(longSide - 297) <= tolerance) {
+            // Сначала проверяем соотношение сторон A-серии
+            const isARatio = Math.abs(ratio - 1.414) < 0.06;
+
+            if (!isARatio) {
+                return { format: 'Other', orientation: wMM < hMM ? 'portrait' : 'landscape' };
+            }
+
+            // Если соотношение правильное — определяем по размеру
+            if (shortSide >= 195 && shortSide <= 230 && longSide >= 280 && longSide <= 320) {
                 return { format: 'A4', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
-            if (Math.abs(shortSide - 297) <= tolerance && Math.abs(longSide - 420) <= tolerance) {
+            if (shortSide >= 280 && shortSide <= 320 && longSide >= 400 && longSide <= 440) {
                 return { format: 'A3', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
+
             return { format: 'Other', orientation: wMM < hMM ? 'portrait' : 'landscape' };
         }
 
@@ -302,7 +313,7 @@
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов (округление + fallback + ResolutionUnit)', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов (соотношение сторон + размер)', 'color:#c9a227');
         }
 
         window.onload = init;
