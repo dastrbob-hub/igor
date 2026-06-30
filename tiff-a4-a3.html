@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIFF Сортировщик | A4 / A3 / A2</title>
+    <title>TIFF Сортировщик | A2 / A3 / A4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/pako@2/dist/pako.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js"></script>
@@ -19,7 +19,7 @@
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A2 / A3 / A4</h1>
-                <p class="text-[#8b5e3c]">Автосортировка по реальному размеру в мм</p>
+                <p class="text-[#8b5e3c]">Автосортировка по реальному физическому размеру</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
@@ -43,10 +43,11 @@
             </button>
         </div>
 
-        <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- 4 колонки, но с нормальной шириной -->
+        <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
             <!-- A4 -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <span class="text-2xl font-bold text-emerald-400">A4</span>
@@ -60,7 +61,7 @@
             </div>
 
             <!-- A3 -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <span class="text-2xl font-bold text-amber-400">A3</span>
@@ -74,7 +75,7 @@
             </div>
 
             <!-- A2 -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <span class="text-2xl font-bold text-orange-400">A2</span>
@@ -88,7 +89,7 @@
             </div>
 
             <!-- Other -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <span class="text-2xl font-bold text-slate-400">Другое</span>
@@ -103,7 +104,7 @@
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Теперь поддерживает A2 (420×594 мм). Если что-то в Другое — пришли пример.
+            A2 = 420×594 мм • A3 = 297×420 мм • A4 = 210×297 мм. Если что-то в Другое — пришли размер.
         </div>
     </div>
 
@@ -245,8 +246,8 @@
             if (short >= 260 && short <= 340 && long >= 380 && long <= 480) {
                 return { format: 'A3', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
-            // A2 (420×594)
-            if (short >= 405 && short <= 435 && long >= 575 && long <= 615) {
+            // A2 (420×594) + чуть шире для реальных сканов
+            if (short >= 400 && short <= 450 && long >= 580 && long <= 650) {
                 return { format: 'A2', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
 
@@ -287,7 +288,7 @@
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов — добавлен A2', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — A2 диапазон расширен + нормальная ширина колонок', 'color:#c9a227');
         }
 
         window.onload = init;
