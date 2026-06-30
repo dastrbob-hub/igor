@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIFF Сортировщик | A2 / A3 / A4</title>
+    <title>TIFF Сортировщик | A4 / A3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/pako@2/dist/pako.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js"></script>
@@ -18,8 +18,8 @@
     <div class="max-w-7xl mx-auto p-8">
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A2 / A3 / A4</h1>
-                <p class="text-[#8b5e3c]">Автосортировка по реальному физическому размеру</p>
+                <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A4 / A3</h1>
+                <p class="text-[#8b5e3c]">Сортировка по ориентации: вертикальные → A4, горизонтальные → A3</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
@@ -43,53 +43,39 @@
             </button>
         </div>
 
-        <!-- 4 колонки, но с нормальной шириной -->
-        <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- 3 колонки -->
+        <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <!-- A4 -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
+            <!-- A4 (вертикальные) -->
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl font-bold text-emerald-400">A4</span>
+                        <span class="text-2xl font-bold text-emerald-400">A4 (вертикальные)</span>
                         <span id="a4-count" class="text-sm bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full">0 стр.</span>
                     </div>
                     <button onclick="downloadGroup('a4')" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-xs font-medium">Скачать PDF</button>
                 </div>
                 <div id="a4-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь будут A4</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Вертикальные (высота > ширины)</div>
                 </div>
             </div>
 
-            <!-- A3 -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
+            <!-- A3 (горизонтальные) -->
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl font-bold text-amber-400">A3</span>
+                        <span class="text-2xl font-bold text-amber-400">A3 (горизонтальные)</span>
                         <span id="a3-count" class="text-sm bg-amber-900 text-amber-300 px-3 py-1 rounded-full">0 стр.</span>
                     </div>
                     <button onclick="downloadGroup('a3')" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-2xl text-xs font-medium">Скачать PDF</button>
                 </div>
                 <div id="a3-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь будут A3</div>
-                </div>
-            </div>
-
-            <!-- A2 -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl font-bold text-orange-400">A2</span>
-                        <span id="a2-count" class="text-sm bg-orange-900 text-orange-300 px-3 py-1 rounded-full">0 стр.</span>
-                    </div>
-                    <button onclick="downloadGroup('a2')" class="px-4 py-1.5 bg-orange-600 hover:bg-orange-500 rounded-2xl text-xs font-medium">Скачать PDF</button>
-                </div>
-                <div id="a2-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь будут A2</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Горизонтальные (ширина > высоты)</div>
                 </div>
             </div>
 
             <!-- Other -->
-            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6 min-w-[260px]">
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <span class="text-2xl font-bold text-slate-400">Другое</span>
@@ -97,14 +83,14 @@
                     </div>
                 </div>
                 <div id="other-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Квадратные или с ошибкой</div>
                 </div>
             </div>
 
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            A2 = 420×594 мм • A3 = 297×420 мм • A4 = 210×297 мм. Если что-то в Другое — пришли размер.
+            Простая логика: если высота больше ширины — A4, если ширина больше высоты — A3.
         </div>
     </div>
 
@@ -139,45 +125,12 @@
             document.getElementById('results').classList.add('hidden');
         }
 
-        function getBestPhysicalSize(widthPx, heightPx, ifd) {
-            let xRes = 300, yRes = 300;
-            const processTag = (val) => {
-                if (!val) return null;
-                if (Array.isArray(val) && val.length >= 2 && val[1] !== 0) return val[0] / val[1];
-                if (typeof val === 'number') return val;
-                if (val && val[0]) return val[0];
-                return null;
-            };
-            const xr = processTag(ifd['282']);
-            const yr = processTag(ifd['283']);
-            if (xr) xRes = xr;
-            if (yr) yRes = yr;
-
-            let unit = 2;
-            if (ifd['296']) {
-                const u = ifd['296'];
-                if (Array.isArray(u)) unit = u[0] || 2;
-                else if (typeof u === 'number') unit = u;
-            }
-
-            let wMM, hMM;
-            if (unit === 3) {
-                wMM = (widthPx / xRes) * 10;
-                hMM = (heightPx / yRes) * 10;
-            } else {
-                wMM = (widthPx / xRes) * 25.4;
-                hMM = (heightPx / yRes) * 25.4;
-            }
-
-            return { wMM, hMM, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
-        }
-
         async function analyzeFiles() {
             const resultsDiv = document.getElementById('results');
             resultsDiv.classList.remove('hidden');
 
-            ['a4-list','a3-list','a2-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
-            let counts = { a4: 0, a3: 0, a2: 0, other: 0 };
+            ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            let counts = { a4: 0, a3: 0, other: 0 };
 
             for (let item of filesData) {
                 try {
@@ -192,17 +145,13 @@
                         const height = ifd.height || ifd.ImageLength || 0;
                         if (!width || !height) continue;
 
-                        const sizeInfo = getBestPhysicalSize(width, height, ifd);
-                        const classification = classifyByMM(sizeInfo.wMM, sizeInfo.hMM);
+                        const classification = classifyByOrientation(width, height);
 
                         const pageInfo = {
                             fileName: item.file.name,
                             pageIndex: i,
-                            widthMM: Math.round(sizeInfo.wMM),
-                            heightMM: Math.round(sizeInfo.hMM),
-                            xRes: sizeInfo.xRes,
-                            yRes: sizeInfo.yRes,
-                            source: sizeInfo.source,
+                            width,
+                            height,
                             ...classification
                         };
 
@@ -212,9 +161,6 @@
                         } else if (classification.format === 'A3') {
                             counts.a3++;
                             addToList('a3-list', pageInfo);
-                        } else if (classification.format === 'A2') {
-                            counts.a2++;
-                            addToList('a2-list', pageInfo);
                         } else {
                             counts.other++;
                             addToList('other-list', pageInfo);
@@ -230,28 +176,20 @@
 
             document.getElementById('a4-count').textContent = counts.a4 + ' стр.';
             document.getElementById('a3-count').textContent = counts.a3 + ' стр.';
-            document.getElementById('a2-count').textContent = counts.a2 + ' стр.';
             document.getElementById('other-count').textContent = counts.other + ' стр.';
         }
 
-        function classifyByMM(wMM, hMM) {
-            const short = Math.round(Math.min(wMM, hMM));
-            const long = Math.round(Math.max(wMM, hMM));
-
-            // A4
-            if (short >= 180 && short <= 250 && long >= 260 && long <= 340) {
-                return { format: 'A4', orientation: wMM < hMM ? 'portrait' : 'landscape' };
+        function classifyByOrientation(width, height) {
+            if (height > width) {
+                // Вертикальная ориентация → A4
+                return { format: 'A4', orientation: 'portrait' };
+            } else if (width > height) {
+                // Горизонтальная ориентация → A3
+                return { format: 'A3', orientation: 'landscape' };
+            } else {
+                // Квадрат
+                return { format: 'Other', orientation: 'square' };
             }
-            // A3
-            if (short >= 260 && short <= 340 && long >= 380 && long <= 480) {
-                return { format: 'A3', orientation: wMM < hMM ? 'portrait' : 'landscape' };
-            }
-            // A2 (420×594) + чуть шире для реальных сканов
-            if (short >= 400 && short <= 450 && long >= 580 && long <= 650) {
-                return { format: 'A2', orientation: wMM < hMM ? 'portrait' : 'landscape' };
-            }
-
-            return { format: 'Other', orientation: wMM < hMM ? 'portrait' : 'landscape' };
         }
 
         function addToList(listId, pageInfo) {
@@ -261,13 +199,15 @@
 
             let extra = '';
             if (pageInfo.format === 'Other') {
-                extra = ` • ${pageInfo.source} DPI~${pageInfo.xRes}`;
+                extra = ` • ${pageInfo.width}×${pageInfo.height} (квадрат)`;
+            } else {
+                extra = ` • ${pageInfo.width}×${pageInfo.height}`;
             }
 
             div.innerHTML = `
                 <div class="min-w-0 flex-1">
                     <div class="font-medium truncate">${pageInfo.fileName} (стр. ${pageInfo.pageIndex + 1})</div>
-                    <div class="text-[#8b5e3c]">${pageInfo.widthMM}×${pageInfo.heightMM} мм${extra}</div>
+                    <div class="text-[#8b5e3c]">${extra}</div>
                 </div>
                 <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812]">${pageInfo.format}</div>
             `;
@@ -275,20 +215,20 @@
         }
 
         function downloadGroup(group) {
-            alert('Экспорт PDF будет позже.');
+            alert('Экспорт PDF будет позже. Сейчас простая сортировка по ориентации.');
         }
 
         function resetAll() {
             filesData = [];
             document.getElementById('controls').classList.add('hidden');
             document.getElementById('results').classList.add('hidden');
-            ['a4-list','a3-list','a2-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
             document.getElementById('fileInput').value = '';
         }
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов — A2 диапазон расширен + нормальная ширина колонок', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — только A4/A3 по ориентации (высота > ширины = A4)', 'color:#c9a227');
         }
 
         window.onload = init;
