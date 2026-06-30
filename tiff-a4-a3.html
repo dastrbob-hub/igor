@@ -19,16 +19,16 @@
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A4 / A3</h1>
-                <p class="text-[#8b5e3c]">Сортировка по ориентации + экспорт в PDF</p>
+                <p class="text-[#8b5e3c]">Поддержка TIFF + JPG, PNG, WEBP и других изображений</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
 
         <div id="dropzone" class="dropzone border-2 border-dashed border-[#8b5e3c] rounded-3xl p-10 text-center cursor-pointer hover:border-[#c9a227]">
             <div class="text-6xl mb-4">📄</div>
-            <h3 class="text-2xl font-semibold mb-2">Перетащите TIFF файлы</h3>
-            <p class="text-[#8b5e3c] mb-4">или нажмите для выбора</p>
-            <input type="file" id="fileInput" multiple accept=".tif,.tiff,image/tiff" class="hidden">
+            <h3 class="text-2xl font-semibold mb-2">Перетащите файлы</h3>
+            <p class="text-[#8b5e3c] mb-4">TIFF (в т.ч. многостраничные), JPG, PNG, WEBP, BMP</p>
+            <input type="file" id="fileInput" multiple accept=".tif,.tiff,.jpg,.jpeg,.png,.webp,.bmp,image/*" class="hidden">
             <button onclick="document.getElementById('fileInput').click()" class="px-8 py-3 bg-[#c9a227] text-[#1a120b] font-semibold rounded-2xl">
                 Выбрать файлы
             </button>
@@ -46,7 +46,7 @@
         <!-- 3 колонки -->
         <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <!-- A4 (вертикальные) -->
+            <!-- A4 -->
             <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <!-- A3 (горизонтальные) -->
+            <!-- A3 -->
             <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
@@ -83,20 +83,19 @@
                     </div>
                 </div>
                 <div id="other-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Квадратные или с ошибкой</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Квадратные / ошибки</div>
                 </div>
             </div>
 
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Простая сортировка по ориентации. Кнопки "Скачать PDF" теперь работают.
+            Поддерживаются TIFF (многостраничные), JPG, PNG, WEBP, BMP. Сортировка по ориентации.
         </div>
     </div>
 
     <script>
         let filesData = [];
-        // Храним все классифицированные страницы с данными для экспорта
         let classifiedPages = { a4: [], a3: [], other: [] };
 
         function initDropzone() {
@@ -117,15 +116,52 @@
         function handleFiles(fileList) {
             filesData = [];
             classifiedPages = { a4: [], a3: [], other: [] };
+
             for (let file of fileList) {
                 const name = file.name.toLowerCase();
-                if (file.type === 'image/tiff' || name.endsWith('.tif') || name.endsWith('.tiff')) {
+                const ext = name.split('.').pop();
+                const isImage = ['tif','tiff','jpg','jpeg','png','webp','bmp'].includes(ext) || file.type.startsWith('image/');
+
+                if (isImage) {
                     filesData.push({ file });
                 }
             }
-            if (filesData.length === 0) { alert('Выберите TIFF файлы'); return; }
+
+            if (filesData.length === 0) { alert('Выберите изображения (TIFF, JPG, PNG, WEBP и т.д.)'); return; }
             document.getElementById('controls').classList.remove('hidden');
             document.getElementById('results').classList.add('hidden');
+        }
+
+        // Загрузка обычного изображения (не TIFF) в RGBA
+        async function loadImageToRGBA(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                    URL.revokeObjectURL(url);
+
+                    resolve({
+                        width: img.width,
+                        height: img.height,
+                        rgba: new Uint8Array(imageData.data.buffer)
+                    });
+                };
+
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Не удалось загрузить изображение'));
+                };
+
+                img.src = url;
+            });
         }
 
         async function analyzeFiles() {
@@ -137,35 +173,52 @@
             let counts = { a4: 0, a3: 0, other: 0 };
 
             for (let item of filesData) {
+                const file = item.file;
+                const ext = file.name.toLowerCase().split('.').pop();
+
                 try {
-                    const buffer = await item.file.arrayBuffer();
-                    const ifds = UTIF.decode(buffer);
+                    let pagesFromFile = [];
 
-                    for (let i = 0; i < ifds.length; i++) {
-                        const ifd = ifds[i];
-                        try { UTIF.decodeImage(buffer, ifd); } catch(e) {}
+                    if (ext === 'tif' || ext === 'tiff') {
+                        // Многостраничный TIFF
+                        const buffer = await file.arrayBuffer();
+                        const ifds = UTIF.decode(buffer);
 
-                        const width = ifd.width || ifd.ImageWidth || 0;
-                        const height = ifd.height || ifd.ImageLength || 0;
-                        if (!width || !height) continue;
+                        for (let i = 0; i < ifds.length; i++) {
+                            const ifd = ifds[i];
+                            try { UTIF.decodeImage(buffer, ifd); } catch(e) {}
 
-                        // Получаем пиксели для экспорта
-                        let rgba = null;
-                        try {
-                            rgba = UTIF.toRGBA8(ifd);
-                        } catch(e) {}
+                            const width = ifd.width || ifd.ImageWidth || 0;
+                            const height = ifd.height || ifd.ImageLength || 0;
+                            if (!width || !height) continue;
 
-                        const classification = classifyByOrientation(width, height);
+                            let rgba = null;
+                            try { rgba = UTIF.toRGBA8(ifd); } catch(e) {}
 
-                        const pageInfo = {
-                            fileName: item.file.name,
-                            pageIndex: i,
-                            width,
-                            height,
-                            rgba: rgba ? new Uint8Array(rgba) : null,
-                            originalBuffer: buffer,
-                            ifdIndex: i
-                        };
+                            pagesFromFile.push({
+                                fileName: file.name,
+                                pageIndex: i,
+                                width,
+                                height,
+                                rgba: rgba ? new Uint8Array(rgba) : null
+                            });
+                        }
+                    } else {
+                        // Обычное изображение (JPG, PNG, WEBP и т.д.)
+                        const imgData = await loadImageToRGBA(file);
+                        pagesFromFile.push({
+                            fileName: file.name,
+                            pageIndex: 0,
+                            width: imgData.width,
+                            height: imgData.height,
+                            rgba: imgData.rgba
+                        });
+                    }
+
+                    // Классифицируем каждую страницу
+                    for (let page of pagesFromFile) {
+                        const classification = classifyByOrientation(page.width, page.height);
+                        const pageInfo = { ...page, ...classification };
 
                         if (classification.format === 'A4') {
                             counts.a4++;
@@ -180,10 +233,12 @@
                             addToList('other-list', pageInfo);
                         }
                     }
+
                 } catch (err) {
+                    console.error(err);
                     const div = document.createElement('div');
                     div.className = 'text-red-400 text-xs p-2';
-                    div.textContent = 'Ошибка: ' + item.file.name;
+                    div.textContent = 'Ошибка: ' + file.name;
                     document.getElementById('other-list').appendChild(div);
                 }
             }
@@ -216,25 +271,23 @@
                     <div class="font-medium truncate">${pageInfo.fileName} (стр. ${pageInfo.pageIndex + 1})</div>
                     <div class="text-[#8b5e3c]">${extra}</div>
                 </div>
-                <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812]">${pageInfo.format || 'Other'}</div>
+                <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812]">${pageInfo.format}</div>
             `;
             container.appendChild(div);
         }
 
-        // === ЭКСПОРТ В PDF ===
         async function downloadGroup(group) {
             const pages = classifiedPages[group];
             if (!pages || pages.length === 0) {
-                alert('В этой группе нет страниц для экспорта');
+                alert('В этой группе нет страниц');
                 return;
             }
 
             const { jsPDF } = window.jspdf;
             const isA4 = group === 'a4';
 
-            // Размеры в поинтах (1 point = 1/72 inch)
-            const pageWidth = isA4 ? 595 : 842;   // A4 width / A3 width
-            const pageHeight = isA4 ? 842 : 1191; // A4 height / A3 height
+            const pageWidth = isA4 ? 595 : 842;
+            const pageHeight = isA4 ? 842 : 1191;
 
             const doc = new jsPDF({
                 orientation: isA4 ? 'portrait' : 'landscape',
@@ -244,13 +297,9 @@
 
             for (let i = 0; i < pages.length; i++) {
                 const page = pages[i];
-
-                if (i > 0) {
-                    doc.addPage();
-                }
+                if (i > 0) doc.addPage();
 
                 if (page.rgba && page.width && page.height) {
-                    // Создаём canvas из RGBA
                     const canvas = document.createElement('canvas');
                     canvas.width = page.width;
                     canvas.height = page.height;
@@ -258,29 +307,22 @@
                     const imageData = new ImageData(new Uint8ClampedArray(page.rgba), page.width, page.height);
                     ctx.putImageData(imageData, 0, 0);
 
-                    // Конвертируем в JPEG для PDF
                     const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-                    // Масштабируем под страницу PDF с сохранением пропорций
                     const imgProps = doc.getImageProperties(jpegDataUrl);
-                    const pdfWidth = pageWidth - 40;
-                    const pdfHeight = pageHeight - 40;
-                    const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
-                    const finalWidth = imgProps.width * ratio;
-                    const finalHeight = imgProps.height * ratio;
-                    const x = (pageWidth - finalWidth) / 2;
-                    const y = (pageHeight - finalHeight) / 2;
+                    const pdfW = pageWidth - 40;
+                    const pdfH = pageHeight - 40;
+                    const ratio = Math.min(pdfW / imgProps.width, pdfH / imgProps.height);
+                    const finalW = imgProps.width * ratio;
+                    const finalH = imgProps.height * ratio;
+                    const x = (pageWidth - finalW) / 2;
+                    const y = (pageHeight - finalH) / 2;
 
-                    doc.addImage(jpegDataUrl, 'JPEG', x, y, finalWidth, finalHeight);
-                } else {
-                    // Если нет изображения — просто пишем текст
-                    doc.setFontSize(14);
-                    doc.text(`Страница ${page.pageIndex + 1} из ${page.fileName}`, 40, 100);
+                    doc.addImage(jpegDataUrl, 'JPEG', x, y, finalW, finalH);
                 }
             }
 
-            const filename = `${group.toUpperCase()}_${pages.length}_pages.pdf`;
-            doc.save(filename);
+            doc.save(`${group.toUpperCase()}_${pages.length}_pages.pdf`);
         }
 
         function resetAll() {
@@ -294,7 +336,7 @@
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов — экспорт в PDF работает', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — поддержка JPG/PNG/WEBP + экспорт PDF', 'color:#c9a227');
         }
 
         window.onload = init;
