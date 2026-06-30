@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIFF Сортировщик | A4 / A3</title>
+    <title>TIFF Сортировщик | A4 / A3 / A2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/pako@2/dist/pako.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js"></script>
@@ -18,8 +18,8 @@
     <div class="max-w-7xl mx-auto p-8">
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A4 / A3</h1>
-                <p class="text-[#8b5e3c]">Автосортировка по размеру в мм (максимально широкие диапазоны)</p>
+                <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A2 / A3 / A4</h1>
+                <p class="text-[#8b5e3c]">Автосортировка по реальному размеру в мм</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
@@ -43,7 +43,7 @@
             </button>
         </div>
 
-        <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
             
             <!-- A4 -->
             <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
@@ -73,6 +73,20 @@
                 </div>
             </div>
 
+            <!-- A2 -->
+            <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl font-bold text-orange-400">A2</span>
+                        <span id="a2-count" class="text-sm bg-orange-900 text-orange-300 px-3 py-1 rounded-full">0 стр.</span>
+                    </div>
+                    <button onclick="downloadGroup('a2')" class="px-4 py-1.5 bg-orange-600 hover:bg-orange-500 rounded-2xl text-xs font-medium">Скачать PDF</button>
+                </div>
+                <div id="a2-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь будут A2</div>
+                </div>
+            </div>
+
             <!-- Other -->
             <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -82,14 +96,14 @@
                     </div>
                 </div>
                 <div id="other-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное (с точными размерами)</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное</div>
                 </div>
             </div>
 
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Максимально широкие диапазоны. Если всё равно в Другое — пришли пример из этой колонки.
+            Теперь поддерживает A2 (420×594 мм). Если что-то в Другое — пришли пример.
         </div>
     </div>
 
@@ -161,8 +175,8 @@
             const resultsDiv = document.getElementById('results');
             resultsDiv.classList.remove('hidden');
 
-            ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
-            let counts = { a4: 0, a3: 0, other: 0 };
+            ['a4-list','a3-list','a2-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            let counts = { a4: 0, a3: 0, a2: 0, other: 0 };
 
             for (let item of filesData) {
                 try {
@@ -188,8 +202,6 @@
                             xRes: sizeInfo.xRes,
                             yRes: sizeInfo.yRes,
                             source: sizeInfo.source,
-                            rawShort: Math.round(Math.min(sizeInfo.wMM, sizeInfo.hMM)),
-                            rawLong: Math.round(Math.max(sizeInfo.wMM, sizeInfo.hMM)),
                             ...classification
                         };
 
@@ -199,6 +211,9 @@
                         } else if (classification.format === 'A3') {
                             counts.a3++;
                             addToList('a3-list', pageInfo);
+                        } else if (classification.format === 'A2') {
+                            counts.a2++;
+                            addToList('a2-list', pageInfo);
                         } else {
                             counts.other++;
                             addToList('other-list', pageInfo);
@@ -214,6 +229,7 @@
 
             document.getElementById('a4-count').textContent = counts.a4 + ' стр.';
             document.getElementById('a3-count').textContent = counts.a3 + ' стр.';
+            document.getElementById('a2-count').textContent = counts.a2 + ' стр.';
             document.getElementById('other-count').textContent = counts.other + ' стр.';
         }
 
@@ -221,12 +237,17 @@
             const short = Math.round(Math.min(wMM, hMM));
             const long = Math.round(Math.max(wMM, hMM));
 
-            // Очень широкие практичные диапазоны для реальных сканов
+            // A4
             if (short >= 180 && short <= 250 && long >= 260 && long <= 340) {
                 return { format: 'A4', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
+            // A3
             if (short >= 260 && short <= 340 && long >= 380 && long <= 480) {
                 return { format: 'A3', orientation: wMM < hMM ? 'portrait' : 'landscape' };
+            }
+            // A2 (420×594)
+            if (short >= 405 && short <= 435 && long >= 575 && long <= 615) {
+                return { format: 'A2', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
 
             return { format: 'Other', orientation: wMM < hMM ? 'portrait' : 'landscape' };
@@ -239,7 +260,7 @@
 
             let extra = '';
             if (pageInfo.format === 'Other') {
-                extra = ` • short=${pageInfo.rawShort} long=${pageInfo.rawLong} (${pageInfo.source} DPI~${pageInfo.xRes})`;
+                extra = ` • ${pageInfo.source} DPI~${pageInfo.xRes}`;
             }
 
             div.innerHTML = `
@@ -253,20 +274,20 @@
         }
 
         function downloadGroup(group) {
-            alert('Экспорт PDF будет позже. Сейчас сортировка по мм.');
+            alert('Экспорт PDF будет позже.');
         }
 
         function resetAll() {
             filesData = [];
             document.getElementById('controls').classList.add('hidden');
             document.getElementById('results').classList.add('hidden');
-            ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            ['a4-list','a3-list','a2-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
             document.getElementById('fileInput').value = '';
         }
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов — максимально широкие диапазоны по мм + детальный Other', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — добавлен A2', 'color:#c9a227');
         }
 
         window.onload = init;
