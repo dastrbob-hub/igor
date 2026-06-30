@@ -19,7 +19,7 @@
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-bold text-[#c9a227]">TIFF Сортировщик A4 / A3</h1>
-                <p class="text-[#8b5e3c]">Автосортировка по физическому размеру страниц</p>
+                <p class="text-[#8b5e3c]">Автосортировка по физическому размеру в мм</p>
             </div>
             <a href="index.html" class="px-5 py-2 border border-[#8b5e3c] rounded-2xl hover:bg-[#2c2118]">← Назад в хаб</a>
         </div>
@@ -27,7 +27,7 @@
         <!-- Upload -->
         <div id="dropzone" class="dropzone border-2 border-dashed border-[#8b5e3c] rounded-3xl p-10 text-center cursor-pointer hover:border-[#c9a227]">
             <div class="text-6xl mb-4">📄</div>
-            <h3 class="text-2xl font-semibold mb-2">Перетащите TIFF файлы (в т.ч. многостраничные)</h3>
+            <h3 class="text-2xl font-semibold mb-2">Перетащите TIFF файлы</h3>
             <p class="text-[#8b5e3c] mb-4">или нажмите для выбора</p>
             <input type="file" id="fileInput" multiple accept=".tif,.tiff,image/tiff" class="hidden">
             <button onclick="document.getElementById('fileInput').click()" class="px-8 py-3 bg-[#c9a227] text-[#1a120b] font-semibold rounded-2xl">
@@ -44,7 +44,7 @@
             </button>
         </div>
 
-        <!-- Results with 3 columns -->
+        <!-- Results -->
         <div id="results" class="hidden mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             
             <!-- A4 -->
@@ -75,7 +75,7 @@
                 </div>
             </div>
 
-            <!-- Other / Debug -->
+            <!-- Other -->
             <div class="bg-[#2c2118] border border-[#8b5e3c] rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
@@ -84,15 +84,14 @@
                     </div>
                 </div>
                 <div id="other-list" class="min-h-[180px] bg-[#1f1812] rounded-2xl p-3 text-sm space-y-1.5 overflow-auto max-h-[420px]">
-                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное (с размерами)</div>
+                    <div class="text-[#8b5e3c] text-center py-6 text-xs">Здесь всё остальное</div>
                 </div>
-                <div class="mt-3 text-[10px] text-[#8b5e3c]">Если всё ещё в Другое — пришли пример из этой колонки (размер + DPI + meta/fallback).</div>
             </div>
 
         </div>
 
         <div class="mt-6 text-xs text-[#8b5e3c] text-center">
-            Классификация по соотношению сторон + размеру (самый надёжный способ для сканов).
+            Сортировка строго по рассчитанному размеру в мм (как показано в списке).
         </div>
     </div>
 
@@ -148,46 +147,44 @@
                 else if (typeof u === 'number') unit = u;
             }
 
-            let wMM_meta, hMM_meta;
+            let wMM, hMM;
             if (unit === 3) {
-                wMM_meta = (widthPx / xRes) * 10;
-                hMM_meta = (heightPx / yRes) * 10;
+                wMM = (widthPx / xRes) * 10;
+                hMM = (heightPx / yRes) * 10;
             } else {
-                wMM_meta = (widthPx / xRes) * 25.4;
-                hMM_meta = (heightPx / yRes) * 25.4;
+                wMM = (widthPx / xRes) * 25.4;
+                hMM = (heightPx / yRes) * 25.4;
             }
 
-            // Проверка по метаданным
-            const short_meta = Math.min(wMM_meta, hMM_meta);
-            const long_meta = Math.max(wMM_meta, hMM_meta);
-            const ratio_meta = long_meta / short_meta;
-            const isAseriesMeta = Math.abs(ratio_meta - 1.414) < 0.08;
+            // Проверка качества
+            const short = Math.min(wMM, hMM);
+            const long = Math.max(wMM, hMM);
+            const ratio = long / short;
+            const isGood = Math.abs(ratio - 1.414) < 0.1 && short > 150 && short < 350;
 
-            if (isAseriesMeta && (short_meta > 180 && short_meta < 320)) {
-                return { wMM: wMM_meta, hMM: hMM_meta, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
+            if (isGood) {
+                return { wMM, hMM, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
             }
 
-            // Fallback на популярные DPI
-            const commonDPIs = [150, 200, 300, 400, 72];
-            let best = { wMM: wMM_meta, hMM: hMM_meta, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
-            let bestScore = isAseriesMeta ? 0 : 999;
+            // Fallback
+            const common = [150, 200, 300, 400];
+            let best = { wMM, hMM, xRes: Math.round(xRes), yRes: Math.round(yRes), unit, source: 'meta' };
+            let bestScore = isGood ? 0 : 999;
 
-            for (const dpi of commonDPIs) {
-                const w = (widthPx / dpi) * 25.4;
-                const h = (heightPx / dpi) * 25.4;
-                const s = Math.min(w, h);
-                const l = Math.max(w, h);
-                const r = l / s;
-                const isA = Math.abs(r - 1.414) < 0.08;
-                const sizeScore = (s > 180 && s < 320) ? 0 : 10;
+            for (const dpi of common) {
+                const ww = (widthPx / dpi) * 25.4;
+                const hh = (heightPx / dpi) * 25.4;
+                const ss = Math.min(ww, hh);
+                const ll = Math.max(ww, hh);
+                const rr = ll / ss;
+                const good = Math.abs(rr - 1.414) < 0.1 && ss > 150 && ss < 350;
+                const score = good ? 0 : 5;
 
-                let score = (isA ? 0 : 5) + sizeScore;
                 if (score < bestScore) {
                     bestScore = score;
-                    best = { wMM: w, hMM: h, xRes: dpi, yRes: dpi, unit: 2, source: 'fallback' };
+                    best = { wMM: ww, hMM: hh, xRes: dpi, yRes: dpi, unit: 2, source: 'fallback' };
                 }
             }
-
             return best;
         }
 
@@ -205,24 +202,22 @@
 
                     for (let i = 0; i < ifds.length; i++) {
                         const ifd = ifds[i];
-                        try { UTIF.decodeImage(buffer, ifd); } catch(e) { /* ignore */ }
+                        try { UTIF.decodeImage(buffer, ifd); } catch(e) {}
 
                         const width = ifd.width || ifd.ImageWidth || 0;
                         const height = ifd.height || ifd.ImageLength || 0;
                         if (!width || !height) continue;
 
                         const sizeInfo = getBestPhysicalSize(width, height, ifd);
-                        const classification = classifySize(sizeInfo.wMM, sizeInfo.hMM);
+                        const classification = classifyByMM(sizeInfo.wMM, sizeInfo.hMM);
 
                         const pageInfo = {
                             fileName: item.file.name,
                             pageIndex: i,
-                            width, height,
                             widthMM: Math.round(sizeInfo.wMM),
                             heightMM: Math.round(sizeInfo.hMM),
                             xRes: sizeInfo.xRes,
                             yRes: sizeInfo.yRes,
-                            unit: sizeInfo.unit,
                             source: sizeInfo.source,
                             ...classification
                         };
@@ -239,10 +234,9 @@
                         }
                     }
                 } catch (err) {
-                    console.error('Ошибка файла', item.file.name, err);
                     const div = document.createElement('div');
                     div.className = 'text-red-400 text-xs p-2';
-                    div.textContent = 'Ошибка: ' + item.file.name + ' — ' + err.message;
+                    div.textContent = 'Ошибка: ' + item.file.name;
                     document.getElementById('other-list').appendChild(div);
                 }
             }
@@ -252,23 +246,15 @@
             document.getElementById('other-count').textContent = counts.other + ' стр.';
         }
 
-        function classifySize(wMM, hMM) {
-            const shortSide = Math.round(Math.min(wMM, hMM));
-            const longSide = Math.round(Math.max(wMM, hMM));
-            const ratio = longSide / shortSide;
+        function classifyByMM(wMM, hMM) {
+            const short = Math.round(Math.min(wMM, hMM));
+            const long = Math.round(Math.max(wMM, hMM));
 
-            // Сначала проверяем соотношение сторон A-серии
-            const isARatio = Math.abs(ratio - 1.414) < 0.06;
-
-            if (!isARatio) {
-                return { format: 'Other', orientation: wMM < hMM ? 'portrait' : 'landscape' };
-            }
-
-            // Если соотношение правильное — определяем по размеру
-            if (shortSide >= 195 && shortSide <= 230 && longSide >= 280 && longSide <= 320) {
+            // Чисто по мм (как просил пользователь)
+            if (short >= 200 && short <= 225 && long >= 285 && long <= 315) {
                 return { format: 'A4', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
-            if (shortSide >= 280 && shortSide <= 320 && longSide >= 400 && longSide <= 440) {
+            if (short >= 285 && short <= 315 && long >= 405 && long <= 435) {
                 return { format: 'A3', orientation: wMM < hMM ? 'portrait' : 'landscape' };
             }
 
@@ -282,38 +268,34 @@
 
             let extra = '';
             if (pageInfo.format === 'Other') {
-                const unitText = pageInfo.unit === 3 ? 'см' : 'дюйм';
-                extra = ` • ${pageInfo.source} DPI~${pageInfo.xRes} (${unitText})`;
+                extra = ` • ${pageInfo.source} DPI~${pageInfo.xRes}`;
             }
 
             div.innerHTML = `
                 <div class="min-w-0 flex-1">
-                    <div class="font-medium truncate">${pageInfo.fileName} <span class="text-[#8b5e3c]">(стр. ${pageInfo.pageIndex + 1})</span></div>
+                    <div class="font-medium truncate">${pageInfo.fileName} (стр. ${pageInfo.pageIndex + 1})</div>
                     <div class="text-[#8b5e3c]">${pageInfo.widthMM}×${pageInfo.heightMM} мм${extra}</div>
                 </div>
-                <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812] whitespace-nowrap">${pageInfo.format}</div>
+                <div class="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#1f1812]">${pageInfo.format}</div>
             `;
             container.appendChild(div);
         }
 
         function downloadGroup(group) {
-            alert('Экспорт в PDF будет добавлен позже. Пока файлы отсортированы по спискам. Если нужно — скажи, сделаю полноценный экспорт.');
+            alert('Экспорт PDF будет позже. Пока сортировка по мм работает.');
         }
 
         function resetAll() {
             filesData = [];
             document.getElementById('controls').classList.add('hidden');
             document.getElementById('results').classList.add('hidden');
-            ['a4-list','a3-list','other-list'].forEach(id => {
-                const el = document.getElementById(id);
-                el.innerHTML = `<div class="text-[#8b5e3c] text-center py-6 text-xs">${id.includes('a4') ? 'A4' : id.includes('a3') ? 'A3' : 'Другое'}</div>`;
-            });
+            ['a4-list','a3-list','other-list'].forEach(id => document.getElementById(id).innerHTML = '');
             document.getElementById('fileInput').value = '';
         }
 
         function init() {
             initDropzone();
-            console.log('%c[TIFF Sorter] Готов (соотношение сторон + размер)', 'color:#c9a227');
+            console.log('%c[TIFF Sorter] Готов — сортировка строго по мм', 'color:#c9a227');
         }
 
         window.onload = init;
