@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مولد العبارات العربية • Королевский Зал</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .arabic {
+            font-family: 'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        .phrase {
+            font-size: 2.1rem;
+            line-height: 1.7;
+            font-weight: 700;
+            color: #f1e7d2;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .section-title {
+            font-family: 'Cinzel', Georgia, serif;
+        }
+
+        .arabic-card {
+            background: linear-gradient(145deg, #1f2520, #161b16);
+            border: 1px solid #3a4235;
+        }
+
+        .generate-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .history-item {
+            transition: all 0.2s ease;
+        }
+        
+        .history-item:hover {
+            background-color: #1f2520;
+            transform: translateX(-4px);
+        }
+    </style>
+</head>
+<body class="bg-[#0f120e] text-[#e8d5b7]">
+    <div class="max-w-4xl mx-auto px-6 py-10">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-10">
+            <div class="flex items-center gap-x-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-amber-600 to-yellow-700 rounded-3xl flex items-center justify-center shadow-xl shadow-amber-900/30">
+                    <i class="fa-solid fa-feather-pointed text-white text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-5xl font-bold tracking-tighter text-[#f1e7d2]">مولد العبارات</h1>
+                    <p class="text-[#8b7a5c] text-xl -mt-1">العربية • عشوائي وجميل</p>
+                </div>
+            </div>
+            
+            <a href="index.html" class="px-5 py-2.5 text-sm border border-[#5c4630] hover:bg-[#1f2520] rounded-2xl flex items-center gap-x-2 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Назад в зал</span>
+            </a>
+        </div>
+
+        <!-- Main Generator Card -->
+        <div class="arabic-card rounded-3xl p-9 shadow-2xl border border-[#3a4235]">
+            
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center gap-x-2 px-4 py-1 bg-[#1f2520] border border-[#3a4235] rounded-full text-xs tracking-[2px] text-[#8b7a5c]">
+                    <i class="fa-solid fa-magic"></i>
+                    <span>СЛУЧАЙНЫЕ КОМБИНАЦИИ СЛОВ</span>
+                </div>
+            </div>
+
+            <!-- Generated Phrase -->
+            <div id="phrase-container" 
+                 class="min-h-[180px] flex items-center justify-center bg-[#161b16] border border-[#3a4235] rounded-3xl p-10 mb-8">
+                <div id="phrase-text" 
+                     class="phrase text-center leading-tight select-all cursor-pointer">
+                    اضغط على кнопку لتوليد عبارة جميلة...
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="generatePhrase()"
+                        class="generate-btn flex-1 sm:flex-none px-10 py-4 bg-gradient-to-r from-amber-600 to-yellow-700 hover:from-amber-500 hover:to-yellow-600 text-[#1a120b] font-bold text-xl rounded-2xl flex items-center justify-center gap-x-3 shadow-lg shadow-amber-900/40">
+                    <i class="fa-solid fa-sync-alt"></i>
+                    <span>ولّد عبارة جديدة</span>
+                </button>
+
+                <button onclick="copyPhrase()"
+                        class="px-8 py-4 border border-[#5c4630] hover:bg-[#1f2520] rounded-2xl flex items-center justify-center gap-x-2 text-lg transition-colors">
+                    <i class="fa-solid fa-copy"></i>
+                    <span>نسخ</span>
+                </button>
+
+                <button onclick="addToFavorites()"
+                        class="px-8 py-4 border border-[#5c4630] hover:bg-[#1f2520] rounded-2xl flex items-center justify-center gap-x-2 text-lg transition-colors">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>في المفضلة</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="mt-8">
+            <div class="text-[#8b7a5c] text-sm mb-3 px-1">اختر نوع العبارة:</div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="generateWithCategory('poetry')" 
+                        class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-feather text-amber-500"></i>
+                    <span>شعر</span>
+                </button>
+                <button onclick="generateWithCategory('wisdom')" 
+                        class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-lightbulb text-yellow-500"></i>
+                    <span>حكمة</span>
+                </button>
+                <button onclick="generateWithCategory('love')" 
+                        class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-heart text-red-400"></i>
+                    <span>حب</span>
+                </button>
+                <button onclick="generateWithCategory('funny')" 
+                        class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-grin-beam text-emerald-400"></i>
+                    <span>فكاهة</span>
+                </button>
+                <button onclick="generateWithCategory('random')" 
+                        class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-dice text-violet-400"></i>
+                    <span>عشوائي</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="mt-10">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div class="text-[#8b7a5c] text-sm">آخر العبارات المولدة</div>
+                <button onclick="clearHistory()" class="text-xs text-[#5c4630] hover:text-red-400 transition-colors flex items-center gap-x-1">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>مسح</span>
+                </button>
+            </div>
+            
+            <div id="history-list" class="space-y-2 max-h-[280px] overflow-auto pr-2">
+                <!-- JS will populate this -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tailwind script
+        function initTailwind() {
+            // Already handled by CDN
+        }
+
+        // Word banks for different categories
+        const wordBanks = {
+            poetry: {
+                subjects: ['القلب', 'الروح', 'النجوم', 'القمر', 'الليل', 'الوردة', 'السماء', 'الطريق', 'الشاعر', 'الملك'],
+                verbs: ['يحلم', 'يطير', 'يكتب', 'يغني', 'يرقص', 'يهمس', 'يضيء', 'يسافر', 'يبني', 'يزرع'],
+                objects: ['في سماء الحب', 'على أجنحة القدر', 'في حديقة الذكريات', 'تحت ضوء القمر', 'في بحر الأحلام', 'بين النجوم', 'في قصر الزمان', 'على طريق النور'],
+                adjectives: ['جميل', 'عميق', 'نوراني', 'أبدي', 'سري', 'قديم', 'جديد', 'حزين', 'سعيد']
+            },
+            wisdom: {
+                subjects: ['الحكمة', 'الصبر', 'العدل', 'الصدق', 'المعرفة', 'التواضع', 'الشجاعة', 'الرحمة'],
+                verbs: ['يبني', 'يحمي', 'يضيء', 'يزرع', 'يفتح', 'يجمع', 'يصنع', 'يحفظ'],
+                objects: ['القلوب', 'الأجيال', 'الطريق', 'النور', 'السلام', 'القوة', 'الحقيقة', 'الجمال'],
+                adjectives: ['عظيم', 'خالد', 'عميق', 'نقي', 'قوي', 'لطيف']
+            },
+            love: {
+                subjects: ['الحب', 'القلب', 'العشق', 'الروح', 'اللقاء', 'الوداع'],
+                verbs: ['يحرق', 'يذيب', 'يجمع', 'يفرق', 'يغني', 'يبكي', 'يضحك', 'يطير'],
+                objects: ['في عيون الحبيب', 'تحت المطر', 'في الليل الطويل', 'بين الورد', 'على الشاطئ', 'في الذاكرة'],
+                adjectives: ['حارق', 'عميق', 'أبدي', 'مؤلم', 'جميل', 'ممنوع']
+            },
+            funny: {
+                subjects: ['الجمل', 'القطة', 'الملك', 'الوزير', 'الجار', 'الطالب'],
+                verbs: ['يأكل', 'ينام', 'يجري', 'يغني', 'يبكي', 'يضحك', 'يسرق', 'يبني'],
+                objects: ['في الصباح الباكر', 'تحت الطاولة', 'في الحمام', 'مع الجيران', 'في السوق', 'على السطح'],
+                adjectives: ['غريب', 'مضحك', 'كسول', 'ذكي', 'غبي', 'شجاع']
+            },
+            random: {
+                subjects: ['القلب', 'النجوم', 'الليل', 'الوردة', 'السماء', 'الطريق', 'الملك', 'الجمل', 'القطة'],
+                verbs: ['يطير', 'يكتب', 'يحلم', 'يغني', 'يبني', 'يزرع', 'يضيء', 'يجري', 'يهمس'],
+                objects: ['في السماء', 'على الجبل', 'تحت الشجرة', 'في البحر', 'بين النجوم', 'في القصر', 'على الطريق'],
+                adjectives: ['جميل', 'قوي', 'حزين', 'سعيد', 'عميق', 'نوراني', 'غريب']
+            }
+        };
+
+        let history = JSON.parse(localStorage.getItem('arabicPhraseHistory') || '[]');
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function generatePhrase(category = 'random') {
+            const bank = wordBanks[category] || wordBanks.random;
+            
+            // Different sentence structures
+            const templates = [
+                `${getRandomItem(bank.subjects)} ${getRandomItem(bank.verbs)} ${getRandomItem(bank.objects)}`,
+                `في ${getRandomItem(bank.objects)} ${getRandomItem(bank.subjects)} ${getRandomItem(bank.verbs)}`,
+                `${getRandomItem(bank.adjectives)} ${getRandomItem(bank.subjects)} يحلم بـ${getRandomItem(bank.objects)}`,
+                `الـ${getRandomItem(bank.subjects)} ${getRandomItem(bank.verbs)} مثل ${getRandomItem(bank.adjectives)} ${getRandomItem(bank.objects)}`,
+                `${getRandomItem(bank.subjects)} ${getRandomItem(bank.verbs)} و${getRandomItem(bank.subjects)} ${getRandomItem(bank.verbs)}`
+            ];
+
+            let phrase = getRandomItem(templates);
+
+            // Make first letter capitalized properly for Arabic
+            phrase = phrase.trim();
+
+            // Display
+            const container = document.getElementById('phrase-container');
+            const textEl = document.getElementById('phrase-text');
+            
+            textEl.innerHTML = phrase;
+            textEl.classList.add('phrase');
+            
+            // Add to history
+            addToHistory(phrase, category);
+            
+            // Nice animation
+            container.style.transition = 'all 0.2s ease';
+            container.style.transform = 'scale(0.96)';
+            setTimeout(() => {
+                container.style.transform = 'scale(1)';
+            }, 80);
+        }
+
+        function generateWithCategory(category) {
+            generatePhrase(category);
+        }
+
+        function addToHistory(phrase, category) {
+            // Avoid duplicates
+            if (history.length > 0 && history[0].text === phrase) return;
+
+            history.unshift({
+                text: phrase,
+                category: category,
+                time: new Date().toISOString()
+            });
+
+            // Keep only last 12
+            if (history.length > 12) history.pop();
+
+            localStorage.setItem('arabicPhraseHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            container.innerHTML = '';
+
+            if (history.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'text-center py-6 text-[#5c4630] text-sm';
+                empty.innerHTML = 'لا توجد عبارات بعد. اضغط على زر التوليد!';
+                container.appendChild(empty);
+                return;
+            }
+
+            history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `history-item flex items-center justify-between gap-4 bg-[#1a1f1a] border border-[#3a4235] rounded-2xl px-5 py-3 cursor-pointer`;
+                
+                const catIcon = {
+                    poetry: 'fa-feather',
+                    wisdom: 'fa-lightbulb',
+                    love: 'fa-heart',
+                    funny: 'fa-grin-beam',
+                    random: 'fa-dice'
+                }[item.category] || 'fa-magic';
+
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="arabic text-[#d4c3a3] text-lg leading-tight line-clamp-2">${item.text}</div>
+                        <div class="flex items-center gap-x-2 mt-1">
+                            <i class="fa-solid ${catIcon} text-xs text-[#8b7a5c]"></i>
+                            <span class="text-[10px] text-[#5c4630]">${item.category}</span>
+                        </div>
+                    </div>
+                    <button onclick="event.stopImmediatePropagation(); useHistoryItem(${index});" 
+                            class="px-4 py-1.5 text-xs bg-[#2a3228] hover:bg-[#3a4235] rounded-xl transition-colors whitespace-nowrap">
+                        استخدم
+                    </button>
+                `;
+
+                div.onclick = () => {
+                    document.getElementById('phrase-text').innerHTML = item.text;
+                    // flash effect
+                    const container = document.getElementById('phrase-container');
+                    container.style.transform = 'scale(0.97)';
+                    setTimeout(() => container.style.transform = 'scale(1)', 120);
+                };
+
+                container.appendChild(div);
+            });
+        }
+
+        function useHistoryItem(index) {
+            const item = history[index];
+            document.getElementById('phrase-text').innerHTML = item.text;
+            
+            const container = document.getElementById('phrase-container');
+            container.style.transform = 'scale(0.96)';
+            setTimeout(() => {
+                container.style.transform = 'scale(1)';
+            }, 80);
+        }
+
+        function copyPhrase() {
+            const text = document.getElementById('phrase-text').innerText.trim();
+            if (!text || text.includes('اضغط على')) return;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = event.currentTarget ? event.currentTarget.innerHTML : '';
+                const btns = document.querySelectorAll('button');
+                
+                // Show toast
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm shadow-xl flex items-center gap-x-2';
+                toast.innerHTML = `<i class="fa-solid fa-check"></i> <span>تم النسخ إلى الحافظة</span>`;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.transition = 'all 0.3s ease';
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 200);
+                }, 1600);
+            });
+        }
+
+        function addToFavorites() {
+            const text = document.getElementById('phrase-text').innerText.trim();
+            if (!text || text.includes('اضغط على')) return;
+
+            let favorites = JSON.parse(localStorage.getItem('arabicFavorites') || '[]');
+            
+            if (!favorites.includes(text)) {
+                favorites.unshift(text);
+                if (favorites.length > 20) favorites.pop();
+                localStorage.setItem('arabicFavorites', JSON.stringify(favorites));
+                
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-amber-600 text-[#1a120b] px-6 py-3 rounded-2xl text-sm shadow-xl flex items-center gap-x-2 font-medium';
+                toast.innerHTML = `<i class="fa-solid fa-heart"></i> <span>تمت الإضافة إلى المفضلة</span>`;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.transition = 'all 0.3s ease';
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 200);
+                }, 1400);
+            }
+        }
+
+        function clearHistory() {
+            if (!confirm('مسح كل تاريخ العبارات؟')) return;
+            history = [];
+            localStorage.removeItem('arabicPhraseHistory');
+            renderHistory();
+        }
+
+        function init() {
+            initTailwind();
+            
+            // Generate first phrase on load
+            setTimeout(() => {
+                generatePhrase('random');
+            }, 420);
+
+            // Render history
+            renderHistory();
+
+            // Keyboard support
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    generatePhrase();
+                }
+                if (e.key.toLowerCase() === 'c' && e.metaKey) {
+                    e.preventDefault();
+                    copyPhrase();
+                }
+            });
+
+            // Easter egg: click on title to generate
+            const title = document.querySelector('h1');
+            if (title) {
+                title.style.cursor = 'pointer';
+                title.onclick = () => generatePhrase('poetry');
+            }
+
+            console.log('%c[Arabic Phrase Generator] جاهز — اضغط على الزر لتوليد عبارات جميلة', 'color:#8b7a5c');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
