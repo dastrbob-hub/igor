@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مولد العبارات العربية • Королевский Зал</title>
+    <title>Генератор арабских высказываний • Королевский Зал</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -66,8 +66,8 @@
                     <i class="fa-solid fa-feather-pointed text-white text-3xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-5xl font-bold tracking-tighter text-[#f1e7d2]">مولد العبارات</h1>
-                    <p class="text-[#8b7a5c] text-xl -mt-1">العربية • عشوائي وجميل</p>
+                    <h1 class="text-5xl font-bold tracking-tighter text-[#f1e7d2]">Генератор арабских высказываний</h1>
+                    <p class="text-[#8b7a5c] text-xl -mt-1">Случайные комбинации • Поэзия, мудрость, любовь и юмор</p>
                 </div>
             </div>
             
@@ -92,7 +92,7 @@
                  class="min-h-[180px] flex items-center justify-center bg-[#161b16] border border-[#3a4235] rounded-3xl p-10 mb-8">
                 <div id="phrase-text" 
                      class="phrase text-center leading-tight select-all cursor-pointer">
-                    اضغط على кнопку لتوليد عبارة جميلة...
+                    Нажмите кнопку, чтобы сгенерировать красивое высказывание...
                 </div>
             </div>
 
@@ -101,51 +101,51 @@
                 <button onclick="generatePhrase()"
                         class="generate-btn flex-1 sm:flex-none px-10 py-4 bg-gradient-to-r from-amber-600 to-yellow-700 hover:from-amber-500 hover:to-yellow-600 text-[#1a120b] font-bold text-xl rounded-2xl flex items-center justify-center gap-x-3 shadow-lg shadow-amber-900/40">
                     <i class="fa-solid fa-sync-alt"></i>
-                    <span>ولّد عبارة جديدة</span>
+                    <span>Сгенерировать высказывание</span>
                 </button>
 
                 <button onclick="copyPhrase()"
                         class="px-8 py-4 border border-[#5c4630] hover:bg-[#1f2520] rounded-2xl flex items-center justify-center gap-x-2 text-lg transition-colors">
                     <i class="fa-solid fa-copy"></i>
-                    <span>نسخ</span>
+                    <span>Скопировать</span>
                 </button>
 
                 <button onclick="addToFavorites()"
                         class="px-8 py-4 border border-[#5c4630] hover:bg-[#1f2520] rounded-2xl flex items-center justify-center gap-x-2 text-lg transition-colors">
                     <i class="fa-solid fa-heart"></i>
-                    <span>في المفضلة</span>
+                    <span>В избранное</span>
                 </button>
             </div>
         </div>
 
         <!-- Categories -->
         <div class="mt-8">
-            <div class="text-[#8b7a5c] text-sm mb-3 px-1">اختر نوع العبارة:</div>
+            <div class="text-[#8b7a5c] text-sm mb-3 px-1">Выберите тип высказывания:</div>
             <div class="flex flex-wrap gap-2">
                 <button onclick="generateWithCategory('poetry')" 
                         class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
                     <i class="fa-solid fa-feather text-amber-500"></i>
-                    <span>شعر</span>
+                    <span>Поэзия</span>
                 </button>
                 <button onclick="generateWithCategory('wisdom')" 
                         class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
                     <i class="fa-solid fa-lightbulb text-yellow-500"></i>
-                    <span>حكمة</span>
+                    <span>Мудрость</span>
                 </button>
                 <button onclick="generateWithCategory('love')" 
                         class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
                     <i class="fa-solid fa-heart text-red-400"></i>
-                    <span>حب</span>
+                    <span>Любовь</span>
                 </button>
                 <button onclick="generateWithCategory('funny')" 
                         class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
                     <i class="fa-solid fa-grin-beam text-emerald-400"></i>
-                    <span>فكاهة</span>
+                    <span>Юмор</span>
                 </button>
                 <button onclick="generateWithCategory('random')" 
                         class="px-5 py-2 bg-[#1f2520] hover:bg-[#2a3228] border border-[#3a4235] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
                     <i class="fa-solid fa-dice text-violet-400"></i>
-                    <span>عشوائي</span>
+                    <span>Случайно</span>
                 </button>
             </div>
         </div>
@@ -153,10 +153,10 @@
         <!-- History -->
         <div class="mt-10">
             <div class="flex items-center justify-between mb-4 px-1">
-                <div class="text-[#8b7a5c] text-sm">آخر العبارات المولدة</div>
+                <div class="text-[#8b7a5c] text-sm">Последние сгенерированные высказывания</div>
                 <button onclick="clearHistory()" class="text-xs text-[#5c4630] hover:text-red-400 transition-colors flex items-center gap-x-1">
                     <i class="fa-solid fa-trash"></i>
-                    <span>مسح</span>
+                    <span>Очистить</span>
                 </button>
             </div>
             
@@ -227,9 +227,6 @@
 
             let phrase = getRandomItem(templates);
 
-            // Make first letter capitalized properly for Arabic
-            phrase = phrase.trim();
-
             // Display
             const container = document.getElementById('phrase-container');
             const textEl = document.getElementById('phrase-text');
@@ -276,7 +273,7 @@
             if (history.length === 0) {
                 const empty = document.createElement('div');
                 empty.className = 'text-center py-6 text-[#5c4630] text-sm';
-                empty.innerHTML = 'لا توجد عبارات بعد. اضغط على زر التوليد!';
+                empty.innerHTML = 'Пока нет высказываний. Нажмите кнопку генерации!';
                 container.appendChild(empty);
                 return;
             }
@@ -293,17 +290,25 @@
                     random: 'fa-dice'
                 }[item.category] || 'fa-magic';
 
+                const catName = {
+                    poetry: 'Поэзия',
+                    wisdom: 'Мудрость',
+                    love: 'Любовь',
+                    funny: 'Юмор',
+                    random: 'Случайно'
+                }[item.category] || item.category;
+
                 div.innerHTML = `
                     <div class="flex-1 min-w-0">
                         <div class="arabic text-[#d4c3a3] text-lg leading-tight line-clamp-2">${item.text}</div>
                         <div class="flex items-center gap-x-2 mt-1">
                             <i class="fa-solid ${catIcon} text-xs text-[#8b7a5c]"></i>
-                            <span class="text-[10px] text-[#5c4630]">${item.category}</span>
+                            <span class="text-[10px] text-[#5c4630]">${catName}</span>
                         </div>
                     </div>
                     <button onclick="event.stopImmediatePropagation(); useHistoryItem(${index});" 
                             class="px-4 py-1.5 text-xs bg-[#2a3228] hover:bg-[#3a4235] rounded-xl transition-colors whitespace-nowrap">
-                        استخدم
+                        Использовать
                     </button>
                 `;
 
@@ -332,16 +337,12 @@
 
         function copyPhrase() {
             const text = document.getElementById('phrase-text').innerText.trim();
-            if (!text || text.includes('اضغط على')) return;
+            if (!text || text.includes('Нажмите кнопку')) return;
 
             navigator.clipboard.writeText(text).then(() => {
-                const originalText = event.currentTarget ? event.currentTarget.innerHTML : '';
-                const btns = document.querySelectorAll('button');
-                
-                // Show toast
                 const toast = document.createElement('div');
                 toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm shadow-xl flex items-center gap-x-2';
-                toast.innerHTML = `<i class="fa-solid fa-check"></i> <span>تم النسخ إلى الحافظة</span>`;
+                toast.innerHTML = `<i class="fa-solid fa-check"></i> <span>Скопировано в буфер обмена</span>`;
                 document.body.appendChild(toast);
 
                 setTimeout(() => {
@@ -354,7 +355,7 @@
 
         function addToFavorites() {
             const text = document.getElementById('phrase-text').innerText.trim();
-            if (!text || text.includes('اضغط على')) return;
+            if (!text || text.includes('Нажмите кнопку')) return;
 
             let favorites = JSON.parse(localStorage.getItem('arabicFavorites') || '[]');
             
@@ -365,7 +366,7 @@
                 
                 const toast = document.createElement('div');
                 toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-amber-600 text-[#1a120b] px-6 py-3 rounded-2xl text-sm shadow-xl flex items-center gap-x-2 font-medium';
-                toast.innerHTML = `<i class="fa-solid fa-heart"></i> <span>تمت الإضافة إلى المفضلة</span>`;
+                toast.innerHTML = `<i class="fa-solid fa-heart"></i> <span>Добавлено в избранное</span>`;
                 document.body.appendChild(toast);
 
                 setTimeout(() => {
@@ -377,7 +378,7 @@
         }
 
         function clearHistory() {
-            if (!confirm('مسح كل تاريخ العبارات؟')) return;
+            if (!confirm('Очистить всю историю высказываний?')) return;
             history = [];
             localStorage.removeItem('arabicPhraseHistory');
             renderHistory();
@@ -413,7 +414,7 @@
                 title.onclick = () => generatePhrase('poetry');
             }
 
-            console.log('%c[Arabic Phrase Generator] جاهز — اضغط على الزر لتوليد عبارات جميلة', 'color:#8b7a5c');
+            console.log('%c[Arabic Phrase Generator] Готов — интерфейс на русском', 'color:#8b7a5c');
         }
 
         window.onload = init;
