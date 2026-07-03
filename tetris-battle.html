@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тетрис Битва • WebRTC P2P</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+        canvas { image-rendering: pixelated; border: 4px solid #334155; border-radius: 16px; background: #0a0f1a; }
+        .tetris-grid { background-image: linear-gradient(#1e2937 1px, transparent 1px), linear-gradient(90deg, #1e2937 1px, transparent 1px); background-size: 30px 30px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 p-6">
+    <div class="max-w-[1200px] mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-x-4">
+                <div class="w-14 h-14 bg-violet-600 rounded-3xl flex items-center justify-center shadow-lg shadow-violet-600/30">
+                    <span class="text-white text-4xl">🧱</span>
+                </div>
+                <div>
+                    <h1 class="title-font text-5xl font-bold tracking-tighter">Тетрис Битва</h1>
+                    <p class="text-slate-400 text-lg -mt-1">P2P • Классика + Сражение</p>
+                </div>
+            </div>
+            <div id="connStatus" class="px-5 py-2.5 bg-slate-900 border border-violet-700 rounded-3xl text-sm flex items-center gap-x-3">
+                <div class="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                <span class="font-medium">Ожидание подключения...</span>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="flex flex-col lg:flex-row gap-8 justify-center items-start">
+            
+            <!-- Player 1 (You) -->
+            <div class="flex-1 max-w-[340px]">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div>
+                        <div class="text-emerald-400 font-bold text-xl">ТЫ</div>
+                        <div id="p1-name" class="text-xs text-emerald-400/70">Игрок 1</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-emerald-400 text-xs font-mono tracking-[2px]">СЧЁТ</div>
+                        <div id="p1-score" class="text-6xl font-bold tabular-nums text-emerald-400">0</div>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <canvas id="canvas1" width="300" height="600" class="rounded-3xl shadow-2xl"></canvas>
+                    <!-- Overlay for game over -->
+                    <div id="overlay1" class="hidden absolute inset-0 bg-black/70 rounded-3xl flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="text-red-400 text-3xl font-bold">ПОРАЖЕНИЕ</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <!-- Next -->
+                    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+                        <div class="text-emerald-400 text-xs font-bold mb-2 px-1">NEXT</div>
+                        <canvas id="next1" width="120" height="120" class="bg-[#0a0f1a] rounded-xl"></canvas>
+                    </div>
+                    <!-- Hold -->
+                    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+                        <div class="text-emerald-400 text-xs font-bold mb-2 px-1">HOLD (C)</div>
+                        <canvas id="hold1" width="120" height="120" class="bg-[#0a0f1a] rounded-xl"></canvas>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex gap-4 text-sm">
+                    <div class="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-2 flex justify-between items-center">
+                        <span class="text-slate-400">Линии</span>
+                        <span id="p1-lines" class="font-mono text-xl font-bold">0</span>
+                    </div>
+                    <div class="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-2 flex justify-between items-center">
+                        <span class="text-slate-400">Уровень</span>
+                        <span id="p1-level" class="font-mono text-xl font-bold">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VS -->
+            <div class="hidden lg:flex flex-col items-center justify-center pt-12">
+                <div class="text-6xl font-black text-slate-700">VS</div>
+                <div class="mt-2 text-[10px] tracking-[3px] text-slate-500 font-bold">BATTLE</div>
+            </div>
+
+            <!-- Player 2 (Opponent) -->
+            <div class="flex-1 max-w-[340px]">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div>
+                        <div class="text-blue-400 font-bold text-xl">ПРОТИВНИК</div>
+                        <div id="p2-name" class="text-xs text-blue-400/70">Игрок 2</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-blue-400 text-xs font-mono tracking-[2px]">СЧЁТ</div>
+                        <div id="p2-score" class="text-6xl font-bold tabular-nums text-blue-400">0</div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <canvas id="canvas2" width="300" height="600" class="rounded-3xl shadow-2xl opacity-90"></canvas>
+                    <div id="overlay2" class="hidden absolute inset-0 bg-black/70 rounded-3xl flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="text-emerald-400 text-3xl font-bold">ПОБЕДА!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+                        <div class="text-blue-400 text-xs font-bold mb-2 px-1">NEXT</div>
+                        <canvas id="next2" width="120" height="120" class="bg-[#0a0f1a] rounded-xl"></canvas>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+                        <div class="text-blue-400 text-xs font-bold mb-2 px-1">HOLD</div>
+                        <canvas id="hold2" width="120" height="120" class="bg-[#0a0f1a] rounded-xl"></canvas>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex gap-4 text-sm">
+                    <div class="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-2 flex justify-between items-center">
+                        <span class="text-slate-400">Линии</span>
+                        <span id="p2-lines" class="font-mono text-xl font-bold">0</span>
+                    </div>
+                    <div class="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-2 flex justify-between items-center">
+                        <span class="text-slate-400">Уровень</span>
+                        <span id="p2-level" class="font-mono text-xl font-bold">1</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls info -->
+        <div class="mt-6 text-center">
+            <div class="inline-flex items-center gap-x-2 text-xs bg-slate-900 border border-slate-700 rounded-2xl px-5 py-2 text-slate-400">
+                <span class="font-mono">← → ↓</span> 
+                <span>движение</span>
+                <span class="mx-2 text-slate-600">•</span>
+                <span class="font-mono">↑ / X</span> 
+                <span>поворот</span>
+                <span class="mx-2 text-slate-600">•</span>
+                <span class="font-mono">SPACE</span> 
+                <span>жёсткое падение</span>
+                <span class="mx-2 text-slate-600">•</span>
+                <span class="font-mono">C</span> 
+                <span>hold</span>
+            </div>
+        </div>
+
+        <!-- Connection Panel -->
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 mt-8 max-w-[980px] mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <!-- Create Offer -->
+                <div>
+                    <button onclick="createOffer()" 
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition-all py-3 rounded-2xl font-semibold flex items-center justify-center gap-x-2">
+                        <span>Создать игру</span>
+                    </button>
+                    <textarea id="offerOut" readonly placeholder="Offer появится здесь" 
+                              class="mt-3 w-full h-20 bg-slate-950 border border-slate-700 rounded-2xl p-3 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="copyToClipboard('offerOut')" 
+                            class="mt-1.5 w-full text-xs py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl transition-colors">Скопировать Offer</button>
+                </div>
+
+                <!-- Accept Offer -->
+                <div>
+                    <textarea id="offerIn" placeholder="Вставь Offer от первого игрока" 
+                              class="w-full h-20 bg-slate-950 border border-slate-700 rounded-2xl p-3 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="acceptOffer()" 
+                            class="mt-3 w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-2xl font-semibold transition-all">Принять игру (создать Answer)</button>
+                    <textarea id="answerOut" readonly placeholder="Answer появится здесь" 
+                              class="mt-3 w-full h-20 bg-slate-950 border border-slate-700 rounded-2xl p-3 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="copyToClipboard('answerOut')" 
+                            class="mt-1.5 w-full text-xs py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl transition-colors">Скопировать Answer</button>
+                </div>
+
+                <!-- Connect -->
+                <div>
+                    <textarea id="answerIn" placeholder="Вставь Answer от второго игрока" 
+                              class="w-full h-20 bg-slate-950 border border-slate-700 rounded-2xl p-3 text-[10px] font-mono resize-none"></textarea>
+                    <button onclick="connectWithAnswer()" 
+                            class="mt-3 w-full bg-sky-600 hover:bg-sky-500 py-3 rounded-2xl font-semibold transition-all">Подключиться</button>
+                    
+                    <div class="mt-4 text-[10px] text-slate-500 px-1 leading-tight">
+                        После подключения панель можно скрыть. Игра начнётся автоматически.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== TAILWIND ====================
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent', '#7c3aed');
+        }
+
+        // ==================== TETRIS ENGINE ====================
+        const COLS = 10;
+        const ROWS = 20;
+        const COLORS = {
+            'I': '#22d3ee', 'O': '#eab308', 'T': '#a855f7',
+            'S': '#22c55e', 'Z': '#ef4444', 'J': '#3b82f6', 'L': '#f97316'
+        };
+
+        const SHAPES = {
+            'I': [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+            'O': [[1,1],[1,1]],
+            'T': [[0,1,0],[1,1,1],[0,0,0]],
+            'S': [[0,1,1],[1,1,0],[0,0,0]],
+            'Z': [[1,1,0],[0,1,1],[0,0,0]],
+            'J': [[1,0,0],[1,1,1],[0,0,0]],
+            'L': [[0,0,1],[1,1,1],[0,0,0]]
+        };
+
+        function createPiece(type) {
+            return { type, matrix: JSON.parse(JSON.stringify(SHAPES[type])) };
+        }
+
+        function rotate(matrix) {
+            const N = matrix.length;
+            const result = Array.from({length: N}, () => Array(N).fill(0));
+            for (let y = 0; y < N; y++) {
+                for (let x = 0; x < N; x++) {
+                    result[x][N - 1 - y] = matrix[y][x];
+                }
+            }
+            return result;
+        }
+
+        class Tetris {
+            constructor(canvasId, nextId, holdId, isPlayer1 = true) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d', { alpha: false });
+                this.nextCanvas = document.getElementById(nextId);
+                this.nextCtx = this.nextCanvas.getContext('2d');
+                this.holdCanvas = document.getElementById(holdId);
+                this.holdCtx = this.holdCanvas.getContext('2d');
+
+                this.board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+                this.current = null;
+                this.currentX = 3;
+                this.currentY = 0;
+                this.holdPiece = null;
+                this.holdUsed = false;
+                this.nextQueue = [];
+                this.score = 0;
+                this.lines = 0;
+                this.level = 1;
+                this.gameOver = false;
+                this.isPlayer1 = isPlayer1;
+
+                this.bag = [];
+                this.fillBag();
+
+                this.ghostY = 0;
+
+                this.initNextQueue();
+                this.spawnPiece();
+            }
+
+            fillBag() {
+                const types = ['I','O','T','S','Z','J','L'];
+                this.bag = types.sort(() => Math.random() - 0.5);
+            }
+
+            initNextQueue() {
+                while (this.nextQueue.length < 5) {
+                    if (this.bag.length === 0) this.fillBag();
+                    this.nextQueue.push(this.bag.shift());
+                }
+            }
+
+            spawnPiece() {
+                if (this.nextQueue.length === 0) this.initNextQueue();
+                const type = this.nextQueue.shift();
+                this.current = createPiece(type);
+                this.currentX = Math.floor((COLS - this.current.matrix[0].length) / 2);
+                this.currentY = 0;
+                this.holdUsed = false;
+
+                if (this.collides(this.current.matrix, this.currentX, this.currentY)) {
+                    this.gameOver = true;
+                }
+
+                if (this.bag.length === 0) this.fillBag();
+                this.nextQueue.push(this.bag.shift());
+
+                this.updateGhost();
+                this.draw();
+                this.drawNext();
+            }
+
+            collides(matrix, x, y) {
+                for (let row = 0; row < matrix.length; row++) {
+                    for (let col = 0; col < matrix[row].length; col++) {
+                        if (matrix[row][col]) {
+                            const newX = x + col;
+                            const newY = y + row;
+                            if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
+                            if (newY >= 0 && this.board[newY][newX]) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            updateGhost() {
+                if (!this.current) return;
+                let y = this.currentY;
+                while (!this.collides(this.current.matrix, this.currentX, y + 1)) {
+                    y++;
+                }
+                this.ghostY = y;
+            }
+
+            move(dx, dy) {
+                if (!this.current || this.gameOver) return false;
+                const newX = this.currentX + dx;
+                const newY = this.currentY + dy;
+                if (!this.collides(this.current.matrix, newX, newY)) {
+                    this.currentX = newX;
+                    this.currentY = newY;
+                    this.updateGhost();
+                    this.draw();
+                    return true;
+                }
+                return false;
+            }
+
+            rotate() {
+                if (!this.current || this.gameOver) return;
+                const rotated = rotate(this.current.matrix);
+                let offset = 0;
+                // Simple wall kick
+                if (!this.collides(rotated, this.currentX, this.currentY)) {
+                    this.current.matrix = rotated;
+                } else if (!this.collides(rotated, this.currentX - 1, this.currentY)) {
+                    this.currentX--;
+                    this.current.matrix = rotated;
+                } else if (!this.collides(rotated, this.currentX + 1, this.currentY)) {
+                    this.currentX++;
+                    this.current.matrix = rotated;
+                } else {
+                    return;
+                }
+                this.updateGhost();
+                this.draw();
+            }
+
+            hardDrop() {
+                if (!this.current || this.gameOver) return;
+                while (this.move(0, 1)) {}
+                this.lockPiece();
+            }
+
+            lockPiece() {
+                if (!this.current) return;
+
+                for (let row = 0; row < this.current.matrix.length; row++) {
+                    for (let col = 0; col < this.current.matrix[row].length; col++) {
+                        if (this.current.matrix[row][col]) {
+                            const y = this.currentY + row;
+                            const x = this.currentX + col;
+                            if (y >= 0) this.board[y][x] = this.current.type;
+                        }
+                    }
+                }
+
+                const linesCleared = this.clearLines();
+                if (linesCleared > 0) {
+                    this.lines += linesCleared;
+                    this.score += [0, 100, 300, 500, 800][linesCleared] * this.level;
+                    this.level = Math.floor(this.lines / 10) + 1;
+
+                    // Send garbage in battle mode
+                    if (window.onLinesCleared && linesCleared >= 2) {
+                        window.onLinesCleared(linesCleared);
+                    }
+                }
+
+                this.spawnPiece();
+                this.draw();
+                this.updateUI();
+            }
+
+            clearLines() {
+                let cleared = 0;
+                for (let y = ROWS - 1; y >= 0; y--) {
+                    if (this.board[y].every(cell => cell !== 0)) {
+                        this.board.splice(y, 1);
+                        this.board.unshift(Array(COLS).fill(0));
+                        cleared++;
+                        y++;
+                    }
+                }
+                return cleared;
+            }
+
+            hold() {
+                if (!this.current || this.holdUsed || this.gameOver) return;
+
+                if (!this.holdPiece) {
+                    this.holdPiece = this.current;
+                    this.spawnPiece();
+                } else {
+                    const temp = this.current;
+                    this.current = this.holdPiece;
+                    this.holdPiece = temp;
+                    this.currentX = Math.floor((COLS - this.current.matrix[0].length) / 2);
+                    this.currentY = 0;
+                }
+                this.holdUsed = true;
+                this.updateGhost();
+                this.draw();
+                this.drawHold();
+            }
+
+            addGarbage(lines, hole = null) {
+                if (lines <= 0) return;
+
+                // Push existing rows up
+                for (let i = 0; i < lines; i++) {
+                    this.board.shift();
+                    const newRow = Array(COLS).fill('G');
+                    if (hole === null) hole = Math.floor(Math.random() * COLS);
+                    newRow[hole] = 0;
+                    this.board.push(newRow);
+                }
+
+                // If current piece collides after garbage, try to move it up
+                if (this.current && this.collides(this.current.matrix, this.currentX, this.currentY)) {
+                    this.currentY--;
+                    if (this.collides(this.current.matrix, this.currentX, this.currentY)) {
+                        this.gameOver = true;
+                    }
+                }
+
+                this.updateGhost();
+                this.draw();
+            }
+
+            draw() {
+                const ctx = this.ctx;
+                const W = this.canvas.width;
+                const H = this.canvas.height;
+                const cellW = W / COLS;
+                const cellH = H / ROWS;
+
+                ctx.fillStyle = '#0a0f1a';
+                ctx.fillRect(0, 0, W, H);
+
+                // Grid
+                ctx.strokeStyle = '#1e2937';
+                ctx.lineWidth = 1;
+                for (let x = 0; x <= COLS; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * cellW, 0);
+                    ctx.lineTo(x * cellW, H);
+                    ctx.stroke();
+                }
+                for (let y = 0; y <= ROWS; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * cellH);
+                    ctx.lineTo(W, y * cellH);
+                    ctx.stroke();
+                }
+
+                // Board
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        const val = this.board[y][x];
+                        if (val) {
+                            ctx.fillStyle = val === 'G' ? '#475569' : (COLORS[val] || '#64748b');
+                            ctx.fillRect(x * cellW + 1, y * cellH + 1, cellW - 2, cellH - 2);
+                            if (val !== 'G') {
+                                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                                ctx.fillRect(x * cellW + 2, y * cellH + 2, cellW - 4, 4);
+                            }
+                        }
+                    }
+                }
+
+                // Ghost
+                if (this.current && this.ghostY > this.currentY) {
+                    ctx.globalAlpha = 0.25;
+                    ctx.fillStyle = COLORS[this.current.type] || '#64748b';
+                    for (let row = 0; row < this.current.matrix.length; row++) {
+                        for (let col = 0; col < this.current.matrix[row].length; col++) {
+                            if (this.current.matrix[row][col]) {
+                                ctx.fillRect((this.currentX + col) * cellW + 1, (this.ghostY + row) * cellH + 1, cellW - 2, cellH - 2);
+                            }
+                        }
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                // Current piece
+                if (this.current) {
+                    ctx.fillStyle = COLORS[this.current.type] || '#64748b';
+                    for (let row = 0; row < this.current.matrix.length; row++) {
+                        for (let col = 0; col < this.current.matrix[row].length; col++) {
+                            if (this.current.matrix[row][col]) {
+                                const px = (this.currentX + col) * cellW;
+                                const py = (this.currentY + row) * cellH;
+                                ctx.fillRect(px + 1, py + 1, cellW - 2, cellH - 2);
+                                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                                ctx.fillRect(px + 2, py + 2, cellW - 4, 3);
+                                ctx.fillStyle = COLORS[this.current.type] || '#64748b';
+                            }
+                        }
+                    }
+                }
+
+                if (this.gameOver) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.fillStyle = '#f87171';
+                    ctx.font = 'bold 28px Inter, system-ui';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('GAME OVER', W/2, H/2);
+                }
+            }
+
+            drawNext() {
+                const ctx = this.nextCtx;
+                ctx.fillStyle = '#0a0f1a';
+                ctx.fillRect(0, 0, 120, 120);
+
+                if (this.nextQueue.length > 0) {
+                    const type = this.nextQueue[0];
+                    const matrix = SHAPES[type];
+                    const size = 22;
+                    const offsetX = (120 - matrix[0].length * size) / 2;
+                    const offsetY = (120 - matrix.length * size) / 2;
+
+                    ctx.fillStyle = COLORS[type] || '#64748b';
+                    for (let r = 0; r < matrix.length; r++) {
+                        for (let c = 0; c < matrix[r].length; c++) {
+                            if (matrix[r][c]) {
+                                ctx.fillRect(offsetX + c * size + 1, offsetY + r * size + 1, size - 2, size - 2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            drawHold() {
+                const ctx = this.holdCtx;
+                ctx.fillStyle = '#0a0f1a';
+                ctx.fillRect(0, 0, 120, 120);
+
+                if (this.holdPiece) {
+                    const matrix = this.holdPiece.matrix;
+                    const size = 22;
+                    const offsetX = (120 - matrix[0].length * size) / 2;
+                    const offsetY = (120 - matrix.length * size) / 2;
+
+                    ctx.fillStyle = COLORS[this.holdPiece.type] || '#64748b';
+                    for (let r = 0; r < matrix.length; r++) {
+                        for (let c = 0; c < matrix[r].length; c++) {
+                            if (matrix[r][c]) {
+                                ctx.fillRect(offsetX + c * size + 1, offsetY + r * size + 1, size - 2, size - 2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            updateUI() {
+                const prefix = this.isPlayer1 ? 'p1' : 'p2';
+                document.getElementById(prefix + '-score').textContent = this.score;
+                document.getElementById(prefix + '-lines').textContent = this.lines;
+                document.getElementById(prefix + '-level').textContent = this.level;
+            }
+
+            getDropInterval() {
+                return Math.max(100, 800 - (this.level - 1) * 60);
+            }
+        }
+
+        // ==================== GAME STATE ====================
+        let myGame = null;
+        let oppGame = null;
+        let isHost = false;
+        let gameRunning = false;
+        let pc = null;
+        let dataChannel = null;
+        let iceCandidates = [];
+
+        let keys = {};
+        let lastDrop = 0;
+
+        function updateConnStatus(text, connected = false) {
+            const el = document.getElementById('connStatus');
+            el.innerHTML = `
+                <div class="w-3 h-3 ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'} rounded-full"></div>
+                <span class="font-medium">${text}</span>
+            `;
+        }
+
+        function copyToClipboard(id) {
+            const ta = document.getElementById(id);
+            if (ta && ta.value) {
+                navigator.clipboard.writeText(ta.value).then(() => {
+                    const original = ta.placeholder;
+                    ta.placeholder = 'Скопировано!';
+                    setTimeout(() => ta.placeholder = original, 1200);
+                });
+            }
+        }
+
+        // ==================== WEBRTC ====================
+        function setupDataChannel(dc) {
+            dc.onopen = () => {
+                updateConnStatus('Соединено! Игра началась', true);
+                startBattle();
+            };
+
+            dc.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'garbage' && oppGame) {
+                        oppGame.addGarbage(msg.lines, msg.hole);
+                    }
+                    if (msg.type === 'gameover') {
+                        document.getElementById('overlay2').classList.remove('hidden');
+                        document.getElementById('overlay1').classList.add('hidden');
+                    }
+                } catch(e) {}
+            };
+        }
+
+        async function createOffer() {
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = true;
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            const dc = pc.createDataChannel('tetris-battle');
+            setupDataChannel(dc);
+            dataChannel = dc;
+
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            await waitForIce(pc);
+
+            const payload = { type: 'offer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('offerOut').value = JSON.stringify(payload, null, 2);
+            updateConnStatus('Offer создан — отправь второму игроку');
+        }
+
+        async function acceptOffer() {
+            const txt = document.getElementById('offerIn').value.trim();
+            if (!txt) return;
+
+            const signal = JSON.parse(txt);
+            if (pc) pc.close();
+            iceCandidates = [];
+            isHost = false;
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.ondatachannel = e => { dataChannel = e.channel; setupDataChannel(dataChannel); };
+            pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate.toJSON()); };
+
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: signal.sdp }));
+            for (const c of signal.iceCandidates || []) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+            }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIce(pc);
+
+            const payload = { type: 'answer', sdp: pc.localDescription.sdp, iceCandidates };
+            document.getElementById('answerOut').value = JSON.stringify(payload, null, 2);
+            updateConnStatus('Answer создан — отправь первому игроку');
+        }
+
+        async function connectWithAnswer() {
+            const txt = document.getElementById('answerIn').value.trim();
+            if (!txt || !pc) return;
+
+            const signal = JSON.parse(txt);
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signal.sdp }));
+            for (const c of signal.iceCandidates || []) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e){}
+            }
+            updateConnStatus('Соединение устанавливается...');
+        }
+
+        function waitForIce(peerConnection) {
+            return new Promise(resolve => {
+                if (peerConnection.iceGatheringState === 'complete') return resolve();
+                const check = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', check);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', check);
+                setTimeout(() => resolve(), 4000);
+            });
+        }
+
+        // ==================== BATTLE LOGIC ====================
+        function startBattle() {
+            if (gameRunning) return;
+            gameRunning = true;
+
+            myGame = new Tetris('canvas1', 'next1', 'hold1', true);
+            oppGame = new Tetris('canvas2', 'next2', 'hold2', false);
+
+            // Expose callback for sending garbage
+            window.onLinesCleared = (lines) => {
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    const garbageLines = Math.max(0, lines - 1);
+                    if (garbageLines > 0) {
+                        const hole = Math.floor(Math.random() * COLS);
+                        dataChannel.send(JSON.stringify({ type: 'garbage', lines: garbageLines, hole }));
+                    }
+                }
+            };
+
+            // Keyboard
+            document.addEventListener('keydown', handleKeyDown);
+
+            // Game loop
+            setInterval(gameTick, 50);
+
+            updateConnStatus('Игра идёт! Удачи в битве', true);
+        }
+
+        function handleKeyDown(e) {
+            if (!myGame || myGame.gameOver || !gameRunning) return;
+
+            const key = e.key.toLowerCase();
+
+            if (key === 'arrowleft' || key === 'a') myGame.move(-1, 0);
+            if (key === 'arrowright' || key === 'd') myGame.move(1, 0);
+            if (key === 'arrowdown' || key === 's') myGame.move(0, 1);
+            if (key === 'arrowup' || key === 'x' || key === 'w') myGame.rotate();
+            if (key === ' ') { e.preventDefault(); myGame.hardDrop(); }
+            if (key === 'c' || key === 'h') myGame.hold();
+
+            if (key === 'r' && myGame.gameOver) {
+                // restart local for testing
+                location.reload();
+            }
+        }
+
+        let lastTick = Date.now();
+
+        function gameTick() {
+            if (!myGame || !oppGame || !gameRunning) return;
+
+            const now = Date.now();
+            if (now - lastTick > myGame.getDropInterval()) {
+                if (!myGame.move(0, 1)) {
+                    myGame.lockPiece();
+                }
+                lastTick = now;
+            }
+
+            myGame.draw();
+            oppGame.draw();
+
+            if (myGame.gameOver) {
+                gameRunning = false;
+                document.getElementById('overlay1').classList.remove('hidden');
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    dataChannel.send(JSON.stringify({ type: 'gameover' }));
+                }
+            }
+        }
+
+        function init() {
+            initTailwind();
+
+            // Initial empty boards
+            const c1 = document.getElementById('canvas1');
+            const ctx1 = c1.getContext('2d');
+            ctx1.fillStyle = '#0a0f1a';
+            ctx1.fillRect(0, 0, c1.width, c1.height);
+
+            const c2 = document.getElementById('canvas2');
+            const ctx2 = c2.getContext('2d');
+            ctx2.fillStyle = '#0a0f1a';
+            ctx2.fillRect(0, 0, c2.width, c2.height);
+
+            updateConnStatus('Создай или прими игру для старта');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
