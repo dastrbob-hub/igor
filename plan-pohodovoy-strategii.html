@@ -3,168 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>План Пошаговой Стратегии • Королевский Зал</title>
+    <title>План разработки • Век Империй</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap');
-        :root { --gold: #c9a227; }
-        body { font-family: 'Inter', system_ui, sans-serif; background: #1a120b; color: #e8d5b7; }
-        .title-font { font-family: 'Playfair Display', Georgia, serif; }
-        .section-title { font-family: 'Cinzel', serif; }
-        .game-card { background: #2c2118; border: 1px solid #5c4630; transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1); }
-        .game-card:hover { transform: translateY(-4px); border-color: #c9a227; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.2); }
-        .nav-active { color: #c9a227; border-bottom: 2px solid #c9a227; }
-        pre { background: #1a120b; border: 1px solid #5c4630; }
-        .mermaid { background: #2c2118; padding: 1rem; border-radius: 12px; border: 1px solid #5c4630; }
-        .plan-section { scroll-margin-top: 80px; }
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f0f; color: #e5e5e5; line-height: 1.7; }
+        .prose { max-width: 860px; margin: 0 auto; }
+        h1, h2, h3 { font-weight: 600; color: #f1e7d2; }
+        .section { margin-bottom: 3rem; }
+        pre { background: #1a1a1a; border: 1px solid #333; }
+        .mermaid { background: #1a1a1a; padding: 1.5rem; border-radius: 8px; border: 1px solid #333; }
+        .nav { border-bottom: 1px solid #333; }
+        ul { padding-left: 1.25rem; }
+        li { margin-bottom: 0.35rem; }
     </style>
 </head>
-<body>
-    <!-- Navbar -->
-    <nav class="border-b border-[#5c4630] bg-[#1a120b]/95 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-            <div class="flex items-center gap-x-4">
-                <a href="index.html" class="flex items-center gap-x-3 group">
-                    <div class="w-9 h-9 bg-[#c9a227] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-chess-king text-[#1a120b] text-2xl"></i>
-                    </div>
-                    <div>
-                        <span class="title-font text-3xl tracking-wider font-bold text-[#c9a227]">Королевский Зал</span>
-                    </div>
+<body class="bg-[#0f0f0f] text-[#e5e5e5]">
+    <div class="max-w-[900px] mx-auto px-6 pt-8 pb-16">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <a href="index.html" class="text-sm text-[#c9a227] hover:underline flex items-center gap-x-2">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Назад в репозиторий</span>
                 </a>
+                <h1 class="text-4xl font-semibold tracking-tight mt-2">План разработки пошаговой стратегии</h1>
+                <p class="text-2xl text-[#c9a227] mt-1">«Век Империй» — Game Design Document</p>
             </div>
-            <div class="flex items-center gap-x-6 text-sm">
-                <a href="index.html" class="flex items-center gap-x-2 hover:text-[#c9a227] transition-colors">
-                    <i class="fa-solid fa-arrow-left mr-1"></i>
-                    <span>Назад в Зал</span>
-                </a>
-                <a href="https://github.com/dastrbob-hub/igor" class="flex items-center gap-x-2 hover:text-[#c9a227] transition-colors">
-                    <i class="fa-brands fa-github"></i>
-                    <span>GitHub</span>
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto px-6 pt-12 pb-20">
-        <!-- Hero -->
-        <div class="text-center mb-16">
-            <div class="inline-flex items-center gap-x-2 px-5 py-1.5 bg-[#2c2118] border border-[#5c4630] rounded-full text-sm mb-6">
-                <i class="fa-solid fa-scroll text-[#c9a227]"></i>
-                <span class="tracking-[3px] text-xs font-medium">DESIGN DOCUMENT</span>
-            </div>
-            <h1 class="title-font text-6xl md:text-7xl tracking-tighter font-bold text-[#c9a227] mb-4">План Пошаговой Стратегии</h1>
-            <p class="max-w-2xl mx-auto text-[#d4c3a3] text-xl">Подробная архитектура, механики и структура классов для новой глубокой пошаговой стратегии</p>
-            <div class="mt-6 flex justify-center gap-x-4">
-                <a href="#concept" class="px-6 py-2.5 bg-[#c9a227] hover:bg-[#d4af37] text-[#1a120b] font-semibold rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
-                    <i class="fa-solid fa-book-open"></i>
-                    <span>Начать чтение</span>
-                </a>
-                <a href="#classes" class="px-6 py-2.5 border border-[#5c4630] hover:bg-[#2c2118] rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
-                    <i class="fa-solid fa-sitemap"></i>
-                    <span>Классы JS</span>
-                </a>
+            <div class="text-right text-sm text-[#888]">
+                <div>для согласования</div>
+                <div class="mt-1">Июль 2026</div>
             </div>
         </div>
 
-        <!-- Concept -->
-        <div id="concept" class="plan-section mb-16">
-            <h2 class="section-title text-4xl text-[#c9a227] tracking-wider mb-6 flex items-center gap-x-3">
-                <i class="fa-solid fa-lightbulb"></i> <span>1. Концепция и Обзор</span>
-            </h2>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-8">
-                    <h3 class="text-2xl font-semibold text-[#c9a227] mb-4">Название игры</h3>
-                    <p class="text-4xl font-bold tracking-tight">«Век Империй»</p>
-                    <p class="mt-3 text-[#d4c3a3]">Пошаговая стратегия в фэнтезийном сеттинге. Игрок развивает своё королевство, управляет армиями, экономикой и дипломатией на большой карте.</p>
-                </div>
-                <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-8 space-y-4">
-                    <div>
-                        <span class="text-xs tracking-widest text-[#8b5e3c]">ЖАНР</span>
-                        <p class="text-xl font-semibold">Пошаговая 4X / Гранд-стратегия (лёгкая)</p>
-                    </div>
-                    <div>
-                        <span class="text-xs tracking-widest text-[#8b5e3c]">ПЛАТФОРМА</span>
-                        <p class="text-xl font-semibold">Браузер (HTML + JS + Canvas / DOM)</p>
-                    </div>
-                    <div>
-                        <span class="text-xs tracking-widest text-[#8b5e3c]">РЕЖИМЫ</span>
-                        <p class="text-xl font-semibold">Одиночная vs AI • Локальный hot-seat • WebRTC мультиплеер (позже)</p>
-                    </div>
-                </div>
+        <div class="prose">
+            <!-- 1. Цели и концепция -->
+            <div class="section">
+                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">1. Цели и концепция</h2>
+                <p>Создать браузерную пошаговую стратегию в фэнтезийном сеттинге с акцентом на глубину механик, удобную архитектуру кода и возможность дальнейшего расширения (включая мультиплеер).</p>
+                <ul class="mt-4">
+                    <li><strong>Жанр:</strong> Пошаговая стратегия / 4X-лайт</li>
+                    <li><strong>Платформа:</strong> Браузер (чистый HTML + JS + Canvas/DOM)</li>
+                    <li><strong>Режимы:</strong> Одиночная игра против AI, hot-seat, WebRTC мультиплеер (в перспективе)</li>
+                </ul>
             </div>
-        </div>
 
-        <!-- Core Mechanics -->
-        <div id="mechanics" class="plan-section mb-16">
-            <h2 class="section-title text-4xl text-[#c9a227] tracking-wider mb-6 flex items-center gap-x-3">
-                <i class="fa-solid fa-chess"></i> <span>2. Основные Механики</span>
-            </h2>
+            <!-- 2. Основные механики -->
+            <div class="section">
+                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">2. Основные механики</h2>
+                
+                <h3 class="text-xl mt-6 mb-2">Карта и перемещение</h3>
+                <ul>
+                    <li>Квадратная или гексагональная карта (рекомендуется hex)</li>
+                    <li>Типы тайлов: равнина, лес, гора, река, вода, болото</li>
+                    <li>Очки действия (AP) для перемещения в зависимости от типа юнита и местности</li>
+                    <li>Туман войны</li>
+                </ul>
 
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-7">
-                    <div class="text-[#c9a227] text-3xl mb-4"><i class="fa-solid fa-map"></i></div>
-                    <h4 class="font-semibold text-xl mb-2">Карта и Движение</h4>
-                    <ul class="text-sm space-y-1.5 text-[#d4c3a3]">
-                        <li>• Квадратная или гекс-карта (рекомендую hex для тактики)</li>
-                        <li>• Тайлы: равнина, лес, гора, река, вода</li>
-                        <li>• Затраты движения (AP) в зависимости от типа юнита и местности</li>
-                        <li>• Видимость (fog of war)</li>
-                    </ul>
-                </div>
-                <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-7">
-                    <div class="text-[#c9a227] text-3xl mb-4"><i class="fa-solid fa-coins"></i></div>
-                    <h4 class="font-semibold text-xl mb-2">Экономика и Ресурсы</h4>
-                    <ul class="text-sm space-y-1.5 text-[#d4c3a3]">
-                        <li>• Золото, Еда, Дерево, Камень, Железо (или мана)</li>
-                        <li>• Города производят ресурсы + очки науки/культуры</li>
-                        <li>• Содержание армии стоит золото каждый ход</li>
-                        <li>• Торговля и дипломатия (позже)</li>
-                    </ul>
-                </div>
-                <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-7">
-                    <div class="text-[#c9a227] text-3xl mb-4"><i class="fa-solid fa-swords"></i></div>
-                    <h4 class="font-semibold text-xl mb-2">Бой и Развитие</h4>
-                    <ul class="text-sm space-y-1.5 text-[#d4c3a3]">
-                        <li>• Пошаговый бой на карте или отдельный экран</li>
-                        <li>• Опыт, уровни, прокачка юнитов</li>
-                        <li>• Герои с навыками и артефактами</li>
-                        <li>• Осада городов, захват территорий</li>
-                    </ul>
-                </div>
+                <h3 class="text-xl mt-6 mb-2">Экономика и ресурсы</h3>
+                <ul>
+                    <li>Золото, Еда, Дерево, Камень, Железо (или Мана)</li>
+                    <li>Города производят ресурсы + очки науки/культуры</li>
+                    <li>Содержание армии стоит золото каждый ход</li>
+                </ul>
+
+                <h3 class="text-xl mt-6 mb-2">Бой и развитие</h3>
+                <ul>
+                    <li>Пошаговый или полу-реал-тайм бой на карте</li>
+                    <li>Система опыта и уровней юнитов</li>
+                    <li>Герои с навыками и артефактами (позже)</li>
+                    <li>Осада и захват городов</li>
+                </ul>
             </div>
-        </div>
 
-        <!-- Turn Structure -->
-        <div class="plan-section mb-16">
-            <h2 class="section-title text-4xl text-[#c9a227] tracking-wider mb-6 flex items-center gap-x-3">
-                <i class="fa-solid fa-clock-rotate-left"></i> <span>3. Структура Хода (Turn Phases)</span>
-            </h2>
-            <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-8">
-                <ol class="space-y-4 text-[#d4c3a3]">
-                    <li class="flex gap-4"><span class="font-mono text-[#c9a227] w-8">1.</span> <span><strong>Фаза Экономики</strong> — сбор ресурсов, содержание армии, производство в городах</span></li>
-                    <li class="flex gap-4"><span class="font-mono text-[#c9a227] w-8">2.</span> <span><strong>Фаза Движения</strong> — перемещение юнитов, разведка</span></li>
-                    <li class="flex gap-4"><span class="font-mono text-[#c9a227] w-8">3.</span> <span><strong>Фаза Действий</strong> — атака, строительство, использование способностей</span></li>
-                    <li class="flex gap-4"><span class="font-mono text-[#c9a227] w-8">4.</span> <span><strong>Фаза Боя</strong> — разрешение всех боёв (можно в реальном времени или пошагово)</span></li>
-                    <li class="flex gap-4"><span class="font-mono text-[#c9a227] w-8">5.</span> <span><strong>Конец Хода</strong> — проверка победы/поражения, события, AI ход</span></li>
+            <!-- 3. Структура хода -->
+            <div class="section">
+                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">3. Структура хода (фазы)</h2>
+                <ol class="list-decimal pl-5 space-y-1">
+                    <li><strong>Фаза экономики</strong> — сбор ресурсов, содержание армии, производство в городах</li>
+                    <li><strong>Фаза движения</strong> — перемещение юнитов, разведка</li>
+                    <li><strong>Фаза действий</strong> — атака, строительство, способности</li>
+                    <li><strong>Разрешение боёв</strong></li>
+                    <li><strong>Конец хода</strong> — события, проверка условий победы, ход AI</li>
                 </ol>
             </div>
-        </div>
 
-        <!-- Classes Section -->
-        <div id="classes" class="plan-section mb-16">
-            <h2 class="section-title text-4xl text-[#c9a227] tracking-wider mb-6 flex items-center gap-x-3">
-                <i class="fa-solid fa-sitemap"></i> <span>4. Архитектура Классов (OOP)</span>
-            </h2>
-            <p class="text-[#d4c3a3] mb-6 max-w-3xl">Игра построена на чистых JavaScript классах (ES6+). Каждый игровой объект — экземпляр класса. Это позволит легко расширять механики, добавлять новые типы юнитов/зданий и делать сохранения.</p>
+            <!-- 4. Архитектура классов -->
+            <div class="section">
+                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">4. Архитектура классов (JavaScript)</h2>
+                <p class="mb-4">Игра строится на чистых ES6-классах. Это позволит легко расширять механики, добавлять новые типы юнитов/зданий и делать сохранения.</p>
 
-            <!-- Mermaid Diagram -->
-            <div class="mb-8">
-                <h4 class="font-semibold mb-3 text-[#c9a227]">Диаграмма классов (Mermaid)</h4>
-                <div class="mermaid">
+                <h3 class="text-xl mt-6 mb-3">Диаграмма классов</h3>
+                <div class="mermaid mb-8">
 classDiagram
     class Game {
         +players: Player[]
@@ -238,31 +168,23 @@ classDiagram
     Tile "1" --> "0..1" Unit
     Tile "1" --> "0..1" Building
                 </div>
-            </div>
 
-            <div class="grid lg:grid-cols-2 gap-6">
-                <!-- Example Classes -->
-                <div>
-                    <h4 class="font-semibold mb-3 text-[#c9a227]">Пример реализации (JS)</h4>
-                    <pre class="text-xs p-4 rounded-2xl overflow-auto max-h-[420px] font-mono"><code>class Unit {
+                <h3 class="text-xl mt-6 mb-3">Пример реализации класса Unit</h3>
+                <pre class="text-sm p-4 rounded overflow-auto"><code>class Unit {
   constructor(type, owner, x, y) {
     this.id = Date.now() + Math.random();
-    this.type = type;           // 'warrior', 'archer'...
+    this.type = type;
     this.owner = owner;
     this.x = x; this.y = y;
-    this.hp = 100;
-    this.maxHp = 100;
-    this.attack = 15;
-    this.defense = 8;
+    this.hp = 100; this.maxHp = 100;
+    this.attack = 15; this.defense = 8;
     this.movement = 3;
-    this.level = 1;
-    this.experience = 0;
+    this.level = 1; this.experience = 0;
   }
 
   move(toX, toY, gameMap) {
     const dist = Math.abs(this.x - toX) + Math.abs(this.y - toY);
     if (dist > this.movement) return false;
-    // проверка местности...
     this.x = toX; this.y = toY;
     return true;
   }
@@ -288,89 +210,40 @@ classDiagram
     this.defense += 2;
   }
 
-  die() {
-    // удалить из игры
-    console.log(`${this.type} погиб`);
-  }
+  die() { console.log(`${this.type} погиб`); }
 }</code></pre>
-                </div>
+            </div>
 
-                <div class="space-y-6">
-                    <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-6">
-                        <h5 class="font-semibold text-[#c9a227] mb-2">Ключевые принципы</h5>
-                        <ul class="text-sm text-[#d4c3a3] space-y-1.5">
-                            <li>• Композиция > наследование (Unit может иметь разные компоненты: Movement, Combat, Economy)</li>
-                            <li>• Система событий (EventEmitter) для loose coupling</li>
-                            <li>• Сериализация всех объектов для сохранения (JSON)</li>
-                            <li>• Разделение логики и отрисовки (Renderer отдельно)</li>
-                        </ul>
+            <!-- 5. План разработки -->
+            <div class="section">
+                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">5. План разработки (поэтапно)</h2>
+                <div class="space-y-4">
+                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
+                        <strong class="text-[#c9a227]">MVP</strong><br>
+                        Базовая карта + 2–3 типа юнитов + 1 город + простой AI. Ход игрока → ход AI → победа при захвате столицы.
                     </div>
-                    <div class="bg-[#2c2118] border border-[#5c4630] rounded-3xl p-6">
-                        <h5 class="font-semibold text-[#c9a227] mb-2">Дополнительные классы</h5>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <span class="px-3 py-1 bg-[#1a120b] rounded-full">TurnManager</span>
-                            <span class="px-3 py-1 bg-[#1a120b] rounded-full">CombatResolver</span>
-                            <span class="px-3 py-1 bg-[#1a120b] rounded-full">AIPlayer</span>
-                            <span class="px-3 py-1 bg-[#1a120b] rounded-full">EventBus</span>
-                            <span class="px-3 py-1 bg-[#1a120b] rounded-full">SaveSystem</span>
-                            <span class="px-3 py-1 bg-[#1a120b] rounded-full">TechTree</span>
-                        </div>
+                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
+                        <strong class="text-[#c9a227]">v1.0</strong><br>
+                        Полная экономика, строительство зданий, опыт юнитов, туман войны, несколько городов.
+                    </div>
+                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
+                        <strong class="text-[#c9a227]">v2.0</strong><br>
+                        Герои, артефакты, дерево технологий, события, улучшенная графика (Canvas).
+                    </div>
+                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
+                        <strong class="text-[#c9a227]">v3.0</strong><br>
+                        WebRTC мультиплеер, редактор карт, кампания, облачные сохранения.
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Development Plan -->
-        <div class="plan-section mb-16">
-            <h2 class="section-title text-4xl text-[#c9a227] tracking-wider mb-6 flex items-center gap-x-3">
-                <i class="fa-solid fa-tasks"></i> <span>5. План Разработки (MVP → Полная версия)</span>
-            </h2>
-            <div class="space-y-4">
-                <div class="flex gap-4 bg-[#2c2118] border border-[#5c4630] rounded-3xl p-6">
-                    <div class="text-[#c9a227] font-mono text-xl w-12">MVP</div>
-                    <div>
-                        <p class="font-semibold">Базовая карта + 2-3 типа юнитов + 1 город + простой AI</p>
-                        <p class="text-sm text-[#8b5e3c]">Ход игрока → ход AI → победа при захвате столицы</p>
-                    </div>
-                </div>
-                <div class="flex gap-4 bg-[#2c2118] border border-[#5c4630] rounded-3xl p-6">
-                    <div class="text-[#c9a227] font-mono text-xl w-12">v1</div>
-                    <div>
-                        <p class="font-semibold">Полная экономика, строительство зданий, опыт юнитов, туман войны</p>
-                    </div>
-                </div>
-                <div class="flex gap-4 bg-[#2c2118] border border-[#5c4630] rounded-3xl p-6">
-                    <div class="text-[#c9a227] font-mono text-xl w-12">v2</div>
-                    <div>
-                        <p class="font-semibold">Герои, артефакты, дерево технологий, события, лучшая графика (Canvas)</p>
-                    </div>
-                </div>
-                <div class="flex gap-4 bg-[#2c2118] border border-[#5c4630] rounded-3xl p-6">
-                    <div class="text-[#c9a227] font-mono text-xl w-12">v3</div>
-                    <div>
-                        <p class="font-semibold">WebRTC мультиплеер, редактор карт, кампания, сохранения в облаке</p>
-                    </div>
-                </div>
+            <div class="mt-10 pt-6 border-t border-[#333] text-sm text-[#888]">
+                Документ готов для согласования. При необходимости могу сразу приступить к реализации MVP на основе этого плана.
             </div>
-        </div>
-
-        <div class="text-center text-sm text-[#8b5e3c] mt-12">
-            Этот документ — живая основа. Можно сразу начать реализацию, используя классы выше.<br>
-            Хочешь — я могу начать писать код самой игры на основе этого плана.
         </div>
     </div>
 
-    <footer class="max-w-7xl mx-auto px-6 py-10 text-center text-sm text-[#8b5e3c] border-t border-[#5c4630]">
-        <p>План для «Век Империй» • Королевский Зал Игр • 2026</p>
-    </footer>
-
     <script>
-        // Tailwind script
-        function initTailwind() {
-            document.documentElement.style.setProperty('--accent', '#c9a227');
-        }
-        
-        // Mermaid
         function initMermaid() {
             if (typeof mermaid !== 'undefined') {
                 mermaid.initialize({ 
@@ -378,20 +251,15 @@ classDiagram
                     theme: 'dark',
                     themeVariables: {
                         primaryColor: '#c9a227',
-                        primaryTextColor: '#e8d5b7',
-                        primaryBorderColor: '#5c4630',
-                        lineColor: '#8b5e3c',
-                        secondaryColor: '#2c2118',
-                        tertiaryColor: '#1a120b'
+                        primaryTextColor: '#e5e5e5',
+                        primaryBorderColor: '#555',
+                        lineColor: '#666',
+                        secondaryColor: '#1a1a1a'
                     }
                 });
             }
         }
-        
-        window.onload = function() {
-            initTailwind();
-            initMermaid();
-        }
+        window.onload = () => initMermaid();
     </script>
 </body>
 </html>
