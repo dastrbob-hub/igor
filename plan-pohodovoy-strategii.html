@@ -3,263 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>План разработки • Век Империй</title>
+    <title>Век Империй • Пошаговая Стратегия</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
-        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f0f; color: #e5e5e5; line-height: 1.7; }
-        .prose { max-width: 860px; margin: 0 auto; }
-        h1, h2, h3 { font-weight: 600; color: #f1e7d2; }
-        .section { margin-bottom: 3rem; }
-        pre { background: #1a1a1a; border: 1px solid #333; }
-        .mermaid { background: #1a1a1a; padding: 1.5rem; border-radius: 8px; border: 1px solid #333; }
-        .nav { border-bottom: 1px solid #333; }
-        ul { padding-left: 1.25rem; }
-        li { margin-bottom: 0.35rem; }
+        body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e5e5e5; }
+        canvas { border: 2px solid #444; border-radius: 8px; background: #1a1a1a; image-rendering: crisp-edges; }
+        .unit-info { background: #1a1a1a; border: 1px solid #333; }
+        .log { font-size: 13px; }
     </style>
 </head>
-<body class="bg-[#0f0f0f] text-[#e5e5e5]">
-    <div class="max-w-[900px] mx-auto px-6 pt-8 pb-16">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
-            <div>
-                <a href="index.html" class="text-sm text-[#c9a227] hover:underline flex items-center gap-x-2">
-                    <i class="fa-solid fa-arrow-left"></i> <span>Назад в репозиторий</span>
+<body>
+    <div class="max-w-[1100px] mx-auto p-6">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-x-4">
+                <a href="index.html" class="text-[#c9a227] hover:underline flex items-center gap-x-2 text-sm">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Назад в Зал</span>
                 </a>
-                <h1 class="text-4xl font-semibold tracking-tight mt-2">План разработки пошаговой стратегии</h1>
-                <p class="text-2xl text-[#c9a227] mt-1">«Век Империй» — Game Design Document</p>
+                <h1 class="text-3xl font-semibold tracking-tight">Век Империй</h1>
             </div>
-            <div class="text-right text-sm text-[#888]">
-                <div>для согласования</div>
-                <div class="mt-1">Июль 2026</div>
+            <div class="flex items-center gap-x-4">
+                <div id="turn-indicator" class="px-4 py-1.5 bg-[#c9a227] text-[#1a120b] rounded-full text-sm font-bold flex items-center gap-x-2">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Ход игрока</span>
+                </div>
+                <button onclick="endTurn()" 
+                        class="px-6 py-2 bg-[#c9a227] hover:bg-[#d4af37] text-[#1a120b] font-semibold rounded-2xl flex items-center gap-x-2 text-sm">
+                    <i class="fa-solid fa-forward"></i>
+                    <span>Закончить ход</span>
+                </button>
             </div>
         </div>
 
-        <div class="prose">
-            <!-- 1. Цели и концепция -->
-            <div class="section">
-                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">1. Цели и концепция</h2>
-                <p>Создать браузерную пошаговую стратегию в фэнтезийном сеттинге с акцентом на глубину механик, удобную архитектуру кода и возможность дальнейшего расширения (включая мультиплеер).</p>
-                <ul class="mt-4">
-                    <li><strong>Жанр:</strong> Пошаговая стратегия / 4X-лайт</li>
-                    <li><strong>Платформа:</strong> Браузер (чистый HTML + JS + Canvas/DOM)</li>
-                    <li><strong>Режимы:</strong> Одиночная игра против AI, hot-seat, WebRTC мультиплеер (в перспективе)</li>
-                </ul>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Canvas -->
+            <div class="lg:col-span-8">
+                <canvas id="game-canvas" width="600" height="600" class="cursor-pointer"></canvas>
             </div>
 
-            <!-- 2. Основные механики -->
-            <div class="section">
-                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">2. Основные механики</h2>
-                
-                <h3 class="text-xl mt-6 mb-2">Карта и перемещение</h3>
-                <ul>
-                    <li>Квадратная или гексагональная карта (рекомендуется hex)</li>
-                    <li>Типы тайлов: равнина, лес, гора, река, вода, болото</li>
-                    <li>Очки действия (AP) для перемещения в зависимости от типа юнита и местности</li>
-                    <li>Туман войны</li>
-                </ul>
-
-                <h3 class="text-xl mt-6 mb-2">Экономика и ресурсы</h3>
-                <ul>
-                    <li>Золото, Еда, Дерево, Камень, Железо (или Мана)</li>
-                    <li>Города производят ресурсы + очки науки/культуры</li>
-                    <li>Содержание армии стоит золото каждый ход</li>
-                </ul>
-
-                <h3 class="text-xl mt-6 mb-2">Бой и развитие</h3>
-                <ul>
-                    <li>Пошаговый или полу-реал-тайм бой на карте</li>
-                    <li>Система опыта и уровней юнитов</li>
-                    <li>Герои с навыками и артефактами (позже)</li>
-                    <li>Осада и захват городов</li>
-                </ul>
-            </div>
-
-            <!-- 3. Структура хода -->
-            <div class="section">
-                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">3. Структура хода (фазы)</h2>
-                <ol class="list-decimal pl-5 space-y-1">
-                    <li><strong>Фаза экономики</strong> — сбор ресурсов, содержание армии, производство в городах</li>
-                    <li><strong>Фаза движения</strong> — перемещение юнитов, разведка</li>
-                    <li><strong>Фаза действий</strong> — атака, строительство, способности</li>
-                    <li><strong>Разрешение боёв</strong></li>
-                    <li><strong>Конец хода</strong> — события, проверка условий победы, ход AI</li>
-                </ol>
-            </div>
-
-            <!-- 4. Архитектура классов -->
-            <div class="section">
-                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">4. Архитектура классов (JavaScript)</h2>
-                <p class="mb-4">Игра строится на чистых ES6-классах. Это позволит легко расширять механики, добавлять новые типы юнитов/зданий и делать сохранения.</p>
-
-                <h3 class="text-xl mt-6 mb-3">Диаграмма классов</h3>
-                <div class="mermaid mb-8">
-classDiagram
-    class Game {
-        +players: Player[]
-        +map: Map
-        +turn: number
-        +phase: string
-        +start()
-        +endTurn()
-        +save()
-        +load()
-    }
-    class Player {
-        +id: string
-        +name: string
-        +gold: number
-        +resources: Object
-        +units: Unit[]
-        +buildings: Building[]
-        +cities: City[]
-        +addGold(amount)
-        +spendGold(amount)
-    }
-    class Map {
-        +width: number
-        +height: number
-        +tiles: Tile[][]
-        +getTile(x, y)
-        +isValidMove(unit, x, y)
-    }
-    class Tile {
-        +x: number
-        +y: number
-        +type: string
-        +owner: Player
-        +unit: Unit
-        +building: Building
-    }
-    class Unit {
-        +id: string
-        +type: string
-        +hp: number
-        +maxHp: number
-        +attack: number
-        +defense: number
-        +movement: number
-        +range: number
-        +owner: Player
-        +position: {x,y}
-        +move(toX, toY)
-        +attack(target)
-        +takeDamage(dmg)
-        +levelUp()
-    }
-    class Building {
-        +type: string
-        +hp: number
-        +production: Object
-        +owner: Player
-        +position: {x,y}
-        +produce()
-    }
-    class City extends Building {
-        +population: number
-        +buildQueue: Array
-        +trainUnit(type)
-    }
-    Game "1" --> "*" Player
-    Player "1" --> "*" Unit
-    Player "1" --> "*" Building
-    Map "1" --> "*" Tile
-    Tile "1" --> "0..1" Unit
-    Tile "1" --> "0..1" Building
-                </div>
-
-                <h3 class="text-xl mt-6 mb-3">Пример реализации класса Unit</h3>
-                <pre class="text-sm p-4 rounded overflow-auto"><code>class Unit {
-  constructor(type, owner, x, y) {
-    this.id = Date.now() + Math.random();
-    this.type = type;
-    this.owner = owner;
-    this.x = x; this.y = y;
-    this.hp = 100; this.maxHp = 100;
-    this.attack = 15; this.defense = 8;
-    this.movement = 3;
-    this.level = 1; this.experience = 0;
-  }
-
-  move(toX, toY, gameMap) {
-    const dist = Math.abs(this.x - toX) + Math.abs(this.y - toY);
-    if (dist > this.movement) return false;
-    this.x = toX; this.y = toY;
-    return true;
-  }
-
-  attack(target) {
-    if (!target || target.owner === this.owner) return;
-    const damage = Math.max(1, this.attack - target.defense);
-    target.takeDamage(damage);
-    this.experience += 10;
-    if (this.experience >= this.level * 50) this.levelUp();
-  }
-
-  takeDamage(dmg) {
-    this.hp = Math.max(0, this.hp - dmg);
-    if (this.hp <= 0) this.die();
-  }
-
-  levelUp() {
-    this.level++;
-    this.maxHp += 15;
-    this.hp = this.maxHp;
-    this.attack += 3;
-    this.defense += 2;
-  }
-
-  die() { console.log(`${this.type} погиб`); }
-}</code></pre>
-            </div>
-
-            <!-- 5. План разработки -->
-            <div class="section">
-                <h2 class="text-2xl mb-4 border-b border-[#333] pb-2">5. План разработки (поэтапно)</h2>
-                <div class="space-y-4">
-                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
-                        <strong class="text-[#c9a227]">MVP</strong><br>
-                        Базовая карта + 2–3 типа юнитов + 1 город + простой AI. Ход игрока → ход AI → победа при захвате столицы.
-                    </div>
-                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
-                        <strong class="text-[#c9a227]">v1.0</strong><br>
-                        Полная экономика, строительство зданий, опыт юнитов, туман войны, несколько городов.
-                    </div>
-                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
-                        <strong class="text-[#c9a227]">v2.0</strong><br>
-                        Герои, артефакты, дерево технологий, события, улучшенная графика (Canvas).
-                    </div>
-                    <div class="bg-[#1a1a1a] border border-[#333] rounded p-4">
-                        <strong class="text-[#c9a227]">v3.0</strong><br>
-                        WebRTC мультиплеер, редактор карт, кампания, облачные сохранения.
+            <!-- Sidebar -->
+            <div class="lg:col-span-4 space-y-4">
+                <!-- Selected Unit -->
+                <div class="unit-info rounded-2xl p-5">
+                    <div class="text-xs text-[#888] mb-1">ВЫБРАННЫЙ ЮНИТ</div>
+                    <div id="selected-info" class="min-h-[80px]">
+                        <div class="text-[#666] text-sm">Кликни по юниту</div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mt-10 pt-6 border-t border-[#333] text-sm text-[#888]">
-                Документ готов для согласования. При необходимости могу сразу приступить к реализации MVP на основе этого плана.
+                <!-- Legend -->
+                <div class="unit-info rounded-2xl p-5 text-sm">
+                    <div class="font-semibold mb-3 text-[#c9a227]">Легенда</div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex items-center gap-x-2"><span class="inline-block w-3 h-3 bg-blue-500 rounded"></span> <span>Твои юниты (синие)</span></div>
+                        <div class="flex items-center gap-x-2"><span class="inline-block w-3 h-3 bg-red-500 rounded"></span> <span>Враг (красные)</span></div>
+                        <div class="flex items-center gap-x-2"><span class="inline-block w-3 h-3 bg-[#555] rounded"></span> <span>Горы (непроходимы)</span></div>
+                    </div>
+                </div>
+
+                <!-- Log -->
+                <div class="unit-info rounded-2xl p-4">
+                    <div class="font-semibold mb-2 text-[#c9a227] text-sm">Лог</div>
+                    <div id="log" class="log h-40 overflow-auto text-xs space-y-0.5 text-[#aaa]"></div>
+                </div>
             </div>
+        </div>
+
+        <div class="mt-4 text-xs text-[#666]">
+            Кликни по своему юниту → затем кликни на клетку для перемещения или атаки. ИИ ходит автоматически после тебя.
         </div>
     </div>
 
     <script>
-        function initMermaid() {
-            if (typeof mermaid !== 'undefined') {
-                mermaid.initialize({ 
-                    startOnLoad: true,
-                    theme: 'dark',
-                    themeVariables: {
-                        primaryColor: '#c9a227',
-                        primaryTextColor: '#e5e5e5',
-                        primaryBorderColor: '#555',
-                        lineColor: '#666',
-                        secondaryColor: '#1a1a1a'
-                    }
-                });
+        // ==================== КЛАССЫ ====================
+        class Unit {
+            constructor(type, owner, x, y) {
+                this.id = Date.now() + Math.random();
+                this.type = type; // 'warrior' or 'archer'
+                this.owner = owner; // 'player' or 'ai'
+                this.x = x;
+                this.y = y;
+                this.hp = type === 'warrior' ? 120 : 80;
+                this.maxHp = this.hp;
+                this.attack = type === 'warrior' ? 22 : 18;
+                this.defense = type === 'warrior' ? 10 : 6;
+                this.movement = type === 'warrior' ? 3 : 4;
+                this.range = type === 'warrior' ? 1 : 2;
+                this.level = 1;
+            }
+
+            getColor() {
+                return this.owner === 'player' ? '#3b82f6' : '#ef4444';
+            }
+
+            canAttack(target) {
+                const dx = Math.abs(this.x - target.x);
+                const dy = Math.abs(this.y - target.y);
+                return dx + dy <= this.range;
+            }
+
+            attack(target) {
+                if (!target || target.owner === this.owner) return 0;
+                const damage = Math.max(5, this.attack - target.defense + Math.floor(Math.random() * 6));
+                target.hp = Math.max(0, target.hp - damage);
+                return damage;
+            }
+
+            takeDamage(dmg) {
+                this.hp = Math.max(0, this.hp - dmg);
+            }
+
+            isAlive() {
+                return this.hp > 0;
             }
         }
-        window.onload = () => initMermaid();
+
+        class GameMap {
+            constructor(size = 10) {
+                this.size = size;
+                this.tiles = Array(size).fill().map(() => Array(size).fill('plain'));
+                // Добавим немного гор
+                this.tiles[2][3] = 'mountain';
+                this.tiles[3][3] = 'mountain';
+                this.tiles[7][6] = 'mountain';
+                this.tiles[6][7] = 'mountain';
+            }
+
+            isValid(x, y) {
+                return x >= 0 && x < this.size && y >= 0 && y < this.size;
+            }
+
+            isPassable(x, y) {
+                return this.tiles[y][x] !== 'mountain';
+            }
+        }
+
+        class Player {
+            constructor(name, isAI = false) {
+                this.name = name;
+                this.isAI = isAI;
+                this.units = [];
+            }
+
+            addUnit(unit) {
+                this.units.push(unit);
+            }
+
+            getAliveUnits() {
+                return this.units.filter(u => u.isAlive());
+            }
+        }
+
+        // ==================== ИГРА ====================
+        let game;
+
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('game-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.map = new GameMap(10);
+                this.tileSize = this.canvas.width / this.map.size;
+
+                this.player = new Player('Игрок');
+                this.ai = new Player('Враг', true);
+
+                this.units = [];
+                this.selectedUnit = null;
+                this.currentPlayer = 'player';
+                this.logEl = document.getElementById('log');
+
+                this.initUnits();
+                this.setupInput();
+                this.render();
+                this.addLog('Игра началась. Твой ход.');
+            }
+
+            initUnits() {
+                // Игрок
+                this.addUnit(new Unit('warrior', 'player', 1, 1));
+                this.addUnit(new Unit('archer', 'player', 2, 2));
+                this.addUnit(new Unit('warrior', 'player', 1, 3));
+
+                // ИИ
+                this.addUnit(new Unit('warrior', 'ai', 8, 7));
+                this.addUnit(new Unit('archer', 'ai', 7, 8));
+                this.addUnit(new Unit('warrior', 'ai', 8, 8));
+            }
+
+            addUnit(unit) {
+                this.units.push(unit);
+                if (unit.owner === 'player') this.player.addUnit(unit);
+                else this.ai.addUnit(unit);
+            }
+
+            getUnitAt(x, y) {
+                return this.units.find(u => u.x === x && u.y === y && u.isAlive());
+            }
+
+            setupInput() {
+                this.canvas.addEventListener('click', (e) => {
+                    if (this.currentPlayer !== 'player') return;
+
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = Math.floor((e.clientX - rect.left) / this.tileSize);
+                    const y = Math.floor((e.clientY - rect.top) / this.tileSize);
+
+                    const clickedUnit = this.getUnitAt(x, y);
+
+                    if (this.selectedUnit) {
+                        if (clickedUnit && clickedUnit.owner === 'player') {
+                            this.selectedUnit = clickedUnit;
+                        } else {
+                            this.tryMoveOrAttack(this.selectedUnit, x, y);
+                        }
+                        this.render();
+                    } else if (clickedUnit && clickedUnit.owner === 'player') {
+                        this.selectedUnit = clickedUnit;
+                        this.render();
+                    }
+                    this.updateSelectedInfo();
+                });
+            }
+
+            tryMoveOrAttack(unit, targetX, targetY) {
+                if (!unit || !unit.isAlive()) return;
+
+                const targetUnit = this.getUnitAt(targetX, targetY);
+
+                // Атака
+                if (targetUnit && targetUnit.owner !== unit.owner && unit.canAttack(targetUnit)) {
+                    const dmg = unit.attack(targetUnit);
+                    this.addLog(`${unit.type} нанёс ${dmg} урона`);
+
+                    if (!targetUnit.isAlive()) {
+                        this.addLog(`${targetUnit.type} противника уничтожен!`);
+                    }
+                    this.selectedUnit = null;
+                    this.checkWin();
+                    return;
+                }
+
+                // Перемещение
+                const dx = Math.abs(unit.x - targetX);
+                const dy = Math.abs(unit.y - targetY);
+                const dist = dx + dy;
+
+                if (dist <= unit.movement && this.map.isPassable(targetX, targetY) && !this.getUnitAt(targetX, targetY)) {
+                    unit.x = targetX;
+                    unit.y = targetY;
+                    this.selectedUnit = null;
+                }
+            }
+
+            endPlayerTurn() {
+                this.currentPlayer = 'ai';
+                document.getElementById('turn-indicator').innerHTML = `<i class="fa-solid fa-robot"></i> <span>Ход ИИ...</span>`;
+                this.selectedUnit = null;
+                this.updateSelectedInfo();
+                this.render();
+
+                setTimeout(() => {
+                    this.aiTurn();
+                }, 600);
+            }
+
+            aiTurn() {
+                const aliveAI = this.ai.getAliveUnits();
+                const alivePlayer = this.player.getAliveUnits();
+
+                if (aliveAI.length === 0 || alivePlayer.length === 0) {
+                    this.checkWin();
+                    return;
+                }
+
+                // Простой ИИ: идёт к ближайшему врагу и атакует если может
+                for (let unit of aliveAI) {
+                    if (!unit.isAlive()) continue;
+
+                    let closest = null;
+                    let minDist = 999;
+
+                    for (let enemy of alivePlayer) {
+                        if (!enemy.isAlive()) continue;
+                        const d = Math.abs(unit.x - enemy.x) + Math.abs(unit.y - enemy.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            closest = enemy;
+                        }
+                    }
+
+                    if (closest) {
+                        if (unit.canAttack(closest)) {
+                            const dmg = unit.attack(closest);
+                            this.addLog(`ИИ ${unit.type} нанёс ${dmg} урона`);
+                            if (!closest.isAlive()) this.addLog(`${closest.type} уничтожен!`);
+                        } else {
+                            // Движемся ближе
+                            let nx = unit.x;
+                            let ny = unit.y;
+                            if (unit.x < closest.x) nx++;
+                            else if (unit.x > closest.x) nx--;
+                            else if (unit.y < closest.y) ny++;
+                            else if (unit.y > closest.y) ny--;
+
+                            if (this.map.isPassable(nx, ny) && !this.getUnitAt(nx, ny)) {
+                                unit.x = nx;
+                                unit.y = ny;
+                            }
+                        }
+                    }
+                }
+
+                this.currentPlayer = 'player';
+                document.getElementById('turn-indicator').innerHTML = `<i class="fa-solid fa-user"></i> <span>Ход игрока</span>`;
+                this.render();
+                this.checkWin();
+            }
+
+            checkWin() {
+                const playerAlive = this.player.getAliveUnits().length;
+                const aiAlive = this.ai.getAliveUnits().length;
+
+                if (playerAlive === 0) {
+                    this.addLog('Поражение! Все твои юниты уничтожены.');
+                    alert('Поражение...');
+                } else if (aiAlive === 0) {
+                    this.addLog('Победа! Враг уничтожен.');
+                    alert('Победа!');
+                }
+            }
+
+            updateSelectedInfo() {
+                const container = document.getElementById('selected-info');
+                if (!this.selectedUnit) {
+                    container.innerHTML = `<div class="text-[#666] text-sm">Кликни по своему юниту</div>`;
+                    return;
+                }
+                const u = this.selectedUnit;
+                container.innerHTML = `
+                    <div class="font-semibold">${u.type.toUpperCase()} (ур. ${u.level})</div>
+                    <div class="text-xs mt-1">HP: ${u.hp}/${u.maxHp}</div>
+                    <div class="text-xs">Атака: ${u.attack} | Защита: ${u.defense}</div>
+                    <div class="text-xs">Движение: ${u.movement} | Дальность: ${u.range}</div>
+                `;
+            }
+
+            addLog(msg) {
+                const div = document.createElement('div');
+                div.textContent = msg;
+                this.logEl.prepend(div);
+                if (this.logEl.children.length > 12) this.logEl.lastChild.remove();
+            }
+
+            render() {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Тайлы
+                for (let y = 0; y < this.map.size; y++) {
+                    for (let x = 0; x < this.map.size; x++) {
+                        const px = x * this.tileSize;
+                        const py = y * this.tileSize;
+
+                        if (this.map.tiles[y][x] === 'mountain') {
+                            ctx.fillStyle = '#444';
+                        } else {
+                            ctx.fillStyle = (x + y) % 2 === 0 ? '#1f2937' : '#111827';
+                        }
+                        ctx.fillRect(px, py, this.tileSize, this.tileSize);
+
+                        // Сетка
+                        ctx.strokeStyle = '#333';
+                        ctx.strokeRect(px, py, this.tileSize, this.tileSize);
+                    }
+                }
+
+                // Юниты
+                for (let unit of this.units) {
+                    if (!unit.isAlive()) continue;
+
+                    const px = unit.x * this.tileSize + this.tileSize / 2;
+                    const py = unit.y * this.tileSize + this.tileSize / 2;
+                    const radius = this.tileSize * 0.35;
+
+                    // Круг
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = unit.getColor();
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // HP бар
+                    const hpPercent = unit.hp / unit.maxHp;
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(px - radius, py - radius - 8, radius * 2, 5);
+                    ctx.fillStyle = hpPercent > 0.5 ? '#22c55e' : '#f87171';
+                    ctx.fillRect(px - radius, py - radius - 8, radius * 2 * hpPercent, 5);
+
+                    // Тип
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(unit.type[0].toUpperCase(), px, py + 4);
+                }
+
+                // Подсветка выбранного
+                if (this.selectedUnit) {
+                    const u = this.selectedUnit;
+                    ctx.strokeStyle = '#c9a227';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(u.x * this.tileSize + 2, u.y * this.tileSize + 2, 
+                                   this.tileSize - 4, this.tileSize - 4);
+                }
+            }
+        }
+
+        function endTurn() {
+            if (game.currentPlayer === 'player') {
+                game.endPlayerTurn();
+            }
+        }
+
+        // Старт
+        function startGame() {
+            game = new Game();
+            window.game = game; // для отладки
+        }
+
+        window.onload = startGame;
     </script>
 </body>
 </html>
